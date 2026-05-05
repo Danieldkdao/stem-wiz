@@ -1,5 +1,6 @@
 import { envServer } from "@/data/env/server";
 import { db } from "@/db/db";
+import { sendVerificationOtp } from "@/services/mailjet/verification-email";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins";
@@ -27,8 +28,7 @@ export const auth = betterAuth({
     emailOTP({
       overrideDefaultEmailVerification: true,
       async sendVerificationOTP(data) {
-        return;
-        // await sendVerificationOtp(data);
+        await sendVerificationOtp(data);
       },
     }),
   ],
