@@ -7,4 +7,4 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const getInputErrorStyle = (error?: FieldError) =>
-  error ? "border-destructive" : undefined;
+  error ? "border-red-destructive" : undefined;
