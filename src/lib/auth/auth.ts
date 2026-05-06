@@ -1,6 +1,6 @@
 import { envServer } from "@/data/env/server";
 import { db } from "@/db/db";
-import { sendVerificationOtp } from "@/services/mailjet/verification-email";
+import { sendVerificationOtp } from "@/services/brevo/emails/verification-email";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins";
