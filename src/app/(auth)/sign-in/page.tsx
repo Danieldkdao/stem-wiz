@@ -58,7 +58,7 @@ const SignInPage = () => {
   const handleSignIn = async (data: FormType) => {
     await authClient.signIn.email({
       ...data,
-      callbackURL: "/",
+      callbackURL: "/dashboard",
       fetchOptions: {
         onSuccess: () => {
           toast.success("Authentication successful!");
@@ -84,7 +84,7 @@ const SignInPage = () => {
     setIsSocialSignIn(true);
     await authClient.signIn.social({
       provider,
-      callbackURL: "/",
+      callbackURL: "/dashboard",
       fetchOptions: {
         onError: (error) => {
           setIsSocialSignIn(false);
@@ -187,7 +187,7 @@ const SignInPage = () => {
           href="/sign-up"
           className="text-sm font-medium text-muted-foreground"
         >
-          Don't have an account? Click here to sign up.
+          Don&apos;t have an account? Click here to sign up.
         </Link>
       </CardContent>
     </Card>

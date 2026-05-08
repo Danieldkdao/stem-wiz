@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "STEMWiz",
+  title: "Synapse",
   description:
-    "STEMWiz is the platform that helps anyone prepare for important STEM events so you can perform your best when it really matters.",
+    "Synapse is the platform where developers can hone their skills and become the best versions of themselves.",
 };
 
 export default function RootLayout({

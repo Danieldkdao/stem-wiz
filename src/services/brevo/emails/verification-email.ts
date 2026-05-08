@@ -39,35 +39,35 @@ const emailContentByType: Record<
   }
 > = {
   "sign-in": {
-    subject: "Your STEMWiz sign-in code",
+    subject: "Your Synapse sign-in code",
     eyebrow: "Secure sign-in",
     heading: "Use this code to sign in",
     description:
-      "Enter the verification code below to finish signing in to your STEMWiz account.",
+      "Enter the verification code below to finish signing in to your Synapse account.",
     instruction: "Paste this code into the sign-in screen to continue.",
   },
   "change-email": {
-    subject: "Confirm your new STEMWiz email",
+    subject: "Confirm your new Synapse email",
     eyebrow: "Email change",
     heading: "Confirm your new email address",
     description:
-      "Use the verification code below to confirm this email address for your STEMWiz account.",
+      "Use the verification code below to confirm this email address for your Synapse account.",
     instruction: "Enter this code to complete your email change.",
   },
   "email-verification": {
-    subject: "Verify your email for STEMWiz",
+    subject: "Verify your email for Synapse",
     eyebrow: "Email verification",
     heading: "Verify your email address",
     description:
-      "Welcome to STEMWiz. Enter the verification code below to activate your account.",
+      "Welcome to Synapse. Enter the verification code below to activate your account.",
     instruction: "Type this code into the verification form to finish setup.",
   },
   "forget-password": {
-    subject: "Your STEMWiz password reset code",
+    subject: "Your Synapse password reset code",
     eyebrow: "Password reset",
     heading: "Reset your password",
     description:
-      "Use the verification code below to continue resetting your STEMWiz password.",
+      "Use the verification code below to continue resetting your Synapse password.",
     instruction: "Enter this code on the password reset screen to proceed.",
   },
 };
@@ -93,7 +93,7 @@ export const sendVerificationOtp = async ({
   const escapedEyebrow = escapeHtml(content.eyebrow);
   const escapedInstruction = escapeHtml(content.instruction);
   const text = [
-    `${content.heading} - STEMWiz`,
+    `${content.heading} - Synapse`,
     "",
     content.description,
     "",
@@ -115,7 +115,7 @@ export const sendVerificationOtp = async ({
       </head>
       <body style="margin:0;padding:0;background:${EMAIL_THEME.background};font-family:${EMAIL_FONT_FAMILY};color:${EMAIL_THEME.text};">
         <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-          Your STEMWiz verification code is ${escapedOtp}.
+          Your Synapse verification code is ${escapedOtp}.
         </div>
         <div style="margin:0;padding:36px 16px;background:${EMAIL_THEME.background};font-family:${EMAIL_FONT_FAMILY};color:${EMAIL_THEME.text};">
           <div style="max-width:560px;margin:0 auto;background:${EMAIL_THEME.surface};border:1px solid ${EMAIL_THEME.border};border-radius:24px;overflow:hidden;box-shadow:${EMAIL_THEME.shadow};">

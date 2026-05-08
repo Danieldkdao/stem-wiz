@@ -21,7 +21,7 @@ export const transporter = nodemailer.createTransport({
 
 export const sendEmail = async ({
   from = envServer.SENDER_EMAIL,
-  fromName = "STEMWiz",
+  fromName = "Synapse",
   to,
   subject,
   html,

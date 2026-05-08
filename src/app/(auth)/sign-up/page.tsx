@@ -50,7 +50,7 @@ const SignUpPage = () => {
   const handleSignUp = async (data: FormType) => {
     await authClient.signUp.email({
       ...data,
-      callbackURL: "/",
+      callbackURL: "/dashboard",
       fetchOptions: {
         onSuccess: async () => {
           toast.success("Account created successfully!");
@@ -71,7 +71,7 @@ const SignUpPage = () => {
     setIsSocialSignIn(true);
     await authClient.signIn.social({
       provider,
-      callbackURL: "/",
+      callbackURL: "/dashboard",
       fetchOptions: {
         onError: (error) => {
           setIsSocialSignIn(false);
