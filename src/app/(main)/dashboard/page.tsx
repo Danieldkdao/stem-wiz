@@ -50,7 +50,7 @@ const DashboardPage = () => {
                   <h2 className="text-2xl mt-2 font-semibold text-center">
                     {option.title}
                   </h2>
-                  <p className="text-muted-foreground text-base">
+                  <p className="text-muted-foreground text-base text-center">
                     {option.description}
                   </p>
                 </CardContent>

@@ -1,3 +1,5 @@
+"use client";
+
 import { LogOutIcon } from "lucide-react";
 import {
   DropdownMenu,
@@ -7,6 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { UserAvatar } from "./user-avatar";
+import { authClient } from "@/lib/auth/auth-client";
+import { toast } from "sonner";
+import { GENERAL_ERROR_MESSAGE } from "@/lib/constants";
+import { useRouter } from "next/navigation";
 
 type UserActionsButtonProps = {
   name: string;
@@ -15,6 +21,8 @@ type UserActionsButtonProps = {
 };
 
 export const UserActionsButton = (user: UserActionsButtonProps) => {
+  const router = useRouter();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -26,7 +34,23 @@ export const UserActionsButton = (user: UserActionsButtonProps) => {
           <span className="text-sm text-muted-foreground">{user.email}</span>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive">
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => {
+            authClient.signOut({
+              fetchOptions: {
+                onSuccess: () => {
+                  toast.success("Signed out successfully.");
+                  router.push("/sign-in");
+                },
+                onError: (error) => {
+                  console.error(error);
+                  toast.error(error.error.message || GENERAL_ERROR_MESSAGE);
+                },
+              },
+            });
+          }}
+        >
           <LogOutIcon />
           Sign out
         </DropdownMenuItem>
