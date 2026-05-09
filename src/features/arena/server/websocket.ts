@@ -11,9 +11,16 @@ export type ArenaSocketServer = HttpServer & {
   arenaWsInitialized?: boolean;
 };
 
+type UserInfo = {
+  id: string;
+  name: string;
+  image?: string | null | undefined;
+  // todo: add elo later
+};
+
 type ArenaWebSocket = WebSocket & {
   isAlive: boolean;
-  userId: string;
+  user: UserInfo;
 };
 
 const clientMessageSchema = z.discriminatedUnion("type", [
@@ -30,7 +37,7 @@ const globalForArenaWs = globalThis as typeof globalThis & {
   __arenaWsState?: {
     activeMatchesByUser: Map<string, string>;
     socketsByUser: Map<string, ArenaWebSocket>;
-    usersInWaitingRoom: Set<string>;
+    usersInWaitingRoom: Map<string, UserInfo>;
   };
 };
 
@@ -39,7 +46,7 @@ const getArenaWsState = () => {
     globalForArenaWs.__arenaWsState = {
       activeMatchesByUser: new Map(),
       socketsByUser: new Map(),
-      usersInWaitingRoom: new Set(),
+      usersInWaitingRoom: new Map(),
     };
   }
 
@@ -82,9 +89,9 @@ const rejectUpgrade = (
 const joinWaitingRoom = (ws: ArenaWebSocket) => {
   const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
     getArenaWsState();
-  const userId = ws.userId;
+  const userId = ws.user.id;
   if (activeMatchesByUser.has(userId) || usersInWaitingRoom.has(userId)) return;
-  usersInWaitingRoom.add(userId);
+  usersInWaitingRoom.set(userId, ws.user);
   socketsByUser.set(userId, ws);
 
   tryPairUsers(userId);
@@ -107,8 +114,8 @@ const tryPairUsers = async (currentUserId: string) => {
   try {
     const [dev1, dev2] = usersInWaitingRoom.values();
 
-    usersInWaitingRoom.delete(dev1);
-    usersInWaitingRoom.delete(dev2);
+    usersInWaitingRoom.delete(dev1.id);
+    usersInWaitingRoom.delete(dev2.id);
 
     const match = await db.transaction(async (tx) => {
       const [match] = await tx
@@ -126,11 +133,11 @@ const tryPairUsers = async (currentUserId: string) => {
         .insert(UserMatchTable)
         .values([
           {
-            userId: dev1,
+            userId: dev1.id,
             matchId: match.id,
           },
           {
-            userId: dev2,
+            userId: dev2.id,
             matchId: match.id,
           },
         ])
@@ -145,22 +152,22 @@ const tryPairUsers = async (currentUserId: string) => {
 
     const matchId = match.id;
 
-    activeMatchesByUser.set(dev1, matchId);
-    activeMatchesByUser.set(dev2, matchId);
+    activeMatchesByUser.set(dev1.id, matchId);
+    activeMatchesByUser.set(dev2.id, matchId);
 
-    socketsByUser.get(dev1)?.send(
+    socketsByUser.get(dev1.id)?.send(
       JSON.stringify({
         type: "match_found",
         matchId,
-        opponentId: dev2,
+        opponent: dev2,
       }),
     );
 
-    socketsByUser.get(dev2)?.send(
+    socketsByUser.get(dev2.id)?.send(
       JSON.stringify({
         type: "match_found",
         matchId,
-        opponentId: dev1,
+        opponent: dev1,
       }),
     );
   } catch (error) {
@@ -170,7 +177,7 @@ const tryPairUsers = async (currentUserId: string) => {
 
 const leaveWaitingRoom = (ws: ArenaWebSocket) => {
   const { usersInWaitingRoom, socketsByUser } = getArenaWsState();
-  const userId = ws.userId;
+  const userId = ws.user.id;
   usersInWaitingRoom.delete(userId);
   socketsByUser.delete(userId);
 };
@@ -207,7 +214,11 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
       console.log("handleUpgrade callback fired");
 
       const authedWs = ws as ArenaWebSocket;
-      authedWs.userId = session.user.id;
+      authedWs.user = {
+        id: session.user.id,
+        name: session.user.name,
+        image: session.user.image,
+      };
 
       wss.emit("connection", authedWs, request);
     });
@@ -257,14 +268,15 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
     });
 
     ws.on("close", () => {
+      const userId = ws.user.id;
       console.log("client disconnected");
 
       // FOR TESING PURPOSES: PLEASE REMOVE LATER
-      socketsByUser.delete(ws.userId);
+      socketsByUser.delete(userId);
       console.log("USER SOCKETS CLEARED");
-      activeMatchesByUser.delete(ws.userId);
+      activeMatchesByUser.delete(userId);
       console.log("ACTIVE MATCHES CLEARED");
-      usersInWaitingRoom.delete(ws.userId);
+      usersInWaitingRoom.delete(userId);
       console.log("WAITING ROOM CLEARED");
     });
   });
@@ -273,9 +285,9 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
     wss.clients.forEach((originalWs) => {
       const ws = originalWs as ArenaWebSocket;
       if (!ws.isAlive) {
-        activeMatchesByUser.delete(ws.userId);
-        socketsByUser.delete(ws.userId);
-        usersInWaitingRoom.delete(ws.userId);
+        activeMatchesByUser.delete(ws.user.id);
+        socketsByUser.delete(ws.user.id);
+        usersInWaitingRoom.delete(ws.user.id);
         return ws.terminate();
       }
 

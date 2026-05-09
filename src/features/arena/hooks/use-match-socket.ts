@@ -2,16 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+type UserInfo = {
+  id: string;
+  name: string;
+  image?: string | null | undefined;
+};
+
 type ClientMessage =
   | { type: "join_waiting_room" }
   | { type: "leave_waiting_room" };
 
-type ServerMessage =
+export type ServerMessage =
   | {
       // todo: move the type fields into their own constant with their own type
       type: "match_found";
       matchId: string;
-      opponentId: string;
+      opponent: UserInfo;
     }
   | { type: "no_matches_found" }
   | {
@@ -19,7 +25,7 @@ type ServerMessage =
       message: string;
     };
 
-type SocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
+export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -34,7 +40,7 @@ export const useMatchSocket = () => {
   const [lastEvent, setLastEvent] = useState<ServerMessage | null>(null);
   const [match, setMatch] = useState<{
     matchId: string;
-    opponentId: string;
+    opponent: UserInfo;
   } | null>(null);
 
   const connect = useCallback(async () => {
