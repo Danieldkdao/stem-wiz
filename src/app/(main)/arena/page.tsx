@@ -7,7 +7,7 @@ const options = [
     title: "Compete",
     description: "We'll match you in a one-to-one battle to test your skills!",
     icon: SwordsIcon,
-    href: "/arena/matches/compete",
+    href: "/arena/waiting",
   },
   {
     title: "Observe",
