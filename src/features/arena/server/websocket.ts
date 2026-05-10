@@ -1,5 +1,10 @@
 import { db } from "@/db/db";
-import { MatchTable, UserSettingsTable, UserMatchTable } from "@/db/schema";
+import {
+  MatchTable,
+  UserSettingsTable,
+  UserMatchTable,
+  PreferredLanguageType,
+} from "@/db/schema";
 import { auth } from "@/lib/auth/auth";
 import { eq } from "drizzle-orm";
 import { Server as HttpServer, IncomingMessage } from "node:http";
@@ -24,6 +29,11 @@ type ArenaWebSocket = WebSocket & {
   user: UserInfo;
 };
 
+type UpgradeSocket = {
+  write: (chunk: string) => unknown;
+  destroy: () => unknown;
+};
+
 const clientMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("join_waiting_room"),
@@ -38,7 +48,10 @@ const globalForArenaWs = globalThis as typeof globalThis & {
   __arenaWsState?: {
     activeMatchesByUser: Map<string, string>;
     socketsByUser: Map<string, ArenaWebSocket>;
-    usersInWaitingRoom: Map<string, UserInfo>;
+    usersInWaitingRoom: Map<
+      string,
+      UserInfo & { userSettings: typeof UserSettingsTable.$inferSelect }
+    >;
   };
 };
 
@@ -73,11 +86,6 @@ const toHeaders = (req: IncomingMessage) => {
   return headers;
 };
 
-type UpgradeSocket = {
-  write: (chunk: string) => unknown;
-  destroy: () => unknown;
-};
-
 const rejectUpgrade = (
   socket: UpgradeSocket,
   status: 400 | 401 | 403,
@@ -106,13 +114,16 @@ const joinWaitingRoom = async (ws: ArenaWebSocket) => {
   }
 
   if (activeMatchesByUser.has(userId) || usersInWaitingRoom.has(userId)) return;
-  usersInWaitingRoom.set(userId, ws.user);
+  usersInWaitingRoom.set(userId, { ...ws.user, userSettings });
   socketsByUser.set(userId, ws);
 
-  tryPairUsers(userId);
+  tryPairUsers(userId, userSettings.preferredLanguage);
 };
 
-const tryPairUsers = async (currentUserId: string) => {
+const tryPairUsers = async (
+  currentUserId: string,
+  preferredLanguage: PreferredLanguageType,
+) => {
   const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
     getArenaWsState();
   if (usersInWaitingRoom.size < 2) {
@@ -123,6 +134,22 @@ const tryPairUsers = async (currentUserId: string) => {
         }),
       );
     }, 4000);
+    return;
+  }
+  if (
+    !usersInWaitingRoom
+      .values()
+      .find(
+        (user) =>
+          user.userSettings.preferredLanguage === preferredLanguage &&
+          user.id !== currentUserId,
+      )
+  ) {
+    socketsByUser.get(currentUserId)?.send(
+      JSON.stringify({
+        type: "no_matches_found",
+      }),
+    );
     return;
   }
 

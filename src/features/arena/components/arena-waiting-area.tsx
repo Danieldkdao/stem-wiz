@@ -168,7 +168,7 @@ export const ArenaWaitingArea = () => {
                     </span>
                   </div>
                 ) : (
-                  <FindingMatchLoader paused />
+                  <FindingMatchLoader />
                 )}
               </div>
             </CardContent>

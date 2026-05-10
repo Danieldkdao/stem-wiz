@@ -92,9 +92,7 @@ export const OnboardingForm = () => {
                 {...props}
                 value={value ?? ""}
                 onChange={(e) =>
-                  onChange(
-                    e.target.value.trim() ? e.target.value.trim() : undefined,
-                  )
+                  onChange(e.target.value.trim() ? e.target.value : undefined)
                 }
                 placeholder="I like to learn through examples. I want to learn Python but I am most comfortable with Java."
                 className={cn("max-h-32", getInputErrorStyle(fieldState.error))}

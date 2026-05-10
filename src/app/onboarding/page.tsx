@@ -11,7 +11,8 @@ const OnboardingPage = () => {
             <div className="flex flex-col gap-1">
               <h1 className="text-2xl font-semibold text-center">Onboarding</h1>
               <p className="text-muted-foreground">
-                Help us get to know you and your interests!
+                Help us get to know you and your interests! You can always
+                update any of these later.
               </p>
             </div>
             <Separator />
