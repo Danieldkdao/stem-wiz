@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
 import { UserMatchTable } from "./user-match";
-import { SettingsTable } from "./settings";
+import { UserSettingsTable } from "./user-settings";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -79,7 +79,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   sessions: many(session),
   accounts: many(account),
   matches: many(UserMatchTable),
-  settings: one(SettingsTable),
+  settings: one(UserSettingsTable),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({

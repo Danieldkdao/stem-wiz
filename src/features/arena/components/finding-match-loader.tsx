@@ -31,7 +31,11 @@ const imageItems = [
   },
 ];
 
-export const FindingMatchLoader = () => {
+export const FindingMatchLoader = ({
+  paused = false,
+}: {
+  paused?: boolean;
+}) => {
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const currentItem = imageItems[currentItemIndex] ?? {
     id: 10,
@@ -40,12 +44,14 @@ export const FindingMatchLoader = () => {
   };
 
   useEffect(() => {
+    if (paused) return;
     const interval = setInterval(() => {
+      if (paused) return;
       setCurrentItemIndex((prev) => (prev + 1) % imageItems.length);
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [paused]);
 
   return (
     <div className="flex w-28 flex-col items-center gap-2">

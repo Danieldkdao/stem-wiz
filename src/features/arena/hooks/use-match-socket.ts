@@ -20,6 +20,7 @@ export type ServerMessage =
       opponent: UserInfo;
     }
   | { type: "no_matches_found" }
+  | { type: "no_user_settings" }
   | {
       type: "error";
       message: string;

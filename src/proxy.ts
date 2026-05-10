@@ -3,9 +3,10 @@ import { auth } from "./lib/auth/auth";
 import { db } from "./db/db";
 import { user } from "./db/schema";
 import { eq } from "drizzle-orm";
+import { hasUserSettings } from "./features/user/server/user-settings";
 
 const authRoutes = new Set(["/sign-in", "/sign-up"]);
-const protectedRoutePrefixes = ["/dashboard"];
+const protectedRoutePrefixes = ["/dashboard", "/arena"];
 
 const matchesRoutePrefix = (pathname: string, route: string) => {
   return pathname === route || pathname.startsWith(`${route}/`);
@@ -56,9 +57,19 @@ export const proxy = async (request: NextRequest) => {
     return redirectTo(request, "/dashboard");
   }
 
+  if (isProtectedRoute && !(await hasUserSettings(existingUser.id))) {
+    return redirectTo(request, "/onboarding");
+  }
+
   return NextResponse.next();
 };
 
 export const config = {
-  matcher: ["/sign-in", "/sign-up", "/admin/:path*", "/dashboard/:path*"],
+  matcher: [
+    "/sign-in",
+    "/sign-up",
+    "/admin/:path*",
+    "/dashboard/:path*",
+    "/arena/:path*",
+  ],
 };

@@ -1,4 +1,10 @@
-import { pgEnum, pgTable, primaryKey, varchar } from "drizzle-orm/pg-core";
+import {
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { relations } from "drizzle-orm";
 
@@ -7,6 +13,7 @@ export const preferredLanguages = [
   "javascript",
   "java",
   "c++",
+  "typescript",
 ] as const;
 export type PreferredLanguageType = (typeof preferredLanguages)[number];
 export const preferredLanguageEnum = pgEnum(
@@ -14,20 +21,21 @@ export const preferredLanguageEnum = pgEnum(
   preferredLanguages,
 );
 
-export const SettingsTable = pgTable(
-  "settings",
+export const UserSettingsTable = pgTable(
+  "user_settings",
   {
     userId: varchar("user_id")
       .references(() => user.id, { onDelete: "cascade" })
       .notNull(),
     preferredLanguage: preferredLanguageEnum("preferred_language").notNull(),
+    additionalInformation: text("additional_information"),
   },
   (t) => [primaryKey({ columns: [t.userId] })],
 );
 
-export const settingRelations = relations(SettingsTable, ({ one }) => ({
+export const userSettingRelations = relations(UserSettingsTable, ({ one }) => ({
   user: one(user, {
-    fields: [SettingsTable.userId],
+    fields: [UserSettingsTable.userId],
     references: [user.id],
   }),
 }));

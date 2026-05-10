@@ -80,6 +80,18 @@ const responseMap: Record<
       </Button>
     </div>
   ),
+  no_user_settings: () => (
+    <div className="flex flex-col gap-2 items-center">
+      <h1 className="text-xl font-medium text-center">No User Settings</h1>
+      <p className="text-muted-foreground text-center">
+        Please update your preferences and settings so we know what you like and
+        who we should pair you up with!
+      </p>
+      <Button variant="outline" className="w-full">
+        <Link href={`/settings`}>Head to settings</Link>
+      </Button>
+    </div>
+  ),
   error: () => (
     <div className="flex flex-col gap-2 items-center">
       <h1 className="text-xl font-medium text-center text-destructive">
@@ -130,36 +142,39 @@ export const ArenaWaitingArea = () => {
       </div>
 
       <div className="w-full max-w-100 flex flex-col gap-2">
-        <Card>
-          <CardContent>
-            <div className="flex items-center gap-8">
-              <div className="flex flex-col gap-6 items-center p-4">
-                <UserAvatar
-                  {...session.user}
-                  className="size-20"
-                  textClassName="text-2xl font-medium"
-                />
-                <span className="text-xl font-bold">You</span>
-              </div>
-
-              <SwordsIcon className="size-14" strokeWidth={3} />
-              {match ? (
-                <div className="flex flex-col gap-6 items-center p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {lastEvent?.type !== "no_user_settings" && (
+          <Card>
+            <CardContent>
+              <div className="flex items-center gap-8">
+                <div className="flex flex-col gap-6 items-center p-4">
                   <UserAvatar
-                    {...match.opponent}
+                    {...session.user}
                     className="size-20"
                     textClassName="text-2xl font-medium"
                   />
-                  <span className="text-xl font-bold line-clamp-1">
-                    {match.opponent.name}
-                  </span>
+                  <span className="text-xl font-bold">You</span>
                 </div>
-              ) : (
-                <FindingMatchLoader />
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
+                <SwordsIcon className="size-14" strokeWidth={3} />
+                {match ? (
+                  <div className="flex flex-col gap-6 items-center p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <UserAvatar
+                      {...match.opponent}
+                      className="size-20"
+                      textClassName="text-2xl font-medium"
+                    />
+                    <span className="text-xl font-bold line-clamp-1">
+                      {match.opponent.name}
+                    </span>
+                  </div>
+                ) : (
+                  <FindingMatchLoader paused />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {lastEvent && (
           <Card className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <CardContent>

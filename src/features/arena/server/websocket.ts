@@ -1,6 +1,7 @@
 import { db } from "@/db/db";
-import { MatchTable, UserMatchTable } from "@/db/schema";
+import { MatchTable, UserSettingsTable, UserMatchTable } from "@/db/schema";
 import { auth } from "@/lib/auth/auth";
+import { eq } from "drizzle-orm";
 import { Server as HttpServer, IncomingMessage } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import z from "zod";
@@ -86,10 +87,24 @@ const rejectUpgrade = (
   socket.destroy();
 };
 
-const joinWaitingRoom = (ws: ArenaWebSocket) => {
+const joinWaitingRoom = async (ws: ArenaWebSocket) => {
   const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
     getArenaWsState();
   const userId = ws.user.id;
+
+  const [userSettings] = await db
+    .select()
+    .from(UserSettingsTable)
+    .where(eq(UserSettingsTable.userId, userId));
+  if (!userSettings) {
+    ws.send(
+      JSON.stringify({
+        type: "no_user_settings",
+      }),
+    );
+    return;
+  }
+
   if (activeMatchesByUser.has(userId) || usersInWaitingRoom.has(userId)) return;
   usersInWaitingRoom.set(userId, ws.user);
   socketsByUser.set(userId, ws);
@@ -231,7 +246,7 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
     ws.on("error", console.error);
     ws.on("pong", () => (ws.isAlive = true));
 
-    ws.on("message", (data) => {
+    ws.on("message", async (data) => {
       try {
         const json = JSON.parse(data.toString());
         const result = clientMessageSchema.safeParse(json);
@@ -246,7 +261,7 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
 
         switch (messageType) {
           case "join_waiting_room":
-            joinWaitingRoom(ws);
+            await joinWaitingRoom(ws);
             break;
           case "leave_waiting_room":
             leaveWaitingRoom(ws);
