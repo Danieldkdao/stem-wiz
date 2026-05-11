@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -194,5 +195,179 @@
   }
   html {
     @apply font-sans;
+  }
+  .mdxeditor-root-contenteditable {
+    @apply border-input dark:bg-input/30 rounded-md rounded-t-none border bg-transparent px-3 shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden;
+
+    & * {
+      outline: none;
+    }
+  }
+
+  .mdxeditor-toolbar {
+    @apply bg-card border-card rounded-md rounded-b-none! shadow-sm flex-wrap;
+  }
+
+  .mdxeditor-popup-container {
+    position: fixed !important;
+    inset: 0;
+    pointer-events: none;
+    @apply z-50!;
+  }
+
+  .mdxeditor-select-content {
+    pointer-events: auto;
+    max-height: min(300px, calc(100dvh - 1rem));
+    overflow-y: auto;
+  }
+
+  .dark-theme {
+    --basePageBg: var(--muted) !important;
+  }
+
+  .markdown-renderer {
+    @apply text-foreground break-words leading-7;
+  }
+
+  .markdown-renderer > :first-child {
+    @apply mt-0;
+  }
+
+  .markdown-renderer > :last-child {
+    @apply mb-0;
+  }
+
+  .markdown-renderer.prose :where(p) {
+    @apply my-3 leading-7;
+  }
+
+  .markdown-renderer.prose :where(h1, h2, h3, h4, h5, h6) {
+    @apply relative mb-3 leading-tight text-foreground;
+  }
+
+  .markdown-renderer.prose :where(h1, h2, h3, h4, h5, h6) + :where(p, ul, ol, blockquote, [data-rehype-pretty-code-figure]) {
+    @apply mt-0;
+  }
+
+  .markdown-renderer.prose :where(h1) {
+    @apply mt-8;
+  }
+
+  .markdown-renderer.prose :where(h2) {
+    @apply mt-7;
+  }
+
+  .markdown-renderer.prose :where(h3) {
+    @apply mt-6;
+  }
+
+  .markdown-renderer.prose :where(ul, ol) {
+    @apply my-3;
+  }
+
+  .markdown-renderer.prose :where(li) {
+    @apply my-1.5 leading-7 text-foreground;
+  }
+
+  .markdown-renderer.prose :where(li > p) {
+    @apply my-1 leading-7;
+  }
+
+  .markdown-renderer.prose :where(li)::marker {
+    color: var(--muted-foreground);
+  }
+
+  .markdown-renderer .heading-anchor {
+    @apply text-muted-foreground ml-2 opacity-0 transition-opacity no-underline;
+  }
+
+  .markdown-renderer :where(h1, h2, h3, h4, h5, h6):hover .heading-anchor {
+    @apply opacity-100;
+  }
+
+  .markdown-renderer pre {
+    @apply overflow-x-auto;
+  }
+
+  /* rehype-pretty-code dual theme support */
+  .markdown-renderer code[data-theme*=" "],
+  .markdown-renderer code[data-theme*=" "] span {
+    color: var(--shiki-light);
+    background-color: var(--shiki-light-bg);
+  }
+
+  .dark .markdown-renderer code[data-theme*=" "],
+  .dark .markdown-renderer code[data-theme*=" "] span {
+    color: var(--shiki-dark);
+    background-color: var(--shiki-dark-bg);
+  }
+
+  .markdown-renderer pre code {
+    @apply grid min-w-full bg-transparent px-5 py-4 text-base leading-6;
+    counter-reset: line;
+  }
+
+  .markdown-renderer :not(pre) > code {
+    @apply text-foreground bg-muted rounded-md border border-border px-1.5 py-0.5;
+  }
+
+  .markdown-renderer [data-rehype-pretty-code-figure] {
+    @apply my-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm;
+  }
+
+  .markdown-renderer [data-rehype-pretty-code-figure] pre {
+    @apply m-0 bg-transparent;
+  }
+
+  .markdown-renderer [data-rehype-pretty-code-figure] code {
+    background: transparent !important;
+  }
+
+  .markdown-renderer [data-rehype-pretty-code-figure] figcaption {
+    @apply border-border text-muted-foreground border-b bg-muted/50 px-4 py-2 text-xs font-medium;
+  }
+
+  .markdown-renderer [data-line] {
+    @apply -mx-5 block border-l-2 border-transparent px-5;
+  }
+
+  .markdown-renderer [data-highlighted-line] {
+    @apply bg-primary/10 border-primary;
+  }
+
+  .markdown-renderer [data-highlighted-chars] {
+    @apply rounded bg-primary/15 px-1 py-0.5;
+  }
+
+  .markdown-renderer table thead {
+    @apply bg-muted/60;
+  }
+
+  .markdown-renderer table th {
+    @apply text-foreground border-border border-b px-4 py-3 text-left font-semibold;
+  }
+
+  .markdown-renderer table td {
+    @apply border-border border-t px-4 py-3 align-top;
+  }
+
+  .markdown-renderer table tr:nth-child(even) td {
+    @apply bg-muted/20;
+  }
+
+  .markdown-renderer blockquote {
+    @apply border-primary/40 bg-muted/30 my-3 rounded-r-lg border-l-4 px-4 py-1;
+  }
+
+  .markdown-renderer ul.contains-task-list {
+    @apply pl-0;
+  }
+
+  .markdown-renderer .task-list-item {
+    @apply list-none;
+  }
+
+  .markdown-renderer .task-list-item input {
+    @apply mr-2 align-middle;
   }
 }

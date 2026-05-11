@@ -4,7 +4,7 @@ export const programmingLanguages = [
   "python",
   "javascript",
   "java",
-  "c++",
+  "cpp",
   "typescript",
 ] as const;
 export type ProgrammingLanguageType = (typeof programmingLanguages)[number];

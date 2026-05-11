@@ -25,7 +25,7 @@ import { LoadingSwap } from "@/components/ui/loading-swap";
 import { upsertUserSettingsAction } from "../actions/actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { formatPreferredLanguage } from "../lib/formatters";
+import { formatProgrammingLanguage } from "../lib/formatters";
 
 export const OnboardingForm = () => {
   const router = useRouter();
@@ -71,7 +71,7 @@ export const OnboardingForm = () => {
                 <SelectContent>
                   {programmingLanguages.map((lang) => (
                     <SelectItem value={lang} key={lang}>
-                      {formatPreferredLanguage(lang)}
+                      {formatProgrammingLanguage(lang)}
                     </SelectItem>
                   ))}
                 </SelectContent>

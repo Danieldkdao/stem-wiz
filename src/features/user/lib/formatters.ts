@@ -1,6 +1,6 @@
 import { ProgrammingLanguageType } from "@/db/shared";
 
-export const formatPreferredLanguage = (lang: ProgrammingLanguageType) => {
+export const formatProgrammingLanguage = (lang: ProgrammingLanguageType) => {
   switch (lang) {
     case "python":
       return "Python";
@@ -8,7 +8,7 @@ export const formatPreferredLanguage = (lang: ProgrammingLanguageType) => {
       return "JavaScript";
     case "java":
       return "Java";
-    case "c++":
+    case "cpp":
       return "C++";
     case "typescript":
       return "TypeScript";

@@ -12,6 +12,7 @@ export const checkExistingMatch = async (id: string) => {
   const existingMatch = await db.query.MatchTable.findFirst({
     where: and(eq(MatchTable.id, id), eq(MatchTable.status, "in-progress")),
     with: {
+      arenaProblem: true,
       users: {
         where: eq(UserMatchTable.userId, userId),
         limit: 1,
