@@ -1,18 +1,24 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable } from "drizzle-orm/pg-core";
+import { pgTable, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
-
-export const matchStatuses = ["in-progress", "finished"] as const;
-export type MatchStatusType = (typeof matchStatuses)[number];
-export const matchStatusEnum = pgEnum("match_statuses", matchStatuses);
+import { matchStatusEnum } from "../shared";
+import { ArenaProblemTable } from "./arena-problem";
+import { UserMatchTable } from "./user-match";
 
 export const MatchTable = pgTable("matches", {
   id,
   status: matchStatusEnum("status").notNull(),
+  problemId: uuid("problem_id")
+    .references(() => ArenaProblemTable.id, { onDelete: "no action" })
+    .notNull(),
   createdAt,
   updatedAt,
 });
 
-export const matchRelations = relations(MatchTable, ({ many }) => ({
-  users: many(MatchTable),
+export const matchRelations = relations(MatchTable, ({ one, many }) => ({
+  arenaProblem: one(ArenaProblemTable, {
+    fields: [MatchTable.problemId],
+    references: [ArenaProblemTable.id],
+  }),
+  users: many(UserMatchTable),
 }));

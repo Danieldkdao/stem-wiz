@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ServerMessage } from "../lib/types";
 
 type UserInfo = {
   id: string;
@@ -11,20 +12,6 @@ type UserInfo = {
 type ClientMessage =
   | { type: "join_waiting_room" }
   | { type: "leave_waiting_room" };
-
-export type ServerMessage =
-  | {
-      // todo: move the type fields into their own constant with their own type
-      type: "match_found";
-      matchId: string;
-      opponent: UserInfo;
-    }
-  | { type: "no_matches_found" }
-  | { type: "no_user_settings" }
-  | {
-      type: "error";
-      message: string;
-    };
 
 export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
 

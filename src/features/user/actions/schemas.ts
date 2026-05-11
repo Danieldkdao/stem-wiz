@@ -1,8 +1,8 @@
-import { preferredLanguages } from "@/db/schema";
+import { programmingLanguages } from "@/db/shared";
 import z from "zod";
 
 export const onboardingSchema = z.object({
-  preferredLanguage: z.enum(preferredLanguages, {
+  preferredLanguage: z.enum(programmingLanguages, {
     error: "Please select a preferred language.",
   }),
   additionalInformation: z

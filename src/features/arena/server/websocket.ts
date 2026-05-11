@@ -3,25 +3,20 @@ import {
   MatchTable,
   UserSettingsTable,
   UserMatchTable,
-  PreferredLanguageType,
+  ArenaProblemTable,
 } from "@/db/schema";
+import { ProgrammingLanguageType } from "@/db/shared";
 import { auth } from "@/lib/auth/auth";
 import { eq } from "drizzle-orm";
 import { Server as HttpServer, IncomingMessage } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import z from "zod";
+import { ServerMessage, UserInfo } from "../lib/types";
 
 export type ArenaSocketServer = HttpServer & {
   // todo: note that you might have to switch to https in prod
   arenaWss?: WebSocketServer;
   arenaWsInitialized?: boolean;
-};
-
-type UserInfo = {
-  id: string;
-  name: string;
-  image?: string | null | undefined;
-  // todo: add elo later
 };
 
 type ArenaWebSocket = WebSocket & {
@@ -86,6 +81,12 @@ const toHeaders = (req: IncomingMessage) => {
   return headers;
 };
 
+const sendToClient = (message: ServerMessage, ws?: ArenaWebSocket) => {
+  if (!ws) return;
+
+  ws.send(JSON.stringify(message));
+};
+
 const rejectUpgrade = (
   socket: UpgradeSocket,
   status: 400 | 401 | 403,
@@ -105,10 +106,11 @@ const joinWaitingRoom = async (ws: ArenaWebSocket) => {
     .from(UserSettingsTable)
     .where(eq(UserSettingsTable.userId, userId));
   if (!userSettings) {
-    ws.send(
-      JSON.stringify({
+    sendToClient(
+      {
         type: "no_user_settings",
-      }),
+      },
+      ws,
     );
     return;
   }
@@ -122,16 +124,17 @@ const joinWaitingRoom = async (ws: ArenaWebSocket) => {
 
 const tryPairUsers = async (
   currentUserId: string,
-  preferredLanguage: PreferredLanguageType,
+  preferredLanguage: ProgrammingLanguageType,
 ) => {
   const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
     getArenaWsState();
   if (usersInWaitingRoom.size < 2) {
     setTimeout(() => {
-      socketsByUser.get(currentUserId)?.send(
-        JSON.stringify({
+      sendToClient(
+        {
           type: "no_matches_found",
-        }),
+        },
+        socketsByUser.get(currentUserId),
       );
     }, 4000);
     return;
@@ -145,25 +148,47 @@ const tryPairUsers = async (
           user.id !== currentUserId,
       )
   ) {
-    socketsByUser.get(currentUserId)?.send(
-      JSON.stringify({
+    sendToClient(
+      {
         type: "no_matches_found",
-      }),
+      },
+      socketsByUser.get(currentUserId),
     );
     return;
   }
-
+  const [dev1, dev2] = usersInWaitingRoom.values();
+  const devSockets = [
+    { dev: dev1, ws: socketsByUser.get(dev1.id), opponent: dev2 },
+    { dev: dev2, ws: socketsByUser.get(dev2.id), opponent: dev1 },
+  ];
   try {
-    const [dev1, dev2] = usersInWaitingRoom.values();
+    devSockets.forEach((devSocket) => {
+      usersInWaitingRoom.delete(devSocket.dev.id);
+    });
 
-    usersInWaitingRoom.delete(dev1.id);
-    usersInWaitingRoom.delete(dev2.id);
+    const [arenaProblem] = await db
+      .select()
+      .from(ArenaProblemTable)
+      .where(eq(ArenaProblemTable.programmingLanguage, preferredLanguage))
+      .limit(1);
+    if (!arenaProblem) {
+      devSockets.forEach((devSocket) => {
+        sendToClient(
+          {
+            type: "no_problems_found",
+          },
+          devSocket.ws,
+        );
+      });
+      return;
+    }
 
     const match = await db.transaction(async (tx) => {
       const [match] = await tx
         .insert(MatchTable)
         .values({
           status: "in-progress",
+          problemId: arenaProblem.id,
         })
         .returning();
 
@@ -173,16 +198,12 @@ const tryPairUsers = async (
 
       const createdMatchUsers = await tx
         .insert(UserMatchTable)
-        .values([
-          {
-            userId: dev1.id,
+        .values(
+          devSockets.map((devSocket) => ({
+            userId: devSocket.dev.id,
             matchId: match.id,
-          },
-          {
-            userId: dev2.id,
-            matchId: match.id,
-          },
-        ])
+          })),
+        )
         .returning();
 
       if (createdMatchUsers.length !== 2) {
@@ -194,26 +215,28 @@ const tryPairUsers = async (
 
     const matchId = match.id;
 
-    activeMatchesByUser.set(dev1.id, matchId);
-    activeMatchesByUser.set(dev2.id, matchId);
-
-    socketsByUser.get(dev1.id)?.send(
-      JSON.stringify({
-        type: "match_found",
-        matchId,
-        opponent: dev2,
-      }),
-    );
-
-    socketsByUser.get(dev2.id)?.send(
-      JSON.stringify({
-        type: "match_found",
-        matchId,
-        opponent: dev1,
-      }),
-    );
+    devSockets.forEach((devSocket) => {
+      activeMatchesByUser.set(devSocket.dev.id, matchId);
+      sendToClient(
+        {
+          type: "match_found",
+          matchId,
+          opponent: devSocket.opponent,
+        },
+        devSocket.ws,
+      );
+    });
   } catch (error) {
     console.error(error);
+    devSockets.forEach((devSocket) => {
+      sendToClient(
+        {
+          type: "error",
+          message: "Failed to find match and pair users.",
+        },
+        devSocket.ws,
+      );
+    });
   }
 };
 
@@ -300,11 +323,12 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
         }
       } catch (error) {
         console.error(error);
-        ws.send(
-          JSON.stringify({
+        sendToClient(
+          {
             type: "error",
             message: "Invalid message format.",
-          }),
+          },
+          ws,
         );
       }
     });

@@ -1,25 +1,7 @@
-import {
-  pgEnum,
-  pgTable,
-  primaryKey,
-  text,
-  varchar,
-} from "drizzle-orm/pg-core";
-import { user } from "./user";
 import { relations } from "drizzle-orm";
-
-export const preferredLanguages = [
-  "python",
-  "javascript",
-  "java",
-  "c++",
-  "typescript",
-] as const;
-export type PreferredLanguageType = (typeof preferredLanguages)[number];
-export const preferredLanguageEnum = pgEnum(
-  "preferred_languages",
-  preferredLanguages,
-);
+import { pgTable, primaryKey, text, varchar } from "drizzle-orm/pg-core";
+import { programmingLanguageEnum } from "../shared";
+import { user } from "./user";
 
 export const UserSettingsTable = pgTable(
   "user_settings",
@@ -27,7 +9,7 @@ export const UserSettingsTable = pgTable(
     userId: varchar("user_id")
       .references(() => user.id, { onDelete: "cascade" })
       .notNull(),
-    preferredLanguage: preferredLanguageEnum("preferred_language").notNull(),
+    preferredLanguage: programmingLanguageEnum("preferred_language").notNull(),
     additionalInformation: text("additional_information"),
   },
   (t) => [primaryKey({ columns: [t.userId] })],

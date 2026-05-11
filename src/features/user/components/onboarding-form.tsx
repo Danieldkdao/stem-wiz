@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { preferredLanguages } from "@/db/schema";
+import { programmingLanguages } from "@/db/shared";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, getInputErrorStyle } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ export const OnboardingForm = () => {
                   <SelectValue placeholder="Select a programming language..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {preferredLanguages.map((lang) => (
+                  {programmingLanguages.map((lang) => (
                     <SelectItem value={lang} key={lang}>
                       {formatPreferredLanguage(lang)}
                     </SelectItem>

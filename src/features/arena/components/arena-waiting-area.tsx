@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import {
-  ServerMessage,
   SocketStatus,
   useMatchSocket,
 } from "@/features/arena/hooks/use-match-socket";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { Loader2Icon, SwordsIcon, XIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { JSX, ReactNode, useEffect } from "react";
+import { SOCKET_RESPONSE_TYPES } from "../lib/constants";
 import { FindingMatchLoader } from "./finding-match-loader";
 
 const statusMap: Record<
@@ -55,7 +56,7 @@ const statusMap: Record<
 };
 
 const responseMap: Record<
-  ServerMessage["type"],
+  keyof typeof SOCKET_RESPONSE_TYPES,
   (...args: any) => JSX.Element
 > = {
   no_matches_found: () => (
@@ -78,6 +79,15 @@ const responseMap: Record<
       <Button variant="outline" className="w-full">
         <Link href={`/arena/matches/${matchId}`}>Battle!</Link>
       </Button>
+    </div>
+  ),
+  no_problems_found: () => (
+    <div className="flex flex-col gap-2 items-center">
+      <h1 className="text-xl font-medium text-center">No Problems Found</h1>
+      <p className="text-muted-foreground text-center">
+        Unfortunately, we currently are unable to find any interesting problems
+        for your battle. Try refreshing the page or coming back at another time.
+      </p>
     </div>
   ),
   no_user_settings: () => (
@@ -106,6 +116,7 @@ const responseMap: Record<
 };
 
 export const ArenaWaitingArea = () => {
+  const router = useRouter();
   const { status, match, lastEvent, connect, joinWaitingRoom } =
     useMatchSocket();
   const { data: session, isPending } = useAuthSession();
@@ -123,6 +134,11 @@ export const ArenaWaitingArea = () => {
 
     joinWaitingRoom();
   }, [session, status, joinWaitingRoom]);
+
+  useEffect(() => {
+    if (status !== "open") return;
+    if (match) router.push(`/arena/matches/${match.matchId}`);
+  }, [status, match]);
 
   if (!session) return;
 

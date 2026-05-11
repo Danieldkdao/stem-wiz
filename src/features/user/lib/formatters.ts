@@ -1,6 +1,6 @@
-import { PreferredLanguageType } from "@/db/schema";
+import { ProgrammingLanguageType } from "@/db/shared";
 
-export const formatPreferredLanguage = (lang: PreferredLanguageType) => {
+export const formatPreferredLanguage = (lang: ProgrammingLanguageType) => {
   switch (lang) {
     case "python":
       return "Python";
