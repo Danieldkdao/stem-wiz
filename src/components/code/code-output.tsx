@@ -22,7 +22,7 @@ export const CodeOutput = ({
   };
 
   return (
-    <div className="flex flex-col bg-background/50 h-full">
+    <div className="flex flex-col bg-card/75 h-full">
       <div className="px-5 py-4 bg-card border-b flex items-center justify-between gap-2 flex-wrap">
         <span className="text-base font-medium text-muted-foreground">
           Output

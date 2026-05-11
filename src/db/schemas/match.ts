@@ -4,6 +4,7 @@ import { createdAt, id, updatedAt } from "../helpers";
 import { matchStatusEnum } from "../shared";
 import { ArenaProblemTable } from "./arena-problem";
 import { UserMatchTable } from "./user-match";
+import { MatchResultTable } from "./match-result";
 
 export const MatchTable = pgTable("matches", {
   id,
@@ -20,5 +21,6 @@ export const matchRelations = relations(MatchTable, ({ one, many }) => ({
     fields: [MatchTable.problemId],
     references: [ArenaProblemTable.id],
   }),
+  result: one(MatchResultTable),
   users: many(UserMatchTable),
 }));

@@ -23,3 +23,7 @@ export const difficultyLevelEnum = pgEnum(
 export const matchStatuses = ["in-progress", "finished"] as const;
 export type MatchStatusType = (typeof matchStatuses)[number];
 export const matchStatusEnum = pgEnum("match_statuses", matchStatuses);
+
+export const matchResults = ["completed", "timed_out"] as const;
+export type MatchResultType = (typeof matchResults)[number];
+export const matchResultEnum = pgEnum("match_result_results", matchResults);
