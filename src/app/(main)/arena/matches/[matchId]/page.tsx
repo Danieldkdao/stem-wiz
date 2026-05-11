@@ -1,4 +1,5 @@
 import { CodeEditor } from "@/components/code/code-editor";
+import { CodeOutput } from "@/components/code/code-output";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -71,13 +72,15 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
         <ResizablePanel minSize="40%">
           <ResizablePanelGroup orientation="vertical">
             <ResizablePanel minSize="30%">
-              <div className="w-full h-full bg-card/50">
+              <div className="w-full h-full">
                 <CodeEditor language={match.arenaProblem.programmingLanguage} />
               </div>
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel minSize="30%">
-              <div className="w-full h-full bg-card/50">One</div>
+              <div className="w-full h-full">
+                <CodeOutput language={match.arenaProblem.programmingLanguage} />
+              </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>

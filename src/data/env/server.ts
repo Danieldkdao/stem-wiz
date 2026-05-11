@@ -13,6 +13,7 @@ export const envServer = createEnv({
     SMTP_USER: z.string().min(1),
     SMTP_PASS: z.string().min(1),
     SENDER_EMAIL: z.string().min(1),
+    CODE_EXECUTION_BASE_URL: z.string().min(1),
   },
   emptyStringAsUndefined: true,
   experimental__runtimeEnv: process.env,

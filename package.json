@@ -62,7 +62,8 @@
     "unified": "^11.0.5",
     "vaul": "^1.1.2",
     "ws": "^8.20.0",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -2,16 +2,29 @@
 
 import { ProgrammingLanguageType } from "@/db/shared";
 import { CODE_EDITOR_THEME } from "@/lib/constants";
+import { useCodeEditorStore } from "@/store/use-code-editor-store";
 import { Editor } from "@monaco-editor/react";
+import { useEffect, useState } from "react";
+import { Skeleton } from "../ui/skeleton";
 
 export const CodeEditor = ({
   language,
 }: {
   language: ProgrammingLanguageType;
 }) => {
+  const [isMounted, setIsMounted] = useState(false);
+  const setEditor = useCodeEditorStore((state) => state.setEditor);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) return <Skeleton className="w-full h-full" />;
+
   return (
     <Editor
       language={language}
+      onMount={(editor) => setEditor(editor)}
       beforeMount={(monaco) => {
         return monaco.editor.defineTheme(CODE_EDITOR_THEME.id, {
           base: CODE_EDITOR_THEME.base,
@@ -23,8 +36,8 @@ export const CodeEditor = ({
           colors: CODE_EDITOR_THEME.colors,
         });
       }}
+      theme={CODE_EDITOR_THEME.id}
       options={{
-        theme: CODE_EDITOR_THEME.id,
         minimap: { enabled: false },
         fontSize: 16,
         automaticLayout: true,
