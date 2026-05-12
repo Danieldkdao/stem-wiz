@@ -3,9 +3,10 @@
 import { ProgrammingLanguageType } from "@/db/shared";
 import { LANGUAGE_VERSION_MAP } from "@/features/user/lib/constants";
 import { useCodeEditorStore } from "@/store/use-code-editor-store";
-import { PlayIcon } from "lucide-react";
+import { CheckCircleIcon, PlayIcon, SendIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { LoadingSwap } from "../ui/loading-swap";
+import { useMatchStore } from "@/store/use-match-store";
 
 export const CodeOutput = ({
   language,
@@ -17,6 +18,8 @@ export const CodeOutput = ({
   const output = useCodeEditorStore((state) => state.output);
   const error = useCodeEditorStore((state) => state.error);
 
+  const isEnding = useMatchStore((state) => state.isEnding);
+
   const handleCodeExecution = async () => {
     await runCode(language, LANGUAGE_VERSION_MAP[language]);
   };
@@ -27,23 +30,37 @@ export const CodeOutput = ({
         <span className="text-base font-medium text-muted-foreground">
           Output
         </span>
-        <Button onClick={handleCodeExecution} disabled={isRunning}>
-          <LoadingSwap isLoading={isRunning}>
-            <div className="flex items-center gap-2">
-              <PlayIcon />
-              Run Code
-            </div>
-          </LoadingSwap>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleCodeExecution}
+            disabled={isRunning || isEnding}
+            variant="outline"
+          >
+            <LoadingSwap isLoading={isRunning}>
+              <div className="flex items-center gap-2">
+                <PlayIcon />
+                Run Code
+              </div>
+            </LoadingSwap>
+          </Button>
+          <Button disabled={isRunning || isEnding}>
+            <LoadingSwap isLoading={isRunning}>
+              <div className="flex items-center gap-2">
+                <SendIcon />
+                Submit Code
+              </div>
+            </LoadingSwap>
+          </Button>
+        </div>
       </div>
       <div className="p-5 font-mono overflow-y-auto flex-1">
         {error ? (
           <div className="flex flex-col gap-1">
             <span className="text-destructive">Error Running Code</span>
-            <pre className="text-destructive">{error}</pre>
+            <pre className="text-destructive text-wrap">{error}</pre>
           </div>
         ) : (
-          <pre>{output}</pre>
+          <pre className="text-wrap">{output}</pre>
         )}
       </div>
     </div>

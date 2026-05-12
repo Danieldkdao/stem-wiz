@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, uuid } from "drizzle-orm/pg-core";
+import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
 import { matchStatusEnum } from "../shared";
 import { ArenaProblemTable } from "./arena-problem";
@@ -14,6 +14,7 @@ export const MatchTable = pgTable("matches", {
     .notNull(),
   createdAt,
   updatedAt,
+  expiresAt: timestamp("expires_at").notNull(),
 });
 
 export const matchRelations = relations(MatchTable, ({ one, many }) => ({
