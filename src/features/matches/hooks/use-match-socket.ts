@@ -1,19 +1,14 @@
 "use client";
 
+import {
+  ClientMessage,
+  MatchServerMessage,
+  ServerMessage,
+} from "@/features/arena/lib/types";
+import { SocketStatus } from "@/lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ServerMessage } from "../lib/types";
 
-type UserInfo = {
-  id: string;
-  name: string;
-  image?: string | null | undefined;
-};
-
-type ClientMessage =
-  | { type: "join_waiting_room" }
-  | { type: "leave_waiting_room" };
-
-export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
+type OpponentStatus = "active" | "disconnected";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -21,15 +16,13 @@ const getSocketUrl = () => {
   return `${protocol}//${window.location.host}/api/arena/ws`;
 };
 
-export const useMatchSocket = () => {
+export const useMatchSocket = (matchId: string) => {
   const socketRef = useRef<WebSocket | null>(null);
 
   const [status, setStatus] = useState<SocketStatus>("idle");
   const [lastEvent, setLastEvent] = useState<ServerMessage | null>(null);
-  const [match, setMatch] = useState<{
-    matchId: string;
-    opponent: UserInfo;
-  } | null>(null);
+  const [opponentStatus, setOpponentStatus] =
+    useState<OpponentStatus>("active");
 
   const connect = useCallback(async () => {
     if (
@@ -54,19 +47,29 @@ export const useMatchSocket = () => {
 
     socket.onmessage = (event) => {
       try {
-        const message = JSON.parse(event.data) as ServerMessage;
+        const message = JSON.parse(event.data) as MatchServerMessage;
 
         setLastEvent(message);
 
-        if (message.type === "match_found") {
-          setMatch(message);
+        const messageType = message.type;
+
+        switch (messageType) {
+          case "opponent_left_match":
+            setOpponentStatus("disconnected");
+            break;
+          case "opponent_joined_match":
+            setOpponentStatus("active");
+            break;
+          default:
+            throw new Error(
+              `Unknown match response type: ${messageType satisfies never}`,
+            );
         }
       } catch (error) {
         console.error(error);
-        // todo: maybe implement better error handling
+        // todo: implement better error handling and
       }
     };
-
     socket.onerror = () => {
       setStatus("error");
     };
@@ -87,13 +90,9 @@ export const useMatchSocket = () => {
     return true;
   }, []);
 
-  const joinWaitingRoom = useCallback(() => {
-    return send({ type: "join_waiting_room" });
-  }, [send]);
-
-  const leaveWaitingRoom = useCallback(() => {
-    return send({ type: "leave_waiting_room" });
-  }, [send]);
+  const connectToMatch = useCallback(() => {
+    return send({ type: "connect_to_match", matchId });
+  }, [send, matchId]);
 
   useEffect(() => {
     return () => {
@@ -104,10 +103,9 @@ export const useMatchSocket = () => {
 
   return {
     status,
-    match,
     lastEvent,
     connect,
-    joinWaitingRoom,
-    leaveWaitingRoom,
+    connectToMatch,
+    opponentStatus,
   };
 };

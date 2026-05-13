@@ -12,3 +12,5 @@ export type SearchOption = {
   icon: keyof typeof SEARCH_OPTION_ICONS;
   href: string;
 };
+
+export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "error";

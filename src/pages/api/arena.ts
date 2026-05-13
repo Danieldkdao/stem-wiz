@@ -1,7 +1,5 @@
-import {
-  ArenaSocketServer,
-  initArenaWebSocketServer,
-} from "@/features/arena/server/websocket";
+import { ArenaSocketServer } from "@/features/arena/lib/types";
+import { initArenaWebSocketServer } from "@/features/arena/server/websocket";
 import { NextApiRequest, NextApiResponse } from "next";
 import { Socket } from "node:net";
 

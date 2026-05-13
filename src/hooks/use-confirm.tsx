@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 export const useConfirm = (
   title: string,
   description: string,
-): [() => JSX.Element, () => Promise<unknown>] => {
+): [JSX.Element, () => Promise<unknown>] => {
   const [promise, setPromise] = useState<{
     resolve: (value: boolean) => void;
   } | null>(null);
@@ -36,7 +36,7 @@ export const useConfirm = (
     handleClose();
   };
 
-  const ConfirmationDialog = () => (
+  const confirmationDialog = (
     <Dialog
       open={promise !== null}
       onOpenChange={(val) => !val && handleClose()}
@@ -62,5 +62,5 @@ export const useConfirm = (
     </Dialog>
   );
 
-  return [ConfirmationDialog, confirm];
+  return [confirmationDialog, confirm];
 };
