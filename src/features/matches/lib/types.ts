@@ -5,6 +5,7 @@ export type MatchServerMessage =
       type: (typeof MATCH_SOCKET_MESSAGE_TYPES)["opponent_left_match"];
     }
   | { type: (typeof MATCH_SOCKET_MESSAGE_TYPES)["opponent_joined_match"] }
-  | { type: (typeof MATCH_SOCKET_MESSAGE_TYPES)["opponent_submitted_code"] };
+  | { type: (typeof MATCH_SOCKET_MESSAGE_TYPES)["opponent_submitted_code"] }
+  | { type: (typeof MATCH_SOCKET_MESSAGE_TYPES)["match_finished"] };
 
 export type MatchServerMessageType = MatchServerMessage["type"];

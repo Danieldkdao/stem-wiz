@@ -14,7 +14,13 @@ import {
   upsertMatchSubmission,
 } from "../server/match-results";
 
-export const checkExistingMatch = async (id: string) => {
+export const checkExistingMatch = async ({
+  id,
+  forResults = false,
+}: {
+  id: string;
+  forResults?: boolean;
+}) => {
   const { userId } = await getCurrentUser();
   if (!userId) return;
 
@@ -22,8 +28,7 @@ export const checkExistingMatch = async (id: string) => {
   const existingMatch = await db.query.MatchTable.findFirst({
     where: and(
       eq(MatchTable.id, id),
-      eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
+      forResults ? undefined : gt(MatchTable.expiresAt, new Date()),
     ),
     with: {
       submissions: true,

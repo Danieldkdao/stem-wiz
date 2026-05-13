@@ -36,7 +36,7 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
   if (!session) return null;
 
   const { matchId } = await params;
-  const match = await checkExistingMatch(matchId);
+  const match = await checkExistingMatch({ id: matchId });
 
   if (!match) {
     return (

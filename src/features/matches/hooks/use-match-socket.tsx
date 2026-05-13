@@ -78,6 +78,8 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
             break;
           case "opponent_submitted_code":
             break;
+          case "match_finished":
+            break;
           default:
             throw new Error(
               `Unknown match response type: ${messageType satisfies never}`,

@@ -141,20 +141,27 @@ export const broadcastCodeSubmission = async (
 
   const userId = ws.user.id;
 
-  const [activeUserMatch] = await db
-    .select({
-      ...getTableColumns(UserMatchTable),
-    })
-    .from(UserMatchTable)
-    .innerJoin(MatchTable, eq(MatchTable.id, UserMatchTable.matchId))
-    .where(
-      and(
-        eq(UserMatchTable.userId, userId),
-        eq(UserMatchTable.matchId, matchId),
-        eq(MatchTable.status, "in-progress"),
-        gt(MatchTable.expiresAt, new Date()),
-      ),
-    );
+  const existingMatch = await db.query.MatchTable.findFirst({
+    where: and(
+      eq(MatchTable.id, matchId),
+      eq(MatchTable.status, "in-progress"),
+      gt(MatchTable.expiresAt, new Date()),
+    ),
+    with: {
+      users: true,
+      submissions: true,
+    },
+  });
+
+  if (!existingMatch) {
+    cleanupUserConnection(userId);
+    // todo: maybe terminate socket later?
+    return;
+  }
+
+  const activeUserMatch = existingMatch.users.find(
+    (user) => user.userId === userId,
+  );
 
   if (!activeUserMatch) {
     cleanupUserConnection(userId);
@@ -174,4 +181,16 @@ export const broadcastCodeSubmission = async (
   }
 
   sendToUser(opponent?.[0] ?? "", { type: "opponent_submitted_code" });
+  if (existingMatch.users.length && existingMatch.submissions.length) {
+    const [updatedMatch] = await db
+      .update(MatchTable)
+      .set({ status: "finished" })
+      .where(eq(MatchTable.id, existingMatch.id))
+      .returning();
+
+    if (!updatedMatch) return;
+    existingMatch.users.forEach((user) => {
+      sendToUser(user.userId, { type: "match_finished" });
+    });
+  }
 };
