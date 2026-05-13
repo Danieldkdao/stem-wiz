@@ -1,12 +1,17 @@
 "use client";
 
-import {
-  ClientMessage,
-  MatchServerMessage,
-  ServerMessage,
-} from "@/features/arena/lib/types";
+import { ClientMessage, ServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { MatchServerMessage } from "../lib/types";
 
 type OpponentStatus = "active" | "disconnected";
 
@@ -16,7 +21,18 @@ const getSocketUrl = () => {
   return `${protocol}//${window.location.host}/api/arena/ws`;
 };
 
-export const useMatchSocket = (matchId: string) => {
+type MatchSocketContextType = {
+  status: SocketStatus;
+  lastEvent: ServerMessage | null;
+  connect: () => Promise<void>;
+  connectToMatch: (matchId: string) => boolean;
+  opponentStatus: OpponentStatus;
+  broadcastCodeSubmission: (matchId: string) => boolean;
+};
+
+const MatchSocketContext = createContext<MatchSocketContextType | null>(null);
+
+export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
   const socketRef = useRef<WebSocket | null>(null);
 
   const [status, setStatus] = useState<SocketStatus>("idle");
@@ -60,6 +76,8 @@ export const useMatchSocket = (matchId: string) => {
           case "opponent_joined_match":
             setOpponentStatus("active");
             break;
+          case "opponent_submitted_code":
+            break;
           default:
             throw new Error(
               `Unknown match response type: ${messageType satisfies never}`,
@@ -90,9 +108,19 @@ export const useMatchSocket = (matchId: string) => {
     return true;
   }, []);
 
-  const connectToMatch = useCallback(() => {
-    return send({ type: "connect_to_match", matchId });
-  }, [send, matchId]);
+  const connectToMatch = useCallback(
+    (matchId: string) => {
+      return send({ type: "connect_to_match", matchId });
+    },
+    [send],
+  );
+
+  const broadcastCodeSubmission = useCallback(
+    (matchId: string) => {
+      return send({ type: "submitted_code", matchId });
+    },
+    [send],
+  );
 
   useEffect(() => {
     return () => {
@@ -101,11 +129,29 @@ export const useMatchSocket = (matchId: string) => {
     };
   }, []);
 
-  return {
+  const values = {
     status,
     lastEvent,
     connect,
     connectToMatch,
     opponentStatus,
+    broadcastCodeSubmission,
   };
+
+  return (
+    <MatchSocketContext.Provider value={values}>
+      {children}
+    </MatchSocketContext.Provider>
+  );
+};
+
+export const useMatchSocket = () => {
+  const context = useContext(MatchSocketContext);
+  if (!context) {
+    throw new Error(
+      "Match socket context must be used inside the match socket context provider.",
+    );
+  }
+
+  return context;
 };

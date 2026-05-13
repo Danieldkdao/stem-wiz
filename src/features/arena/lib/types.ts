@@ -1,12 +1,10 @@
 import { WebSocketServer, WebSocket } from "ws";
-import {
-  ARENA_WAITING_SOCKET_MESSAGE_TYPES,
-  MATCH_SOCKET_MESSAGE_TYPES,
-} from "./constants";
+import { ARENA_WAITING_SOCKET_MESSAGE_TYPES } from "./constants";
 import { Server as HttpServer } from "http";
 import { UserSettingsTable } from "@/db/schema";
 import z from "zod";
 import { clientMessageSchema } from "./schemas";
+import { MatchServerMessage } from "@/features/matches/lib/types";
 
 export type UserInfo = {
   id: string;
@@ -39,14 +37,6 @@ export type ArenaWaitingServerMessage =
     };
 
 export type ArenaWaitingServerMessageType = ArenaWaitingServerMessage["type"];
-
-export type MatchServerMessage =
-  | {
-      type: (typeof MATCH_SOCKET_MESSAGE_TYPES)["opponent_left_match"];
-    }
-  | { type: (typeof MATCH_SOCKET_MESSAGE_TYPES)["opponent_joined_match"] };
-
-export type MatchServerMessageType = MatchServerMessage["type"];
 
 export type ArenaSocketServer = HttpServer & {
   // todo: note that you might have to switch to https in prod

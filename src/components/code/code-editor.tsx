@@ -6,12 +6,20 @@ import { useCodeEditorStore } from "@/store/use-code-editor-store";
 import { Editor } from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 import { Skeleton } from "../ui/skeleton";
+import { MatchSubmissionTable } from "@/db/schema";
+
+type CodeEditorProps = {
+  language: ProgrammingLanguageType;
+  existingSubmission?:
+    | typeof MatchSubmissionTable.$inferSelect
+    | null
+    | undefined;
+};
 
 export const CodeEditor = ({
   language,
-}: {
-  language: ProgrammingLanguageType;
-}) => {
+  existingSubmission,
+}: CodeEditorProps) => {
   const [isMounted, setIsMounted] = useState(false);
   const setEditor = useCodeEditorStore((state) => state.setEditor);
 
@@ -23,6 +31,7 @@ export const CodeEditor = ({
 
   return (
     <Editor
+      defaultValue={existingSubmission?.code}
       language={language}
       onMount={(editor) => setEditor(editor)}
       beforeMount={(monaco) => {
@@ -38,6 +47,7 @@ export const CodeEditor = ({
       }}
       theme={CODE_EDITOR_THEME.id}
       options={{
+        theme: CODE_EDITOR_THEME.id,
         minimap: { enabled: false },
         fontSize: 16,
         automaticLayout: true,

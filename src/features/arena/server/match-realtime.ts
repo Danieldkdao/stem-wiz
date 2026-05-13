@@ -132,3 +132,46 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
     activeMatches: [...activeMatchesByUser.entries()],
   });
 };
+
+export const broadcastCodeSubmission = async (
+  ws: ArenaWebSocket,
+  matchId: string,
+) => {
+  const { activeMatchesByUser } = getArenaWsState();
+
+  const userId = ws.user.id;
+
+  const [activeUserMatch] = await db
+    .select({
+      ...getTableColumns(UserMatchTable),
+    })
+    .from(UserMatchTable)
+    .innerJoin(MatchTable, eq(MatchTable.id, UserMatchTable.matchId))
+    .where(
+      and(
+        eq(UserMatchTable.userId, userId),
+        eq(UserMatchTable.matchId, matchId),
+        eq(MatchTable.status, "in-progress"),
+        gt(MatchTable.expiresAt, new Date()),
+      ),
+    );
+
+  if (!activeUserMatch) {
+    cleanupUserConnection(userId);
+    // todo: maybe terminate socket later?
+    return;
+  }
+
+  const opponent = [...activeMatchesByUser.entries()].find(
+    ([otherUserId, otherMatchId]) =>
+      otherUserId !== userId && otherMatchId.matchId === matchId,
+  );
+
+  const hasActiveInMap = activeMatchesByUser.get(userId);
+  if (!hasActiveInMap) {
+    console.error("No active match for user.");
+    return;
+  }
+
+  sendToUser(opponent?.[0] ?? "", { type: "opponent_submitted_code" });
+};

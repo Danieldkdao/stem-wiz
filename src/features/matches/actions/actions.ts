@@ -8,8 +8,11 @@ import {
   NO_PERMISSION_DATA_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { and, eq, gt } from "drizzle-orm";
-import { upsertMatchResult } from "../server/match-results";
+import { and, eq, getTableColumns, gt } from "drizzle-orm";
+import {
+  upsertMatchResult,
+  upsertMatchSubmission,
+} from "../server/match-results";
 
 export const checkExistingMatch = async (id: string) => {
   const { userId } = await getCurrentUser();
@@ -23,15 +26,13 @@ export const checkExistingMatch = async (id: string) => {
       gt(MatchTable.expiresAt, new Date()),
     ),
     with: {
+      submissions: true,
       arenaProblem: true,
-      users: {
-        where: eq(UserMatchTable.userId, userId),
-        limit: 1,
-      },
+      users: true,
     },
   });
 
-  if (!existingMatch || existingMatch.users.length !== 1) return null;
+  if (!existingMatch) return null;
   return existingMatch ?? null;
 };
 
@@ -188,6 +189,59 @@ export const handleUserMatchWinAction = async (matchId: string) => {
     return {
       error: false,
       message: "You have won the match!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const codeSubmissionAction = async (matchId: string, code: string) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingMatchUser] = await db
+    .select({
+      ...getTableColumns(UserMatchTable),
+    })
+    .from(UserMatchTable)
+    .innerJoin(MatchTable, eq(MatchTable.id, UserMatchTable.matchId))
+    .where(
+      and(
+        eq(UserMatchTable.userId, userId),
+        eq(UserMatchTable.matchId, matchId),
+        eq(MatchTable.status, "in-progress"),
+        gt(MatchTable.expiresAt, new Date()),
+      ),
+    );
+
+  if (!existingMatchUser) {
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+
+  try {
+    const matchSubmission = await upsertMatchSubmission({
+      ...existingMatchUser,
+      code,
+    });
+    if (!matchSubmission) {
+      throw new Error("Failed to upsert match submission.");
+    }
+
+    return {
+      error: false,
+      message: "Code submitted successfully!",
     };
   } catch (error) {
     console.error(error);

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
-import { MatchTable } from "@/db/schema";
+import { MatchSubmissionTable, MatchTable, UserMatchTable } from "@/db/schema";
 import { statusMap } from "@/features/arena/components";
 import { useConfirm } from "@/hooks/use-confirm";
 import { cn, getTimeValues } from "@/lib/utils";
@@ -17,11 +17,15 @@ import {
   quitMatchAction,
 } from "../actions/actions";
 import { useMatchSocket } from "../hooks/use-match-socket";
+import { Separator } from "@/components/ui/separator";
 
 export const MatchHeader = ({
   match,
 }: {
-  match: typeof MatchTable.$inferSelect;
+  match: typeof MatchTable.$inferSelect & {
+    submissions: (typeof MatchSubmissionTable.$inferSelect)[];
+    users: (typeof UserMatchTable.$inferSelect)[];
+  };
 }) => {
   const isEnding = useMatchStore((state) => state.isEnding);
   const setIsEnding = useMatchStore((state) => state.setIsEnding);
@@ -31,9 +35,8 @@ export const MatchHeader = ({
   );
   const [disconnectSecondsRemaining, setDisconnectSecondsRemaining] =
     useState(30);
-  const { connect, connectToMatch, status, opponentStatus } = useMatchSocket(
-    match.id,
-  );
+  const { connect, connectToMatch, status, opponentStatus, lastEvent } =
+    useMatchSocket();
   const [confirmationDialog, confirm] = useConfirm(
     "Confirm Leave",
     "Are you sure you want to quit this match?",
@@ -48,7 +51,7 @@ export const MatchHeader = ({
   useEffect(() => {
     if (status !== "open") return;
 
-    connectToMatch();
+    connectToMatch(match.id);
   }, [status]);
 
   useEffect(() => {
@@ -86,6 +89,17 @@ export const MatchHeader = ({
 
     return () => clearInterval(interval);
   }, [opponentStatus, disconnectSecondsRemaining]);
+
+  useEffect(() => {
+    if (status !== "open") return;
+    if (
+      lastEvent?.type === "opponent_submitted_code" &&
+      match.submissions.length === 0
+    ) {
+      toast.success("Your opponent has submitted their code.");
+      router.refresh();
+    }
+  }, [status, lastEvent]);
 
   const timeValues = getTimeValues(secondsRemaining);
 
@@ -148,6 +162,32 @@ export const MatchHeader = ({
             <div className="flex items-center gap-2">
               {statusMap[status].element}
               <span className="font-medium">{statusMap[status].label}</span>
+            </div>
+            <Separator orientation="vertical" />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                {match.users.map((user) => {
+                  const hasSubmission = match.submissions.find(
+                    (submission) => submission.userId === user.userId,
+                  );
+
+                  return (
+                    <div
+                      key={user.userId}
+                      className={cn(
+                        "size-4 rounded-full shrink-0 bg-muted-foreground",
+                        hasSubmission && "bg-accent",
+                      )}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-muted-foreground">
+                Submissions:{" "}
+                <span className="text-foreground font-medium">
+                  {match.submissions.length}/{match.users.length}
+                </span>
+              </span>
             </div>
           </div>
           <div className="w-full flex items-center justify-center">

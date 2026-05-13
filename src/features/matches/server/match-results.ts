@@ -1,5 +1,9 @@
 import { db } from "@/db/db";
-import { MatchResultTable, MatchTable } from "@/db/schema";
+import {
+  MatchResultTable,
+  MatchSubmissionTable,
+  MatchTable,
+} from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const upsertMatchResult = async (
@@ -33,4 +37,19 @@ export const upsertMatchResult = async (
     console.error(error);
     return null;
   }
+};
+
+export const upsertMatchSubmission = async (
+  submission: typeof MatchSubmissionTable.$inferInsert,
+) => {
+  const [upsertedResult] = await db
+    .insert(MatchSubmissionTable)
+    .values(submission)
+    .onConflictDoUpdate({
+      target: [MatchSubmissionTable.userId, MatchSubmissionTable.matchId],
+      set: submission,
+    })
+    .returning();
+
+  return upsertedResult;
 };

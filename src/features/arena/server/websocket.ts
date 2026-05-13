@@ -9,7 +9,7 @@ import {
   sendToClient,
 } from "./connection-state";
 import { joinWaitingRoom, leaveWaitingRoom } from "./matchmaking";
-import { connectToMatch } from "./match-realtime";
+import { broadcastCodeSubmission, connectToMatch } from "./match-realtime";
 
 const toHeaders = (req: IncomingMessage) => {
   const headers = new Headers();
@@ -114,6 +114,9 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
             break;
           case "connect_to_match":
             await connectToMatch(ws, message.matchId);
+            break;
+          case "submitted_code":
+            broadcastCodeSubmission(ws, message.matchId);
             break;
           default:
             throw new Error(
