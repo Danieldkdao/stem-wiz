@@ -22,6 +22,7 @@ const getSocketUrl = () => {
 };
 
 type MatchSocketContextType = {
+  error: string | null;
   status: SocketStatus;
   lastEvent: ServerMessage | null;
   connect: () => Promise<void>;
@@ -35,6 +36,7 @@ const MatchSocketContext = createContext<MatchSocketContextType | null>(null);
 export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
   const socketRef = useRef<WebSocket | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<SocketStatus>("idle");
   const [lastEvent, setLastEvent] = useState<ServerMessage | null>(null);
   const [opponentStatus, setOpponentStatus] =
@@ -80,6 +82,9 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
             break;
           case "match_finished":
             break;
+          case "match_error":
+            setError(message.message);
+            break;
           default:
             throw new Error(
               `Unknown match response type: ${messageType satisfies never}`,
@@ -87,6 +92,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error(error);
+        setError("Something went wrong behind the scenes.");
         // todo: implement better error handling and
       }
     };
@@ -132,6 +138,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const values = {
+    error,
     status,
     lastEvent,
     connect,

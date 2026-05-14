@@ -116,7 +116,7 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
             await connectToMatch(ws, message.matchId);
             break;
           case "submitted_code":
-            broadcastCodeSubmission(ws, message.matchId);
+            await broadcastCodeSubmission(ws, message.matchId);
             break;
           default:
             throw new Error(

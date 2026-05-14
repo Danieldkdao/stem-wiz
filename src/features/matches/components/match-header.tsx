@@ -36,13 +36,18 @@ export const MatchHeader = ({
   );
   const [disconnectSecondsRemaining, setDisconnectSecondsRemaining] =
     useState(30);
-  const { connect, connectToMatch, status, opponentStatus, lastEvent } =
+  const { connect, connectToMatch, status, opponentStatus, lastEvent, error } =
     useMatchSocket();
   const [confirmationDialog, confirm] = useConfirm(
     "Confirm Leave",
     "Are you sure you want to quit this match?",
   );
-  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  const allUsersSubmitted = match.users.every((user) =>
+    match.submissions.some((submission) => submission.userId === user.userId),
+  );
+  const finishDialogOpen =
+    lastEvent?.type === "match_finished" ||
+    (match.status === "finished" && allUsersSubmitted);
 
   useEffect(() => {
     if (
@@ -106,8 +111,8 @@ export const MatchHeader = ({
       toast.success("Your opponent has submitted their code.");
       router.refresh();
     }
-    if (lastEvent?.type === "match_finished" || match.status === "finished") {
-      setFinishDialogOpen(true);
+    if (lastEvent?.type === "match_error") {
+      toast.error(error ?? "Something went wrong behind the scenes.");
     }
   }, [status, lastEvent, match.status]);
 

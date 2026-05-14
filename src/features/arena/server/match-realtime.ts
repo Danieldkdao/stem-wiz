@@ -7,6 +7,7 @@ import {
   getArenaWsState,
   sendToUser,
 } from "./connection-state";
+import { generateMatchResults } from "@/services/ai/matches";
 
 export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
   const { usersInWaitingRoom, activeMatchesByUser } = getArenaWsState();
@@ -150,6 +151,7 @@ export const broadcastCodeSubmission = async (
     with: {
       users: true,
       submissions: true,
+      result: true,
     },
   });
 
@@ -177,20 +179,52 @@ export const broadcastCodeSubmission = async (
   const hasActiveInMap = activeMatchesByUser.get(userId);
   if (!hasActiveInMap) {
     console.error("No active match for user.");
+    sendToUser(userId, {
+      type: "match_error",
+      message: "No active match for user found.",
+    });
     return;
   }
 
   sendToUser(opponent?.[0] ?? "", { type: "opponent_submitted_code" });
-  if (existingMatch.users.length && existingMatch.submissions.length) {
-    const [updatedMatch] = await db
-      .update(MatchTable)
-      .set({ status: "finished" })
-      .where(eq(MatchTable.id, existingMatch.id))
-      .returning();
 
-    if (!updatedMatch) return;
-    existingMatch.users.forEach((user) => {
-      sendToUser(user.userId, { type: "match_finished" });
+  const latestMatch = await db.query.MatchTable.findFirst({
+    where: and(
+      eq(MatchTable.id, matchId),
+      eq(MatchTable.status, "in-progress"),
+      gt(MatchTable.expiresAt, new Date()),
+    ),
+    with: {
+      users: true,
+      submissions: true,
+      result: true,
+    },
+  });
+
+  if (!latestMatch) return;
+
+  const submittedUserIds = new Set(
+    latestMatch.submissions.map((submission) => submission.userId),
+  );
+  const allUsersSubmitted = latestMatch.users.every((user) =>
+    submittedUserIds.has(user.userId),
+  );
+
+  if (!allUsersSubmitted) return;
+
+  const response = await generateMatchResults(latestMatch.id);
+
+  if (!response) {
+    latestMatch.users.forEach((user) => {
+      sendToUser(user.userId, {
+        type: "match_error",
+        message: "Failed to generate match results.",
+      });
     });
+    return;
   }
+
+  latestMatch.users.forEach((user) => {
+    sendToUser(user.userId, { type: "match_finished" });
+  });
 };

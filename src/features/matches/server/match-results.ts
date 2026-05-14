@@ -20,7 +20,7 @@ export const upsertMatchResult = async (
         })
         .returning();
 
-      if (!upsertMatchResult) throw new Error("Failed to upsert match result.");
+      if (!upsertedResult) throw new Error("Failed to upsert match result.");
 
       await tx
         .update(MatchTable)
