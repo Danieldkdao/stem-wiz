@@ -14,11 +14,15 @@ type CodeEditorProps = {
     | typeof MatchSubmissionTable.$inferSelect
     | null
     | undefined;
+  readOnly?: boolean;
+  height?: number;
 };
 
 export const CodeEditor = ({
   language,
   existingSubmission,
+  readOnly = false,
+  height,
 }: CodeEditorProps) => {
   const [isMounted, setIsMounted] = useState(false);
   const setEditor = useCodeEditorStore((state) => state.setEditor);
@@ -46,7 +50,9 @@ export const CodeEditor = ({
         });
       }}
       theme={CODE_EDITOR_THEME.id}
+      height={height}
       options={{
+        readOnly,
         theme: CODE_EDITOR_THEME.id,
         minimap: { enabled: false },
         fontSize: 16,

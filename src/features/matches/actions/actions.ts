@@ -33,7 +33,12 @@ export const checkExistingMatch = async ({
     with: {
       submissions: true,
       arenaProblem: true,
-      users: true,
+      users: {
+        with: {
+          user: true,
+        },
+      },
+      result: true,
     },
   });
 
