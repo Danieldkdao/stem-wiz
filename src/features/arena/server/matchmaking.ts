@@ -1,6 +1,6 @@
 import { db } from "@/db/db";
 import { ArenaWebSocket } from "../lib/types";
-import { getArenaWsState, sendToClient } from "./connection-state";
+import { getArenaWsState, sendToClient, sendToUser } from "./connection-state";
 import {
   ArenaProblemTable,
   MatchTable,
@@ -40,8 +40,12 @@ const tryPairUsers = async (
   currentUserId: string,
   preferredLanguage: ProgrammingLanguageType,
 ) => {
-  const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
-    getArenaWsState();
+  const {
+    usersInWaitingRoom,
+    activeMatchesByUser,
+    socketsByUser,
+    usersInObservingRoom,
+  } = getArenaWsState();
   if (usersInWaitingRoom.size < 2) {
     setTimeout(() => {
       if (!usersInWaitingRoom.has(currentUserId)) return;
@@ -167,6 +171,9 @@ const tryPairUsers = async (
         },
         devSocket.ws,
       );
+    });
+    usersInObservingRoom.forEach((userId) => {
+      sendToUser(userId, { type: "observable_match_count_updated" });
     });
   } catch (error) {
     console.error(error);

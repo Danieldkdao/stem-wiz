@@ -5,4 +5,6 @@ export const MATCH_SOCKET_MESSAGE_TYPES = {
   match_finished: "match_finished",
 } as const;
 
-export const MATCH_OBSERVE_SOCKET_MESSAGE_TYPES = {} as const;
+export const MATCH_OBSERVE_SOCKET_MESSAGE_TYPES = {
+  observable_match_count_updated: "observable_match_count_updated",
+} as const;

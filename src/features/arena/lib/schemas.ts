@@ -15,4 +15,7 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("submitted_code"),
     matchId: z.uuid(),
   }),
+  z.object({
+    type: z.literal("connect_to_observers"),
+  }),
 ]);

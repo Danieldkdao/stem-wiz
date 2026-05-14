@@ -10,6 +10,7 @@ import {
 } from "./connection-state";
 import { joinWaitingRoom, leaveWaitingRoom } from "./matchmaking";
 import { broadcastCodeSubmission, connectToMatch } from "./match-realtime";
+import { connectToObservers } from "./match-observers";
 
 const toHeaders = (req: IncomingMessage) => {
   const headers = new Headers();
@@ -118,6 +119,9 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
           case "submitted_code":
             await broadcastCodeSubmission(ws, message.matchId);
             break;
+          case "connect_to_observers":
+            connectToObservers(ws);
+            break;
           default:
             throw new Error(
               `Invalid message type: ${messageType satisfies never}`,
@@ -137,6 +141,13 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
 
     ws.on("close", () => {
       const userId = ws.user.id;
+      const isCurrentUserSocket = socketsByUser.get(userId) === ws;
+
+      if (!isCurrentUserSocket) {
+        console.log("stale client socket disconnected");
+        return;
+      }
+
       const activeUserMatch = activeMatchesByUser.get(userId);
       if (activeUserMatch) {
         const opponentSocket = getOpponentSocket(userId);

@@ -1,5 +1,8 @@
 import { ARENA_WAITING_SOCKET_MESSAGE_TYPES } from "@/features/arena/lib/constants";
-import { MATCH_SOCKET_MESSAGE_TYPES } from "./constants";
+import {
+  MATCH_SOCKET_MESSAGE_TYPES,
+  MATCH_OBSERVE_SOCKET_MESSAGE_TYPES,
+} from "./constants";
 
 export type MatchServerMessage =
   | {
@@ -14,3 +17,13 @@ export type MatchServerMessage =
     };
 
 export type MatchServerMessageType = MatchServerMessage["type"];
+
+export type MatchObserverServerMessage =
+  | {
+      type: (typeof ARENA_WAITING_SOCKET_MESSAGE_TYPES)["error"];
+      message: string;
+    }
+  | {
+      type: (typeof MATCH_OBSERVE_SOCKET_MESSAGE_TYPES)["observable_match_count_updated"];
+    };
+export type MatchObserverServerMessageType = MatchObserverServerMessage["type"];

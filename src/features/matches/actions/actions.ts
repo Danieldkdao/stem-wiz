@@ -13,8 +13,10 @@ import {
   upsertMatchResult,
   upsertMatchSubmission,
 } from "../server/match-results";
+import { auth } from "@/lib/auth/auth";
+import { headers } from "next/headers";
 
-export const checkExistingMatch = async ({
+export const checkExistingMatchAction = async ({
   id,
   forResults = false,
 }: {
@@ -260,4 +262,36 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const isUserActiveMatch = async () => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return null;
+
+  // todo
+  const userMatches = await db.query.UserMatchTable.findMany({
+    where: eq(UserMatchTable.userId, session.user.id),
+    with: {
+      match: true,
+    },
+  });
+};
+
+export const getObservableMatches = async () => {
+  const matches = await db.query.MatchTable.findMany({
+    where: and(
+      eq(MatchTable.status, "in-progress"),
+      gt(MatchTable.expiresAt, new Date()),
+    ),
+    with: {
+      arenaProblem: true,
+      users: {
+        with: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  return matches;
 };

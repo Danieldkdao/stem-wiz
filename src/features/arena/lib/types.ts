@@ -4,7 +4,10 @@ import { Server as HttpServer } from "http";
 import { UserSettingsTable } from "@/db/schema";
 import z from "zod";
 import { clientMessageSchema } from "./schemas";
-import { MatchServerMessage } from "@/features/matches/lib/types";
+import {
+  MatchObserverServerMessage,
+  MatchServerMessage,
+} from "@/features/matches/lib/types";
 
 export type UserInfo = {
   id: string;
@@ -20,7 +23,10 @@ export type ActiveUser = {
 
 export type ClientMessage = z.infer<typeof clientMessageSchema>;
 
-export type ServerMessage = ArenaWaitingServerMessage | MatchServerMessage;
+export type ServerMessage =
+  | ArenaWaitingServerMessage
+  | MatchServerMessage
+  | MatchObserverServerMessage;
 
 export type ArenaWaitingServerMessage =
   | {

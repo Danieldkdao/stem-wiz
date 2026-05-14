@@ -13,7 +13,7 @@ const options = [
     title: "Observe",
     description: "Watch others' matches to learn and see the action unfold!",
     icon: ViewIcon,
-    href: "/arena/matches/watch",
+    href: "/arena/observe",
   },
 ];
 

@@ -138,7 +138,7 @@ export const broadcastCodeSubmission = async (
   ws: ArenaWebSocket,
   matchId: string,
 ) => {
-  const { activeMatchesByUser } = getArenaWsState();
+  const { activeMatchesByUser, usersInObservingRoom } = getArenaWsState();
 
   const userId = ws.user.id;
 
@@ -226,5 +226,8 @@ export const broadcastCodeSubmission = async (
 
   latestMatch.users.forEach((user) => {
     sendToUser(user.userId, { type: "match_finished" });
+  });
+  usersInObservingRoom.forEach((userId) => {
+    sendToUser(userId, { type: "observable_match_count_updated" });
   });
 };

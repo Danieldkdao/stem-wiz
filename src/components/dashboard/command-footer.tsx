@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { UserActionsButton } from "../user-actions-button";
 import { SearchOptionsInput } from "./search-options-input";
 import { SearchOption } from "@/lib/types";
+import { Skeleton } from "../ui/skeleton";
 
 const options: SearchOption[] = [
   {
@@ -44,7 +45,7 @@ export const CommandFooter = () => {
 };
 
 const CommandLoading = () => {
-  return <div>loading</div>;
+  return <Skeleton className="size-10 shrink-0 rounded-full" />;
 };
 
 const CommandSuspense = async () => {
