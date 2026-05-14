@@ -180,7 +180,7 @@ export const broadcastCodeSubmission = async (
   if (!hasActiveInMap) {
     console.error("No active match for user.");
     sendToUser(userId, {
-      type: "match_error",
+      type: "error",
       message: "No active match for user found.",
     });
     return;
@@ -217,7 +217,7 @@ export const broadcastCodeSubmission = async (
   if (!response) {
     latestMatch.users.forEach((user) => {
       sendToUser(user.userId, {
-        type: "match_error",
+        type: "error",
         message: "Failed to generate match results.",
       });
     });

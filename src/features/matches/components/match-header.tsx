@@ -58,13 +58,13 @@ export const MatchHeader = ({
       return;
 
     void connect();
-  }, [status, match.status]);
+  }, [connect, status, match.status]);
 
   useEffect(() => {
     if (status !== "open" || match.status === "finished") return;
 
     connectToMatch(match.id);
-  }, [status, match.status]);
+  }, [connectToMatch, match.id, status, match.status]);
 
   useEffect(() => {
     if (secondsRemaining <= 0 && match.status === "in-progress") {
@@ -111,7 +111,7 @@ export const MatchHeader = ({
       toast.success("Your opponent has submitted their code.");
       router.refresh();
     }
-    if (lastEvent?.type === "match_error") {
+    if (lastEvent?.type === "error") {
       toast.error(error ?? "Something went wrong behind the scenes.");
     }
   }, [status, lastEvent, match.status]);

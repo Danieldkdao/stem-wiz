@@ -3,5 +3,6 @@ export const MATCH_SOCKET_MESSAGE_TYPES = {
   opponent_joined_match: "opponent_joined_match",
   opponent_submitted_code: "opponent_submitted_code",
   match_finished: "match_finished",
-  match_error: "match_error",
 } as const;
+
+export const MATCH_OBSERVE_SOCKET_MESSAGE_TYPES = {} as const;

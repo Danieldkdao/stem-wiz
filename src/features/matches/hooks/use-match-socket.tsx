@@ -82,7 +82,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
             break;
           case "match_finished":
             break;
-          case "match_error":
+          case "error":
             setError(message.message);
             break;
           default:
