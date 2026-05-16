@@ -190,13 +190,15 @@ export const subscribeObserverMatch = async (
   usersInObservingRoom.delete(userId);
   activeObserversByUser.set(userId, matchId);
   await broadcastUpdatedMatchObserverCount(userId);
-  matchUsers.forEach((user) => {
-    const activeUser = activeMatchesByUser.get(user.userId);
+  sendToUser(userId, {
+    type: "users_connection_statuses",
+    users: matchUsers.map((user) => {
+      const activeUser = activeMatchesByUser.get(user.userId);
 
-    sendToUser(userId, {
-      type: "users_connection_statuses",
-      userId: user.userId,
-      isConnected: activeUser?.isConnected || false,
-    });
+      return {
+        userId: user.userId,
+        isConnected: activeUser ? activeUser.isConnected : false,
+      };
+    }),
   });
 };

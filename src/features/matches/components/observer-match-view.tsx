@@ -230,7 +230,9 @@ export const ObserverMatchView = ({ match }: { match: ObserverMatch }) => {
         updateUsers({ hasSubmittedCode: true }, lastEvent.userId);
         break;
       case "users_connection_statuses":
-        updateUsers({ isConnected: lastEvent.isConnected }, lastEvent.userId);
+        lastEvent.users.forEach((user) => {
+          updateUsers({ isConnected: user.isConnected }, user.userId);
+        });
         break;
       default:
         return;

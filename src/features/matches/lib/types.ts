@@ -20,7 +20,10 @@ export type MatchObserverServerMessage =
       message: string;
     }
   | { type: "connection_error"; message: string }
-  | { type: "users_connection_statuses"; userId: string; isConnected: boolean }
+  | {
+      type: "users_connection_statuses";
+      users: { userId: string; isConnected: boolean }[];
+    }
   | {
       type: "observable_match_count_updated";
     }

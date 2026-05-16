@@ -197,8 +197,7 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
         if (activeMatch)
           broadcastToMatchObservers(activeMatch.matchId, {
             type: "users_connection_statuses",
-            userId,
-            isConnected: false,
+            users: [{ userId, isConnected: false }],
           });
       }
       console.log("client disconnected");

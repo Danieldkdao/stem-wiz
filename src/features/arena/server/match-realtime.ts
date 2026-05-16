@@ -63,8 +63,7 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
   sendToUser(opponent?.[0] ?? "", { type: "opponent_joined_match" });
   broadcastToMatchObservers(matchId, {
     type: "users_connection_statuses",
-    userId,
-    isConnected: true,
+    users: [{ userId, isConnected: true }],
   });
 };
 
