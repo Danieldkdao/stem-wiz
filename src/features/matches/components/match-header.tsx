@@ -29,7 +29,7 @@ export const MatchHeader = ({
   match,
 }: {
   match: typeof MatchTable.$inferSelect & {
-    result?: typeof MatchResultTable.$inferSelect;
+    result?: typeof MatchResultTable.$inferSelect | null;
     submissions: (typeof MatchSubmissionTable.$inferSelect)[];
     users: (typeof UserMatchTable.$inferSelect)[];
   };
@@ -196,9 +196,6 @@ export const MatchHeader = ({
         )}
         <div className="w-full py-4 grid grid-cols-3 border-b bg-background/50 px-5">
           <div className="flex items-center gap-4">
-            {/* todo: <div className="flex items-center gap-2">
-            <span>5 people watching</span>
-          </div> */}
             <div className="flex items-center gap-2">
               {statusMap[status].element}
               <span className="font-medium">{statusMap[status].label}</span>

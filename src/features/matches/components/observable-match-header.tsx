@@ -3,27 +3,36 @@
 import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { Separator } from "@/components/ui/separator";
-import { EyeIcon, LogOutIcon, TimerIcon } from "lucide-react";
-import { MatchFinishedDialog } from "./match-finished-dialog";
-import { useEffect, useState } from "react";
+import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import {
+  ArenaProblemTable,
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
   UserMatchTable,
 } from "@/db/schema";
-import { cn, getTimeValues } from "@/lib/utils";
-import { useMatchObserverSocket } from "../hooks/use-match-observer-socket";
-import { toast } from "sonner";
 import { statusMap } from "@/features/arena/components";
-import { useRouter } from "next/navigation";
 import { User } from "@/lib/auth/auth";
+import { cn, getTimeValues } from "@/lib/utils";
+import {
+  EyeIcon,
+  LogOutIcon,
+  PanelRightOpenIcon,
+  TimerIcon,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useMatchObserverSocket } from "../hooks/use-match-observer-socket";
+import { MatchFinishedDialog } from "./match-finished-dialog";
+import { ObserverMatchSliderContent } from "./observer-match-slider-content";
 
 type ObservableMatchHeaderProps = {
   match: typeof MatchTable.$inferSelect & {
     submissions: (typeof MatchSubmissionTable.$inferSelect)[];
     users: (typeof UserMatchTable.$inferSelect & { user: User })[];
     result?: typeof MatchResultTable.$inferSelect | null;
+    arenaProblem: typeof ArenaProblemTable.$inferSelect;
   };
 };
 
@@ -110,6 +119,15 @@ export const ObservableMatchHeader = ({
 
       <div className="w-full py-4 grid grid-cols-3 border-b bg-background/50 px-5">
         <div className="flex items-center gap-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <PanelRightOpenIcon />
+              </Button>
+            </SheetTrigger>
+            <ObserverMatchSliderContent match={match} />
+          </Sheet>
+          <Separator orientation="vertical" />
           <div className="flex items-center gap-2">
             {statusMap[status].element}
             <span className="font-medium">{statusMap[status].label}</span>

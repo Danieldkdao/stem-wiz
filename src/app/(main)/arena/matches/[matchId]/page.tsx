@@ -1,18 +1,14 @@
-import { MatchCodeOutput } from "@/features/matches/components/match-code-output";
-import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
-import { Badge } from "@/components/ui/badge";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
+import { ArenaProblemDetails } from "@/features/arena-problems/components/arena-problem-details";
 import { checkExistingMatchAction } from "@/features/matches/actions/actions";
 import { MatchCodeEditor } from "@/features/matches/components/match-code-editor";
+import { MatchCodeOutput } from "@/features/matches/components/match-code-output";
 import { MatchHeader } from "@/features/matches/components/match-header";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 import { auth } from "@/lib/auth/auth";
 import { ParamsId } from "@/lib/types";
 import { headers } from "next/headers";
@@ -139,25 +135,7 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
       <MatchHeader match={match} />
       <ResizablePanelGroup orientation="horizontal">
         <ResizablePanel minSize="30%" className="p-4 sm:p-6 bg-card/75">
-          <div className="w-full h-full overflow-y-auto flex flex-col gap-4">
-            <h1 className="text-3xl font-semibold">
-              {match.arenaProblem.title}
-            </h1>
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <Badge>
-                {formatProgrammingLanguage(
-                  match.arenaProblem.programmingLanguage,
-                )}
-              </Badge>
-              <Badge>
-                {formatDifficultyLevel(match.arenaProblem.difficultyLevel)}
-              </Badge>
-            </div>
-            <Separator />
-            <MarkdownRenderer>
-              {match.arenaProblem.description}
-            </MarkdownRenderer>
-          </div>
+          <ArenaProblemDetails arenaProblem={match.arenaProblem} />
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel minSize="40%">

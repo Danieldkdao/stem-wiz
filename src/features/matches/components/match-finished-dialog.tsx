@@ -57,13 +57,10 @@ export const MatchFinishedDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
-        className="flex flex-col gap-4 items-center [&>button:last-child]:hidden"
-        aria-describedby={undefined}
-      >
-        <DialogHeader className="hidden">
-          <DialogTitle />
-          <DialogDescription />
+      <DialogContent className="flex flex-col gap-4 items-center [&>button:last-child]:hidden">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Match Finished</DialogTitle>
+          <DialogDescription>{reasonDisplay.message}</DialogDescription>
         </DialogHeader>
 
         <h1 className="text-center text-2xl font-semibold">Match Finished</h1>
