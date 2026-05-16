@@ -11,6 +11,7 @@ const globalForArenaWs = globalThis as typeof globalThis & {
     socketsByUser: Map<string, ArenaWebSocket>;
     usersInWaitingRoom: Map<string, WaitingRoomUser>;
     usersInObservingRoom: Set<string>;
+    activeObserversByUser: Map<string, string>;
   };
 };
 
@@ -21,6 +22,7 @@ export const getArenaWsState = () => {
       socketsByUser: new Map(),
       usersInWaitingRoom: new Map(),
       usersInObservingRoom: new Set(),
+      activeObserversByUser: new Map(),
     };
   }
 

@@ -23,8 +23,10 @@ type MatchObserverSocketContextType = {
   error: string | null;
   status: SocketStatus;
   lastEvent: ServerMessage | null;
+  matchObserverCount: number;
   connect: () => Promise<void>;
   connectToMatchObservers: () => boolean;
+  subscribeObserverMatch: (matchId: string) => boolean;
 };
 
 const MatchObserverSocketContext =
@@ -39,7 +41,10 @@ export const MatchObserverSocketProvider = ({
 
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<SocketStatus>("idle");
-  const [lastEvent, setLastEvent] = useState<ServerMessage | null>(null);
+  const [lastEvent, setLastEvent] = useState<MatchObserverServerMessage | null>(
+    null,
+  );
+  const [matchObserverCount, setMatchObserverCount] = useState(0);
 
   const connect = useCallback(async () => {
     if (
@@ -71,10 +76,21 @@ export const MatchObserverSocketProvider = ({
         const messageType = message.type;
 
         switch (messageType) {
-          case "observable_match_count_updated":
+          case "match_observer_count_updated":
+            const newCount = message.newCount;
+            setMatchObserverCount(newCount);
+            break;
+          case "connection_error":
+            setStatus("error");
+            setError(message.message);
             break;
           case "error":
             setError(message.message);
+            break;
+          case "observable_match_count_updated":
+          case "observer_code_snapshot":
+          case "observer_code_output":
+          case "observer_running_code":
             break;
           default:
             throw new Error(
@@ -111,6 +127,13 @@ export const MatchObserverSocketProvider = ({
     return send({ type: "connect_to_observers" });
   }, [send]);
 
+  const subscribeObserverMatch = useCallback(
+    (matchId: string) => {
+      return send({ type: "subscribe_observer_match", matchId });
+    },
+    [send],
+  );
+
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -122,8 +145,10 @@ export const MatchObserverSocketProvider = ({
     error,
     status,
     lastEvent,
+    matchObserverCount,
     connect,
     connectToMatchObservers,
+    subscribeObserverMatch,
   };
 
   return (

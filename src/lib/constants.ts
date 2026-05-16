@@ -121,3 +121,5 @@ export const CODE_EDITOR_THEME = {
     "scrollbarSlider.activeBackground": "#8b949e99",
   },
 };
+
+export const NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS = 2;

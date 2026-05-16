@@ -22,6 +22,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@neondatabase/serverless": "^1.1.0",
     "@t3-oss/env-nextjs": "^0.13.11",
+    "@tanstack/react-pacer": "^0.22.1",
     "@uiw/codemirror-theme-github": "^4.25.9",
     "@zxcvbn-ts/core": "^3.0.4",
     "@zxcvbn-ts/language-common": "^3.0.4",

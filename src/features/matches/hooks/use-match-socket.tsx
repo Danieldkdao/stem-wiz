@@ -29,6 +29,13 @@ type MatchSocketContextType = {
   connectToMatch: (matchId: string) => boolean;
   opponentStatus: OpponentStatus;
   broadcastCodeSubmission: (matchId: string) => boolean;
+  broadcastCodeSnapshot: (props: { matchId: string; code: string }) => void;
+  broadcastCodeOutput: (props: {
+    matchId: string;
+    output?: string | null;
+    error?: string | null;
+  }) => void;
+  broadcastRunningCode: (matchId: string) => void;
 };
 
 const MatchSocketContext = createContext<MatchSocketContextType | null>(null);
@@ -38,7 +45,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
 
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<SocketStatus>("idle");
-  const [lastEvent, setLastEvent] = useState<ServerMessage | null>(null);
+  const [lastEvent, setLastEvent] = useState<MatchServerMessage | null>(null);
   const [opponentStatus, setOpponentStatus] =
     useState<OpponentStatus>("active");
 
@@ -123,9 +130,34 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     [send],
   );
 
+  const broadcastCodeSnapshot = useCallback(
+    (props: { matchId: string; code: string }) => {
+      return send({ type: "code_snapshot", ...props });
+    },
+    [send],
+  );
+
+  const broadcastCodeOutput = useCallback(
+    (props: {
+      matchId: string;
+      output?: string | null;
+      error?: string | null;
+    }) => {
+      return send({ type: "output_snapshot", ...props });
+    },
+    [send],
+  );
+
   const broadcastCodeSubmission = useCallback(
     (matchId: string) => {
       return send({ type: "submitted_code", matchId });
+    },
+    [send],
+  );
+
+  const broadcastRunningCode = useCallback(
+    (matchId: string) => {
+      return send({ type: "running_code", matchId });
     },
     [send],
   );
@@ -137,7 +169,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const values = {
+  const values: MatchSocketContextType = {
     error,
     status,
     lastEvent,
@@ -145,6 +177,9 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     connectToMatch,
     opponentStatus,
     broadcastCodeSubmission,
+    broadcastCodeSnapshot,
+    broadcastCodeOutput,
+    broadcastRunningCode,
   };
 
   return (

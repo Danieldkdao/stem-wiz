@@ -10,7 +10,14 @@ import {
 } from "./connection-state";
 import { joinWaitingRoom, leaveWaitingRoom } from "./matchmaking";
 import { broadcastCodeSubmission, connectToMatch } from "./match-realtime";
-import { connectToObservers } from "./match-observers";
+import {
+  broadcastCodeOutput,
+  broadcastCodeSnapshot,
+  broadcastRunningCode,
+  broadcastUpdatedMatchObserverCount,
+  connectToObservers,
+  subscribeObserverMatch,
+} from "./match-observers";
 
 const toHeaders = (req: IncomingMessage) => {
   const headers = new Headers();
@@ -41,8 +48,13 @@ const rejectUpgrade = (
 };
 
 export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
-  const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
-    getArenaWsState();
+  const {
+    usersInWaitingRoom,
+    activeMatchesByUser,
+    socketsByUser,
+    usersInObservingRoom,
+    activeObserversByUser,
+  } = getArenaWsState();
   if (server.arenaWsInitialized && server.arenaWss) {
     return server.arenaWss;
   }
@@ -98,6 +110,8 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
         const json = JSON.parse(data.toString());
         const result = clientMessageSchema.safeParse(json);
 
+        console.log(json, result.data);
+
         if (!result.success) {
           throw new Error("Invalid message format: ", json);
         }
@@ -122,6 +136,23 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
           case "connect_to_observers":
             connectToObservers(ws);
             break;
+          case "subscribe_observer_match":
+            await subscribeObserverMatch(ws, message.matchId);
+            break;
+          case "code_snapshot":
+            await broadcastCodeSnapshot(ws, message.matchId, message.code);
+            break;
+          case "output_snapshot":
+            await broadcastCodeOutput(
+              ws,
+              message.matchId,
+              message.output,
+              message.error,
+            );
+            break;
+          case "running_code":
+            await broadcastRunningCode(ws, message.matchId);
+            break;
           default:
             throw new Error(
               `Invalid message type: ${messageType satisfies never}`,
@@ -139,7 +170,7 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
       }
     });
 
-    ws.on("close", () => {
+    ws.on("close", async () => {
       const userId = ws.user.id;
       const isCurrentUserSocket = socketsByUser.get(userId) === ws;
 
@@ -162,6 +193,10 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
       console.log("ACTIVE MATCHES CLEARED");
       usersInWaitingRoom.delete(userId);
       console.log("WAITING ROOM CLEARED");
+      usersInObservingRoom.delete(userId);
+      console.log("OBSERVING ROOM CLEARED");
+      activeObserversByUser.delete(userId);
+      await broadcastUpdatedMatchObserverCount(userId);
     });
   });
 

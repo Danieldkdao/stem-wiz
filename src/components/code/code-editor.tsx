@@ -1,31 +1,18 @@
 "use client";
 
-import { ProgrammingLanguageType } from "@/db/shared";
 import { CODE_EDITOR_THEME } from "@/lib/constants";
-import { useCodeEditorStore } from "@/store/use-code-editor-store";
 import { Editor } from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { ComponentProps, useEffect, useState } from "react";
 import { Skeleton } from "../ui/skeleton";
-import { MatchSubmissionTable } from "@/db/schema";
-
-type CodeEditorProps = {
-  language: ProgrammingLanguageType;
-  existingSubmission?:
-    | typeof MatchSubmissionTable.$inferSelect
-    | null
-    | undefined;
-  readOnly?: boolean;
-  height?: number;
-};
 
 export const CodeEditor = ({
   language,
-  existingSubmission,
-  readOnly = false,
+  defaultValue,
   height,
-}: CodeEditorProps) => {
+  options,
+  ...props
+}: ComponentProps<typeof Editor>) => {
   const [isMounted, setIsMounted] = useState(false);
-  const setEditor = useCodeEditorStore((state) => state.setEditor);
 
   useEffect(() => {
     setIsMounted(true);
@@ -35,9 +22,8 @@ export const CodeEditor = ({
 
   return (
     <Editor
-      defaultValue={existingSubmission?.code}
+      defaultValue={defaultValue}
       language={language}
-      onMount={(editor) => setEditor(editor)}
       beforeMount={(monaco) => {
         return monaco.editor.defineTheme(CODE_EDITOR_THEME.id, {
           base: CODE_EDITOR_THEME.base,
@@ -52,7 +38,6 @@ export const CodeEditor = ({
       theme={CODE_EDITOR_THEME.id}
       height={height}
       options={{
-        readOnly,
         theme: CODE_EDITOR_THEME.id,
         minimap: { enabled: false },
         fontSize: 16,
@@ -73,7 +58,9 @@ export const CodeEditor = ({
           verticalScrollbarSize: 8,
           horizontalScrollbarSize: 8,
         },
+        ...options,
       }}
+      {...props}
     />
   );
 };

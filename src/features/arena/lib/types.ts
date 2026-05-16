@@ -1,5 +1,4 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { ARENA_WAITING_SOCKET_MESSAGE_TYPES } from "./constants";
 import { Server as HttpServer } from "http";
 import { UserSettingsTable } from "@/db/schema";
 import z from "zod";
@@ -30,15 +29,15 @@ export type ServerMessage =
 
 export type ArenaWaitingServerMessage =
   | {
-      type: (typeof ARENA_WAITING_SOCKET_MESSAGE_TYPES)["match_found"];
+      type: "match_found";
       matchId: string;
       opponent: UserInfo;
     }
-  | { type: (typeof ARENA_WAITING_SOCKET_MESSAGE_TYPES)["no_matches_found"] }
-  | { type: (typeof ARENA_WAITING_SOCKET_MESSAGE_TYPES)["no_problems_found"] }
-  | { type: (typeof ARENA_WAITING_SOCKET_MESSAGE_TYPES)["no_user_settings"] }
+  | { type: "no_matches_found" }
+  | { type: "no_problems_found" }
+  | { type: "no_user_settings" }
   | {
-      type: (typeof ARENA_WAITING_SOCKET_MESSAGE_TYPES)["error"];
+      type: "error";
       message: string;
     };
 

@@ -4,8 +4,8 @@ import { ProgrammingLanguageType } from "@/db/shared";
 import { LANGUAGE_VERSION_MAP } from "@/features/user/lib/constants";
 import { useCodeEditorStore } from "@/store/use-code-editor-store";
 import { CheckCircleIcon, PlayIcon, SendIcon } from "lucide-react";
-import { Button } from "../ui/button";
-import { LoadingSwap } from "../ui/loading-swap";
+import { Button } from "../../../components/ui/button";
+import { LoadingSwap } from "../../../components/ui/loading-swap";
 import { useMatchStore } from "@/store/use-match-store";
 import { useTransition } from "react";
 import { codeSubmissionAction } from "@/features/matches/actions/actions";
@@ -23,7 +23,7 @@ type CodeOutputProps = {
     | undefined;
 };
 
-export const CodeOutput = ({
+export const MatchCodeOutput = ({
   language,
   matchId,
   existingSubmission,
@@ -31,7 +31,12 @@ export const CodeOutput = ({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const { broadcastCodeSubmission } = useMatchSocket();
+  const {
+    status,
+    broadcastCodeSubmission,
+    broadcastCodeOutput,
+    broadcastRunningCode,
+  } = useMatchSocket();
 
   const runCode = useCodeEditorStore((state) => state.runCode);
   const isRunning = useCodeEditorStore((state) => state.isRunning);
@@ -42,7 +47,15 @@ export const CodeOutput = ({
   const isEnding = useMatchStore((state) => state.isEnding);
 
   const handleCodeExecution = async () => {
-    await runCode(language, LANGUAGE_VERSION_MAP[language]);
+    broadcastRunningCode(matchId);
+    const result = await runCode(language, LANGUAGE_VERSION_MAP[language]);
+    if (status === "open" && result) {
+      broadcastCodeOutput({
+        matchId,
+        output: result.output,
+        error: result.error,
+      });
+    }
   };
 
   const handleCodeSubmission = async () => {

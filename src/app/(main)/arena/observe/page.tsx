@@ -1,6 +1,7 @@
 import { getObservableMatches } from "@/features/matches/actions/actions";
 import { MatchObserverListStatus } from "@/features/matches/components/match-observer-list-status";
 import { ObservableMatchCard } from "@/features/matches/components/observable-match-card";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 const ObserveMatchesListPage = () => {
@@ -16,6 +17,7 @@ const ObserveMatchesListLoading = () => {
 };
 
 const ObserverMatchesListSuspense = async () => {
+  await connection();
   const matches = await getObservableMatches();
 
   return (
@@ -38,8 +40,9 @@ const ObserverMatchesListSuspense = async () => {
         <div className="w-full rounded-md border-2 border-dashed bg-card/75 p-10 flex flex-col gap-2">
           <h1 className="text-xl font-medium text-center">No Matches Found</h1>
           <p className="text-muted-foreground text-center">
-            Looks like there are no matches going on right now. If you wait just
-            a bit longer, you might be able listen to other platforms.
+            Looks like there are no matches going on right now. Try waiting
+            around a bit more or coming back later to see if any new matches
+            have started.
           </p>
         </div>
       )}

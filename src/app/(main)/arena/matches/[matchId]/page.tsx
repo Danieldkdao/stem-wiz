@@ -1,5 +1,4 @@
-import { CodeEditor } from "@/components/code/code-editor";
-import { CodeOutput } from "@/components/code/code-output";
+import { MatchCodeOutput } from "@/features/matches/components/match-code-output";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
 import { checkExistingMatchAction } from "@/features/matches/actions/actions";
+import { MatchCodeEditor } from "@/features/matches/components/match-code-editor";
 import { MatchHeader } from "@/features/matches/components/match-header";
 import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 import { auth } from "@/lib/auth/auth";
@@ -164,7 +164,8 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
           <ResizablePanelGroup orientation="vertical">
             <ResizablePanel minSize="30%">
               <div className="w-full h-full">
-                <CodeEditor
+                <MatchCodeEditor
+                  matchId={match.id}
                   language={match.arenaProblem.programmingLanguage}
                   existingSubmission={currentUserSubmission}
                 />
@@ -173,7 +174,7 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
             <ResizableHandle />
             <ResizablePanel minSize="30%">
               <div className="w-full h-full">
-                <CodeOutput
+                <MatchCodeOutput
                   language={match.arenaProblem.programmingLanguage}
                   matchId={match.id}
                   existingSubmission={currentUserSubmission}

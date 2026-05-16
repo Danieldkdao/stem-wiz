@@ -10,6 +10,15 @@ type ExecutionResult = {
   error: string | null;
 };
 
+type RunCodeReturnType =
+  | {
+      output?: string | null;
+      error?: string | null;
+      executionResult: ExecutionResult;
+    }
+  | null
+  | undefined;
+
 type CodeEditorStoreType = {
   output: string;
   isRunning: boolean;
@@ -21,7 +30,7 @@ type CodeEditorStoreType = {
   runCode: (
     language: ProgrammingLanguageType,
     version: string,
-  ) => Promise<void>;
+  ) => Promise<RunCodeReturnType>;
 };
 
 export const useCodeEditorStore = create<CodeEditorStoreType>((set, get) => {
@@ -33,12 +42,11 @@ export const useCodeEditorStore = create<CodeEditorStoreType>((set, get) => {
     executionResult: null,
     getCode: () => get().editor?.getValue() || "",
     setEditor: (editor: MonacoEditorType) => {
-      // todo: maybe implement code saving
       set({ editor });
     },
-    async runCode(language, version) {
+    async runCode(language, version): Promise<RunCodeReturnType> {
       const code = get().editor?.getValue() ?? "";
-      if (!code.length) return;
+      if (!code.length) return null;
 
       try {
         set({ isRunning: true, error: null, output: "" });
@@ -58,41 +66,43 @@ export const useCodeEditorStore = create<CodeEditorStoreType>((set, get) => {
         const data = await response.json();
 
         if (data.message) {
-          set({
+          const result = {
             error: data.message,
             executionResult: { code, output: "", error: data.message },
-          });
-          return;
+          };
+          set(result);
+          return result;
         }
 
         if (data.compile && data.compile.code !== 0) {
           const error = data.compile.stderr || data.compile.output;
-          set({
+          const result = {
             error,
             executionResult: {
               code,
               output: "",
               error,
             },
-          });
-          return;
+          };
+          set(result);
+          return result;
         }
 
         if (data.run && data.run.code !== 0) {
           const error = data.run.stderr || data.run.output;
-          set({
+          const result = {
             error,
             executionResult: {
               code,
               output: "",
               error,
             },
-          });
-          return;
+          };
+          set(result);
+          return result;
         }
         const output = data.run.output;
-
-        set({
+        const goodResult = {
           output: output.trim(),
           error: null,
           executionResult: {
@@ -100,13 +110,17 @@ export const useCodeEditorStore = create<CodeEditorStoreType>((set, get) => {
             output: output.trim(),
             error: null,
           },
-        });
+        };
+
+        set(goodResult);
+        return goodResult;
       } catch (error) {
         console.log("Error running code:", error);
-        set({
+        const errorResult = {
           error: "Error running code",
           executionResult: { code, output: "", error: "Error running code" },
-        });
+        };
+        set(errorResult);
       } finally {
         set({ isRunning: false });
       }

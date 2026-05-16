@@ -64,7 +64,7 @@ const SignInPage = () => {
           toast.success("Authentication successful!");
         },
         onError: async (error) => {
-          console.log(error);
+          console.error(error);
           if (error.error.code === "EMAIL_NOT_VERIFIED") {
             setVerifyEmail(data.email);
             toast.error("Please verify your email to continue.");

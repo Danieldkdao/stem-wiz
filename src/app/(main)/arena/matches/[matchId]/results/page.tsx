@@ -134,9 +134,9 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
 
                 <CodeEditor
                   language={match.arenaProblem.programmingLanguage}
-                  existingSubmission={winningSubmission}
+                  defaultValue={winningSubmission.code}
                   height={700}
-                  readOnly
+                  options={{ readOnly: true }}
                 />
               </div>
             )}
