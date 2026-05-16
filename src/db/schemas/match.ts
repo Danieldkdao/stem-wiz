@@ -6,6 +6,7 @@ import { ArenaProblemTable } from "./arena-problem";
 import { UserMatchTable } from "./user-match";
 import { MatchResultTable } from "./match-result";
 import { MatchSubmissionTable } from "./match-submission";
+import { ChatTable } from "./chat";
 
 export const MatchTable = pgTable("matches", {
   id,
@@ -26,4 +27,5 @@ export const matchRelations = relations(MatchTable, ({ one, many }) => ({
   result: one(MatchResultTable),
   users: many(UserMatchTable),
   submissions: many(MatchSubmissionTable),
+  chats: many(ChatTable),
 }));

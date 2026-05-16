@@ -7,6 +7,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArenaProblemTable, MatchTable } from "@/db/schema";
 import { ArenaProblemDetails } from "@/features/arena-problems/components/arena-problem-details";
+import { MatchChatInput } from "@/features/chats/components/match-chat-input";
 import { InfoIcon, MessageSquareIcon } from "lucide-react";
 
 export const ObserverMatchSliderContent = ({
@@ -25,7 +26,10 @@ export const ObserverMatchSliderContent = ({
         </SheetDescription>
       </SheetHeader>
       <div className="w-full h-full overflow-y-auto p-4">
-        <Tabs defaultValue="problem-info" className="flex flex-col gap-4">
+        <Tabs
+          defaultValue="problem-info"
+          className="flex flex-col gap-4 h-full"
+        >
           <TabsList className="w-full">
             <TabsTrigger value="problem-info">
               <InfoIcon />
@@ -39,7 +43,12 @@ export const ObserverMatchSliderContent = ({
           <TabsContent value="problem-info">
             <ArenaProblemDetails isClient arenaProblem={match.arenaProblem} />
           </TabsContent>
-          <TabsContent value="chat">this is the chat tab</TabsContent>
+          <TabsContent value="chat">
+            <div className="w-full h-full flex flex-col">
+              <div className="p-4 flex-1">messages go here</div>
+              <MatchChatInput />
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </SheetContent>
