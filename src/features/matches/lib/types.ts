@@ -1,10 +1,12 @@
+import { MatchResultReasonType } from "@/db/shared";
+
 export type MatchServerMessage =
   | {
       type: "opponent_left_match";
     }
   | { type: "opponent_joined_match" }
   | { type: "opponent_submitted_code" }
-  | { type: "match_finished" }
+  | { type: "match_finished"; reason: MatchResultReasonType }
   | {
       type: "error";
       message: string;
@@ -18,6 +20,7 @@ export type MatchObserverServerMessage =
       message: string;
     }
   | { type: "connection_error"; message: string }
+  | { type: "users_connection_statuses"; userId: string; isConnected: boolean }
   | {
       type: "observable_match_count_updated";
     }
@@ -36,5 +39,7 @@ export type MatchObserverServerMessage =
       output?: string | null;
       error?: string | null;
     }
-  | { type: "observer_running_code"; userId: string };
+  | { type: "observer_running_code"; userId: string }
+  | { type: "user_submitted_code"; userId: string }
+  | { type: "match_finished"; reason: MatchResultReasonType };
 export type MatchObserverServerMessageType = MatchObserverServerMessage["type"];

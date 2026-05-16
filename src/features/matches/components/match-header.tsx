@@ -2,7 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
-import { MatchSubmissionTable, MatchTable, UserMatchTable } from "@/db/schema";
+import {
+  MatchResultTable,
+  MatchSubmissionTable,
+  MatchTable,
+  UserMatchTable,
+} from "@/db/schema";
 import { statusMap } from "@/features/arena/components";
 import { useConfirm } from "@/hooks/use-confirm";
 import { cn, getTimeValues } from "@/lib/utils";
@@ -24,6 +29,7 @@ export const MatchHeader = ({
   match,
 }: {
   match: typeof MatchTable.$inferSelect & {
+    result?: typeof MatchResultTable.$inferSelect;
     submissions: (typeof MatchSubmissionTable.$inferSelect)[];
     users: (typeof UserMatchTable.$inferSelect)[];
   };
@@ -31,58 +37,60 @@ export const MatchHeader = ({
   const isEnding = useMatchStore((state) => state.isEnding);
   const setIsEnding = useMatchStore((state) => state.setIsEnding);
   const router = useRouter();
-  const [secondsRemaining, setSecondsRemaining] = useState(
-    Math.max(0, Math.ceil((match.expiresAt.getTime() - Date.now()) / 1000)),
-  );
+  const expiresAtMs = match.expiresAt.getTime();
+  const [now, setNow] = useState(() => Date.now());
+  const secondsRemaining = Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
   const [disconnectSecondsRemaining, setDisconnectSecondsRemaining] =
     useState(30);
-  const { connect, connectToMatch, status, opponentStatus, lastEvent, error } =
-    useMatchSocket();
+  const {
+    connect,
+    connectToMatch,
+    status,
+    opponentStatus,
+    lastEvent,
+    error,
+    broadcastMatchFinished,
+  } = useMatchSocket();
   const [confirmationDialog, confirm] = useConfirm(
     "Confirm Leave",
     "Are you sure you want to quit this match?",
   );
-  const allUsersSubmitted = match.users.every((user) =>
-    match.submissions.some((submission) => submission.userId === user.userId),
-  );
-  const finishDialogOpen =
+  const isMatchFinished =
     lastEvent?.type === "match_finished" ||
-    (match.status === "finished" && allUsersSubmitted);
+    !!(match.result && match.status === "finished");
 
   useEffect(() => {
-    if (
-      status === "connecting" ||
-      status === "open" ||
-      match.status === "finished"
-    )
-      return;
+    if (status === "connecting" || status === "open" || isMatchFinished) return;
 
     void connect();
   }, [connect, status, match.status]);
 
   useEffect(() => {
-    if (status !== "open" || match.status === "finished") return;
+    if (status !== "open" || isMatchFinished) return;
 
     connectToMatch(match.id);
-  }, [connectToMatch, match.id, status, match.status]);
+  }, [connectToMatch, match.id, status, match.status, isMatchFinished]);
 
   useEffect(() => {
+    if (isMatchFinished) return;
     if (secondsRemaining <= 0 && match.status === "in-progress") {
       handleMatchTimeout();
       return;
     }
+    setNow(Date.now());
     const interval = setInterval(async () => {
       if (secondsRemaining <= 0 && match.status === "in-progress") {
         await handleMatchTimeout();
         return;
       }
-      setSecondsRemaining((prev) => prev - 1);
+      setNow(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [secondsRemaining, match.status]);
+  }, [secondsRemaining, match.status, isMatchFinished]);
 
   useEffect(() => {
+    if (isMatchFinished) return;
     if (opponentStatus === "active" && match.status === "in-progress") {
       setDisconnectSecondsRemaining(30);
       return;
@@ -100,9 +108,15 @@ export const MatchHeader = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [opponentStatus, disconnectSecondsRemaining, match.status]);
+  }, [
+    opponentStatus,
+    disconnectSecondsRemaining,
+    match.status,
+    isMatchFinished,
+  ]);
 
   useEffect(() => {
+    if (isMatchFinished) return;
     if (status !== "open" && match.status === "in-progress") return;
     if (
       lastEvent?.type === "opponent_submitted_code" &&
@@ -124,6 +138,7 @@ export const MatchHeader = ({
 
     setIsEnding(true);
 
+    broadcastMatchFinished(match.id, "user_quit");
     const response = await quitMatchAction(match.id);
     if (response.error) {
       toast.error(response.message);
@@ -136,6 +151,7 @@ export const MatchHeader = ({
 
   const handleMatchTimeout = async () => {
     setIsEnding(true);
+    broadcastMatchFinished(match.id, "timeout");
     const response = await handleMatchTimeoutAction(match.id);
     if (response.error) {
       toast.error(response.message);
@@ -147,6 +163,7 @@ export const MatchHeader = ({
 
   const handleUserMatchWin = async () => {
     setIsEnding(true);
+    broadcastMatchFinished(match.id, "user_lost_connection");
     const response = await handleUserMatchWinAction(match.id);
     if (response.error) {
       toast.error(response.message);
@@ -160,11 +177,12 @@ export const MatchHeader = ({
     <>
       {confirmationDialog}
       <MatchFinishedDialog
-        open={finishDialogOpen}
+        open={isMatchFinished}
         setOpen={() => {
-          if (finishDialogOpen) return;
+          if (isMatchFinished) return;
         }}
         matchId={match.id}
+        reason={match.result?.reason}
       />
       <div className="flex flex-col w-full">
         {opponentStatus === "disconnected" && (

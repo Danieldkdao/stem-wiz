@@ -1,4 +1,7 @@
-import { checkExistingMatchAction } from "@/features/matches/actions/actions";
+import {
+  checkExistingMatchAction,
+  isUserMatchActive,
+} from "@/features/matches/actions/actions";
 import { ObservableMatchHeader } from "@/features/matches/components/observable-match-header";
 import { ObserverMatchView } from "@/features/matches/components/observer-match-view";
 import { NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS } from "@/lib/constants";
@@ -22,6 +25,16 @@ const MatchObservingLoading = () => {
 const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
   const { matchId } = await params;
   const match = await checkExistingMatchAction({ id: matchId });
+
+  const userMatch = await isUserMatchActive(matchId);
+  if (userMatch) {
+    return (
+      <div>
+        you are participating in this match, so you cannot watch it. please
+        finish + link there in the form of a button
+      </div>
+    );
+  }
 
   if (!match) {
     return <div>reusable match not found component</div>;

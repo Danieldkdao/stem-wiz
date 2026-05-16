@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { MatchObserverServerMessage } from "../lib/types";
+import { MatchResultReasonType } from "@/db/shared";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -24,6 +25,7 @@ type MatchObserverSocketContextType = {
   status: SocketStatus;
   lastEvent: ServerMessage | null;
   matchObserverCount: number;
+  matchCompletionReason: MatchResultReasonType | null;
   connect: () => Promise<void>;
   connectToMatchObservers: () => boolean;
   subscribeObserverMatch: (matchId: string) => boolean;
@@ -44,6 +46,8 @@ export const MatchObserverSocketProvider = ({
   const [lastEvent, setLastEvent] = useState<MatchObserverServerMessage | null>(
     null,
   );
+  const [matchCompletionReason, setMatchCompletionReason] =
+    useState<MatchResultReasonType | null>(null);
   const [matchObserverCount, setMatchObserverCount] = useState(0);
 
   const connect = useCallback(async () => {
@@ -87,10 +91,15 @@ export const MatchObserverSocketProvider = ({
           case "error":
             setError(message.message);
             break;
+          case "match_finished":
+            setMatchCompletionReason(message.reason);
+            break;
+          case "users_connection_statuses":
           case "observable_match_count_updated":
           case "observer_code_snapshot":
           case "observer_code_output":
           case "observer_running_code":
+          case "user_submitted_code":
             break;
           default:
             throw new Error(
@@ -141,7 +150,7 @@ export const MatchObserverSocketProvider = ({
     };
   }, []);
 
-  const values = {
+  const values: MatchObserverSocketContextType = {
     error,
     status,
     lastEvent,
@@ -149,6 +158,7 @@ export const MatchObserverSocketProvider = ({
     connect,
     connectToMatchObservers,
     subscribeObserverMatch,
+    matchCompletionReason,
   };
 
   return (

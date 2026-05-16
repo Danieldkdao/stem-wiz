@@ -8,23 +8,12 @@ import {
   sendToUser,
 } from "./connection-state";
 import { generateMatchResults } from "@/services/ai/matches";
+import { broadcastToMatchObservers } from "./match-observers";
 
 export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
   const { usersInWaitingRoom, activeMatchesByUser } = getArenaWsState();
 
   const userId = ws.user.id;
-
-  console.log("[match-realtime] connect_to_match received", {
-    userId,
-    matchId,
-    waitingRoomSize: usersInWaitingRoom.size,
-    activeMatchesSize: activeMatchesByUser.size,
-  });
-
-  console.log("[match-realtime] validating active match access", {
-    userId,
-    matchId,
-  });
 
   const [activeUserMatch] = await db
     .select({
@@ -41,96 +30,41 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
       ),
     );
 
-  console.log("[match-realtime] active match query result", {
-    userId,
-    matchId,
-    found: Boolean(activeUserMatch),
-    activeUserMatch,
-  });
-
   if (!activeUserMatch) {
-    console.log("[match-realtime] no active match found, terminating socket", {
-      userId,
-      matchId,
-    });
     cleanupUserConnection(userId);
     // todo: maybe terminate socket later?
     return;
   }
 
   const userInWaitingRoom = usersInWaitingRoom.get(userId);
-  console.log("[match-realtime] waiting room lookup", {
-    userId,
-    matchId,
-    wasInWaitingRoom: Boolean(userInWaitingRoom),
-  });
 
   if (userInWaitingRoom) {
     usersInWaitingRoom.delete(userId);
-    console.log("[match-realtime] removed user from waiting room", {
-      userId,
-      matchId,
-      waitingRoomSize: usersInWaitingRoom.size,
-    });
   }
-
-  console.log("[match-realtime] searching active map for opponent", {
-    userId,
-    matchId,
-    activeMatches: [...activeMatchesByUser.entries()],
-  });
 
   const opponent = [...activeMatchesByUser.entries()].find(
     ([otherUserId, otherMatchId]) =>
       otherUserId !== userId && otherMatchId.matchId === matchId,
   );
 
-  console.log("[match-realtime] opponent lookup result", {
-    userId,
-    matchId,
-    opponentUserId: opponent?.[0],
-    opponentState: opponent?.[1],
-  });
-
   if (!opponent?.[1]?.isConnected) {
-    console.log("[match-realtime] opponent not connected, notifying user", {
-      userId,
-      matchId,
-      opponentUserId: opponent?.[0],
-    });
     sendToUser(userId, { type: "opponent_left_match" });
   }
 
   const hasActiveInMap = activeMatchesByUser.get(userId);
-  console.log("[match-realtime] current user active map state", {
-    userId,
-    matchId,
-    hasActiveInMap,
-  });
 
   if (!hasActiveInMap || !hasActiveInMap.isConnected) {
     activeMatchesByUser.set(activeUserMatch.userId, {
       matchId: activeUserMatch.matchId,
       isConnected: true,
     });
-    console.log("[match-realtime] marked user connected to match", {
-      userId,
-      matchId,
-      activeMatchesSize: activeMatchesByUser.size,
-    });
   }
 
-  console.log("[match-realtime] notifying opponent user joined", {
-    userId,
-    matchId,
-    opponentUserId: opponent?.[0],
-  });
   sendToUser(opponent?.[0] ?? "", { type: "opponent_joined_match" });
-
-  console.log("[match-realtime] connect_to_match finished", {
+  broadcastToMatchObservers(matchId, {
+    type: "users_connection_statuses",
     userId,
-    matchId,
-    activeMatches: [...activeMatchesByUser.entries()],
+    isConnected: true,
   });
 };
 
@@ -187,6 +121,10 @@ export const broadcastCodeSubmission = async (
   }
 
   sendToUser(opponent?.[0] ?? "", { type: "opponent_submitted_code" });
+  broadcastToMatchObservers(existingMatch.id, {
+    type: "user_submitted_code",
+    userId,
+  });
 
   const latestMatch = await db.query.MatchTable.findFirst({
     where: and(
@@ -225,7 +163,11 @@ export const broadcastCodeSubmission = async (
   }
 
   latestMatch.users.forEach((user) => {
-    sendToUser(user.userId, { type: "match_finished" });
+    sendToUser(user.userId, { type: "match_finished", reason: "traditional" });
+  });
+  await broadcastToMatchObservers(latestMatch.id, {
+    type: "match_finished",
+    reason: "traditional",
   });
   usersInObservingRoom.forEach((userId) => {
     sendToUser(userId, { type: "observable_match_count_updated" });

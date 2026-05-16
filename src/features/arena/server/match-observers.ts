@@ -3,6 +3,7 @@ import { ArenaWebSocket, ServerMessage } from "../lib/types";
 import { getArenaWsState, sendToUser } from "./connection-state";
 import { and, eq } from "drizzle-orm";
 import { MatchTable, UserMatchTable } from "@/db/schema";
+import { MatchResultReasonType } from "@/db/schema";
 
 export const connectToObservers = (ws: ArenaWebSocket) => {
   const { usersInWaitingRoom, usersInObservingRoom } = getArenaWsState();
@@ -123,12 +124,45 @@ export const broadcastRunningCode = async (
   });
 };
 
+export const broadcastUserSubmittedCode = async (
+  ws: ArenaWebSocket,
+  matchId: string,
+) => {
+  const userId = ws.user.id;
+
+  await confirmMatchParticipant(userId, matchId);
+
+  await broadcastToMatchObservers(matchId, {
+    type: "user_submitted_code",
+    userId,
+  });
+};
+
+export const broadcastMatchFinished = async (
+  ws: ArenaWebSocket,
+  matchId: string,
+  reason: MatchResultReasonType,
+) => {
+  const userId = ws.user.id;
+
+  await confirmMatchParticipant(userId, matchId);
+
+  await broadcastToMatchObservers(matchId, {
+    type: "match_finished",
+    reason,
+  });
+};
+
 export const subscribeObserverMatch = async (
   ws: ArenaWebSocket,
   matchId: string,
 ) => {
-  const { usersInWaitingRoom, usersInObservingRoom, activeObserversByUser } =
-    getArenaWsState();
+  const {
+    usersInWaitingRoom,
+    usersInObservingRoom,
+    activeObserversByUser,
+    activeMatchesByUser,
+  } = getArenaWsState();
 
   const userId = ws.user.id;
 
@@ -146,9 +180,23 @@ export const subscribeObserverMatch = async (
     return;
   }
 
+  const matchUsers = await db
+    .select()
+    .from(UserMatchTable)
+    .where(eq(UserMatchTable.matchId, matchId));
+
   if (usersInWaitingRoom.has(userId)) usersInWaitingRoom.delete(userId);
   activeObserversByUser.delete(userId);
   usersInObservingRoom.delete(userId);
   activeObserversByUser.set(userId, matchId);
   await broadcastUpdatedMatchObserverCount(userId);
+  matchUsers.forEach((user) => {
+    const activeUser = activeMatchesByUser.get(user.userId);
+
+    sendToUser(userId, {
+      type: "users_connection_statuses",
+      userId: user.userId,
+      isConnected: activeUser?.isConnected || false,
+    });
+  });
 };

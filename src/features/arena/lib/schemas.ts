@@ -1,3 +1,4 @@
+import { matchResultReasons } from "@/db/shared";
 import z from "zod";
 
 export const clientMessageSchema = z.discriminatedUnion("type", [
@@ -36,5 +37,14 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("running_code"),
     matchId: z.uuid(),
+  }),
+  z.object({
+    type: z.literal("user_submitted_code"),
+    matchId: z.uuid(),
+  }),
+  z.object({
+    type: z.literal("match_finished"),
+    matchId: z.uuid(),
+    reason: z.enum(matchResultReasons),
   }),
 ]);

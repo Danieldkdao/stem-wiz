@@ -24,6 +24,18 @@ export const matchStatuses = ["in-progress", "finished"] as const;
 export type MatchStatusType = (typeof matchStatuses)[number];
 export const matchStatusEnum = pgEnum("match_statuses", matchStatuses);
 
-export const matchResults = ["completed", "timed_out"] as const;
+export const matchResults = ["completed", "tie"] as const;
 export type MatchResultType = (typeof matchResults)[number];
 export const matchResultEnum = pgEnum("match_result_results", matchResults);
+
+export const matchResultReasons = [
+  "traditional",
+  "user_lost_connection",
+  "timeout",
+  "user_quit",
+] as const;
+export type MatchResultReasonType = (typeof matchResultReasons)[number];
+export const matchResultReasonEnum = pgEnum(
+  "match_result_reasons",
+  matchResultReasons,
+);

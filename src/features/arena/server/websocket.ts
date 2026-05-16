@@ -13,8 +13,11 @@ import { broadcastCodeSubmission, connectToMatch } from "./match-realtime";
 import {
   broadcastCodeOutput,
   broadcastCodeSnapshot,
+  broadcastMatchFinished,
   broadcastRunningCode,
+  broadcastToMatchObservers,
   broadcastUpdatedMatchObserverCount,
+  broadcastUserSubmittedCode,
   connectToObservers,
   subscribeObserverMatch,
 } from "./match-observers";
@@ -153,6 +156,12 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
           case "running_code":
             await broadcastRunningCode(ws, message.matchId);
             break;
+          case "user_submitted_code":
+            await broadcastUserSubmittedCode(ws, message.matchId);
+            break;
+          case "match_finished":
+            await broadcastMatchFinished(ws, message.matchId, message.reason);
+            break;
           default:
             throw new Error(
               `Invalid message type: ${messageType satisfies never}`,
@@ -182,7 +191,15 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
       const activeUserMatch = activeMatchesByUser.get(userId);
       if (activeUserMatch) {
         const opponentSocket = getOpponentSocket(userId);
+
         sendToClient({ type: "opponent_left_match" }, opponentSocket?.socket);
+        const activeMatch = activeMatchesByUser.get(userId);
+        if (activeMatch)
+          broadcastToMatchObservers(activeMatch.matchId, {
+            type: "users_connection_statuses",
+            userId,
+            isConnected: false,
+          });
       }
       console.log("client disconnected");
 

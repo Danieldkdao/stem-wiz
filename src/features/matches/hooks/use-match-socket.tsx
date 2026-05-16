@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { MatchServerMessage } from "../lib/types";
+import { MatchResultReasonType } from "@/db/shared";
 
 type OpponentStatus = "active" | "disconnected";
 
@@ -29,13 +30,17 @@ type MatchSocketContextType = {
   connectToMatch: (matchId: string) => boolean;
   opponentStatus: OpponentStatus;
   broadcastCodeSubmission: (matchId: string) => boolean;
-  broadcastCodeSnapshot: (props: { matchId: string; code: string }) => void;
+  broadcastCodeSnapshot: (props: { matchId: string; code: string }) => boolean;
   broadcastCodeOutput: (props: {
     matchId: string;
     output?: string | null;
     error?: string | null;
-  }) => void;
-  broadcastRunningCode: (matchId: string) => void;
+  }) => boolean;
+  broadcastRunningCode: (matchId: string) => boolean;
+  broadcastMatchFinished: (
+    matchId: string,
+    reason: MatchResultReasonType,
+  ) => boolean;
 };
 
 const MatchSocketContext = createContext<MatchSocketContextType | null>(null);
@@ -162,6 +167,13 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     [send],
   );
 
+  const broadcastMatchFinished = useCallback(
+    (matchId: string, reason: MatchResultReasonType) => {
+      return send({ type: "match_finished", matchId, reason });
+    },
+    [send],
+  );
+
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -180,6 +192,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     broadcastCodeSnapshot,
     broadcastCodeOutput,
     broadcastRunningCode,
+    broadcastMatchFinished,
   };
 
   return (

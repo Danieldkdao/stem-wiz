@@ -1,6 +1,6 @@
 import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { MatchTable } from "./match";
-import { matchResultEnum } from "../shared";
+import { matchResultEnum, matchResultReasonEnum } from "../shared";
 import { user } from "./user";
 import { createdAt, updatedAt } from "../helpers";
 import { relations } from "drizzle-orm";
@@ -10,6 +10,7 @@ export const MatchResultTable = pgTable("match_results", {
     .references(() => MatchTable.id, { onDelete: "cascade" })
     .primaryKey(),
   result: matchResultEnum("result").notNull(),
+  reason: matchResultReasonEnum("reason").notNull(),
   winnerId: text("winner_id").references(() => user.id, {
     onDelete: "cascade",
   }),

@@ -1,19 +1,24 @@
 "use server";
 
 import { db } from "@/db/db";
-import { MatchTable, UserMatchTable } from "@/db/schema";
+import {
+  ArenaProblemTable,
+  MatchTable,
+  user,
+  UserMatchTable,
+} from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   NO_PERMISSION_DATA_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { and, eq, getTableColumns, gt } from "drizzle-orm";
+import { and, eq, exists, getTableColumns, gt, not, sql } from "drizzle-orm";
 import {
   upsertMatchResult,
   upsertMatchSubmission,
 } from "../server/match-results";
-import { auth } from "@/lib/auth/auth";
+import { auth, User } from "@/lib/auth/auth";
 import { headers } from "next/headers";
 
 export const checkExistingMatchAction = async ({
@@ -89,6 +94,7 @@ export const quitMatchAction = async (matchId: string) => {
     const upsertedResult = await upsertMatchResult({
       matchId: existingMatch.id,
       result: "completed",
+      reason: "user_quit",
       winnerId: opponent.userId,
     });
 
@@ -140,7 +146,8 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
   try {
     const upsertedResult = await upsertMatchResult({
       matchId: existingMatch.id,
-      result: "timed_out",
+      result: "completed",
+      reason: "timeout",
     });
 
     if (!upsertedResult) throw new Error("Failed to timeout match.");
@@ -168,11 +175,7 @@ export const handleUserMatchWinAction = async (matchId: string) => {
   }
 
   const existingMatch = await db.query.MatchTable.findFirst({
-    where: and(
-      eq(MatchTable.id, matchId),
-      eq(MatchTable.status, "finished"),
-      gt(MatchTable.expiresAt, new Date()),
-    ),
+    where: eq(MatchTable.id, matchId),
     with: {
       users: true,
     },
@@ -193,6 +196,7 @@ export const handleUserMatchWinAction = async (matchId: string) => {
     const upsertedResult = await upsertMatchResult({
       matchId: existingMatch.id,
       result: "completed",
+      reason: "user_lost_connection",
       winnerId: userId,
     });
 
@@ -264,34 +268,82 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
   }
 };
 
-export const isUserActiveMatch = async () => {
+export const isUserMatchActive = async (matchId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
 
-  // todo
-  const userMatches = await db.query.UserMatchTable.findMany({
+  const userMatch = await db.query.UserMatchTable.findFirst({
     where: eq(UserMatchTable.userId, session.user.id),
     with: {
       match: true,
     },
   });
+
+  return userMatch?.matchId === matchId ? userMatch : null;
 };
 
 export const getObservableMatches = async () => {
-  const matches = await db.query.MatchTable.findMany({
-    where: and(
-      eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
-    ),
-    with: {
-      arenaProblem: true,
-      users: {
-        with: {
-          user: true,
-        },
-      },
-    },
-  });
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return [];
+
+  const matches = await db
+    .select({
+      ...getTableColumns(MatchTable),
+      arenaProblem: getTableColumns(ArenaProblemTable),
+      users: sql<{ userId: string; matchId: string; user: User }[]>`(
+        COALESCE(
+          (
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'userId', umt.user_id,
+                'matchId', umt.match_id,
+                'user', to_jsonb(ut)
+              )
+            )
+            FROM ${UserMatchTable} umt
+            JOIN ${user} AS ut ON ut.id = umt.user_id
+            WHERE umt.match_id = ${MatchTable.id}
+          ),
+          '[]'::jsonb
+        )
+      )`,
+    })
+    .from(MatchTable)
+    .innerJoin(
+      ArenaProblemTable,
+      eq(ArenaProblemTable.id, MatchTable.problemId),
+    )
+    .where(
+      and(
+        eq(MatchTable.status, "in-progress"),
+        not(
+          exists(
+            db
+              .select()
+              .from(UserMatchTable)
+              .where(
+                and(
+                  eq(UserMatchTable.matchId, MatchTable.id),
+                  eq(UserMatchTable.userId, session.user.id),
+                ),
+              ),
+          ),
+        ),
+        gt(MatchTable.expiresAt, new Date()),
+      ),
+    );
+
+  // const matches = await db.query.MatchTable.findMany({
+  //   where: ,
+  //   with: {
+  //     arenaProblem: true,
+  //     users: {
+  //       with: {
+  //         user: true,
+  //       },
+  //     },
+  //   },
+  // });
 
   return matches;
 };

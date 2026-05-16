@@ -5,6 +5,7 @@ import "@mdxeditor/editor/style.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const outfitSans = Outfit({
   variable: "--font-outfit-sans",
@@ -47,8 +48,10 @@ export default function RootLayout({
           enableColorScheme
           disableTransitionOnChange
         >
-          <Toaster />
-          {children}
+          <TooltipProvider>
+            <Toaster />
+            {children}
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
