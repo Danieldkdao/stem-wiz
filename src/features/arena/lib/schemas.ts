@@ -47,4 +47,14 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
     matchId: z.uuid(),
     reason: z.enum(matchResultReasons),
   }),
+  z.object({
+    type: z.literal("chat_message_sent"),
+    matchId: z.uuid(),
+    messageId: z.uuid(),
+    chatId: z.uuid(),
+  }),
+  z.object({
+    type: z.literal("leave_observer_match"),
+    matchId: z.uuid(),
+  }),
 ]);

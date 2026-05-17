@@ -48,7 +48,7 @@ export const MatchHeader = ({
     status,
     opponentStatus,
     lastEvent,
-    error,
+    subscribeMatchEvent,
     broadcastMatchFinished,
   } = useMatchSocket();
   const [confirmationDialog, confirm] = useConfirm(
@@ -58,6 +58,7 @@ export const MatchHeader = ({
   const isMatchFinished =
     lastEvent?.type === "match_finished" ||
     !!(match.result && match.status === "finished");
+  const hasSubmittedCode = match.submissions.length > 0;
 
   useEffect(() => {
     if (status === "connecting" || status === "open" || isMatchFinished) return;
@@ -117,18 +118,22 @@ export const MatchHeader = ({
 
   useEffect(() => {
     if (isMatchFinished) return;
-    if (status !== "open" && match.status === "in-progress") return;
-    if (
-      lastEvent?.type === "opponent_submitted_code" &&
-      match.submissions.length === 0
-    ) {
-      toast.success("Your opponent has submitted their code.");
-      router.refresh();
-    }
-    if (lastEvent?.type === "error") {
-      toast.error(error ?? "Something went wrong behind the scenes.");
-    }
-  }, [status, lastEvent, match.status]);
+    const unsubscribers = [
+      subscribeMatchEvent("opponent_submitted_code", () => {
+        if (!hasSubmittedCode) {
+          toast.success("Your opponent has submitted their code.");
+          router.refresh();
+        }
+      }),
+      subscribeMatchEvent("error", (event) => {
+        toast.error(event.message ?? "Something went wrong behind the scenes.");
+      }),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [subscribeMatchEvent, isMatchFinished, hasSubmittedCode, router]);
 
   const timeValues = getTimeValues(secondsRemaining);
 

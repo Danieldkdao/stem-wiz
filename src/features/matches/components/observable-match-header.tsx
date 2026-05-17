@@ -6,12 +6,15 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import {
   ArenaProblemTable,
+  ChatMessageTable,
+  ChatTable,
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
   UserMatchTable,
 } from "@/db/schema";
 import { statusMap } from "@/features/arena/components";
+import { useMatchChatMessages } from "@/features/chats/hooks/use-match-chat-messages";
 import { User } from "@/lib/auth/auth";
 import { cn, getTimeValues } from "@/lib/utils";
 import {
@@ -21,7 +24,7 @@ import {
   TimerIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useMatchObserverSocket } from "../hooks/use-match-observer-socket";
 import { MatchFinishedDialog } from "./match-finished-dialog";
@@ -33,6 +36,9 @@ type ObservableMatchHeaderProps = {
     users: (typeof UserMatchTable.$inferSelect & { user: User })[];
     result?: typeof MatchResultTable.$inferSelect | null;
     arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    chats: (typeof ChatTable.$inferSelect & {
+      messages: (typeof ChatMessageTable.$inferSelect & { user: User })[];
+    })[];
   };
 };
 
@@ -44,13 +50,19 @@ export const ObservableMatchHeader = ({
     connect,
     subscribeObserverMatch,
     status,
-    error,
+    subscribeObserverEvent,
     matchObserverCount,
     matchCompletionReason,
+    leaveObserverMatch,
     lastEvent,
   } = useMatchObserverSocket();
   const expiresAtMs = match.expiresAt.getTime();
   const [now, setNow] = useState(() => Date.now());
+  const initialChatMessages = match.chats?.[0]?.messages ?? [];
+  const chatMessages = useMatchChatMessages({
+    initialMessages: initialChatMessages,
+  });
+  const [isPending, startTransition] = useTransition();
 
   const secondsRemaining = Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
   const isMatchFinished =
@@ -61,48 +73,57 @@ export const ObservableMatchHeader = ({
     if (status === "connecting" || status === "open" || isMatchFinished) return;
 
     connect();
-  }, [status]);
+  }, [connect, isMatchFinished, status]);
 
   useEffect(() => {
     if (status !== "open" || isMatchFinished) return;
 
     subscribeObserverMatch(match.id);
-  }, [status]);
+  }, [isMatchFinished, match.id, status, subscribeObserverMatch]);
 
   useEffect(() => {
     if (isMatchFinished) return;
-    if (error) {
-      toast.error(
-        error ||
-          "Something went wrong behind the scenes. Please refresh the page.",
-      );
-    }
-  }, [error]);
+    const unsubscribers = [
+      subscribeObserverEvent("user_submitted_code", (event) => {
+        const user = match.users.find((user) => user.userId === event.userId);
+        toast.success(`${user?.user.name || "User"} has submitted their code.`);
+        router.refresh();
+      }),
+      subscribeObserverEvent("connection_error", (event) => {
+        toast.error(event.message ?? "Connection Error");
+      }),
+      subscribeObserverEvent("error", (event) => {
+        toast.error(event.message ?? "Something went wrong behind the scenes.");
+      }),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [isMatchFinished, match.users, subscribeObserverEvent, router]);
 
   useEffect(() => {
     if (isMatchFinished) return;
-    if (status !== "open" && match.status === "in-progress") return;
-    if (lastEvent?.type === "user_submitted_code") {
-      const user = match.users.find((user) => user.userId === user.userId);
-      toast.success(`${user?.user.name || "User"} has submitted their code.`);
-      router.refresh();
-    }
-    if (lastEvent?.type === "error") {
-      toast.error(error ?? "Something went wrong behind the scenes.");
-    }
-  }, [status, lastEvent, match.status]);
 
-  useEffect(() => {
-    if (isMatchFinished) return;
-    if (secondsRemaining <= 0 && match.status === "in-progress") return;
-    setNow(Date.now());
-    const interval = setInterval(async () => {
-      if (secondsRemaining <= 0 && match.status === "in-progress") return;
+    const interval = setInterval(() => {
       setNow(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [expiresAtMs]);
+  }, [isMatchFinished]);
+
+  const handleLeaveMatch = async () => {
+    startTransition(async () => {
+      leaveObserverMatch(match.id);
+
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve("Success!");
+        }, 1500);
+      });
+      router.push("/arena/observe");
+    });
+  };
 
   const timeValues = getTimeValues(secondsRemaining);
 
@@ -125,7 +146,10 @@ export const ObservableMatchHeader = ({
                 <PanelRightOpenIcon />
               </Button>
             </SheetTrigger>
-            <ObserverMatchSliderContent match={match} />
+            <ObserverMatchSliderContent
+              match={match}
+              chatMessages={chatMessages}
+            />
           </Sheet>
           <Separator orientation="vertical" />
           <div className="flex items-center gap-2">
@@ -155,9 +179,17 @@ export const ObservableMatchHeader = ({
         </div>
 
         <div className="flex justify-end items-center">
-          <Button variant="destructive">
-            <LoadingSwap isLoading={false}>Leave</LoadingSwap>
-            <LogOutIcon />
+          <Button
+            variant="destructive"
+            disabled={isPending}
+            onClick={handleLeaveMatch}
+          >
+            <LoadingSwap isLoading={isPending}>
+              <div className="flex items-center gap-2">
+                Leave
+                <LogOutIcon />
+              </div>
+            </LoadingSwap>
           </Button>
         </div>
       </div>

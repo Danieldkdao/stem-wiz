@@ -151,7 +151,7 @@ const ObserverUserPanel = ({
 };
 
 export const ObserverMatchView = ({ match }: { match: ObserverMatch }) => {
-  const { status, lastEvent } = useMatchObserverSocket();
+  const { subscribeObserverEvent } = useMatchObserverSocket();
 
   const [users, setUsers] = useState<ObservedUser[]>(() =>
     getInitialUsers(match),
@@ -206,38 +206,33 @@ export const ObserverMatchView = ({ match }: { match: ObserverMatch }) => {
   }, [match.users, match.submissions]);
 
   useEffect(() => {
-    if (status !== "open") return;
-
-    const lastEventType = lastEvent?.type;
-    switch (lastEventType) {
-      case "observer_code_snapshot":
-        updateUsers({ code: lastEvent.code }, lastEvent.userId);
-        break;
-      case "observer_code_output":
+    const unsubscribers = [
+      subscribeObserverEvent("observer_code_snapshot", (event) => {
+        updateUsers({ code: event.code }, event.userId);
+      }),
+      subscribeObserverEvent("observer_code_output", (event) => {
         updateUsers(
-          {
-            output: lastEvent.output,
-            error: lastEvent.error,
-            isRunningCode: false,
-          },
-          lastEvent.userId,
+          { output: event.output, error: event.error, isRunningCode: false },
+          event.userId,
         );
-        break;
-      case "observer_running_code":
-        updateUsers({ isRunningCode: true }, lastEvent.userId);
-        break;
-      case "user_submitted_code":
-        updateUsers({ hasSubmittedCode: true }, lastEvent.userId);
-        break;
-      case "users_connection_statuses":
-        lastEvent.users.forEach((user) => {
+      }),
+      subscribeObserverEvent("observer_running_code", (event) => {
+        updateUsers({ isRunningCode: true }, event.userId);
+      }),
+      subscribeObserverEvent("user_submitted_code", (event) => {
+        updateUsers({ hasSubmittedCode: true }, event.userId);
+      }),
+      subscribeObserverEvent("users_connection_statuses", (event) => {
+        event.users.forEach((user) => {
           updateUsers({ isConnected: user.isConnected }, user.userId);
         });
-        break;
-      default:
-        return;
-    }
-  }, [status, lastEvent, updateUsers]);
+      }),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [subscribeObserverEvent, updateUsers]);
 
   const defaultPanelSize = users.length > 0 ? 100 / users.length : 100;
 

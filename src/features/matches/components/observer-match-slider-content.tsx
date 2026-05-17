@@ -8,14 +8,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArenaProblemTable, MatchTable } from "@/db/schema";
 import { ArenaProblemDetails } from "@/features/arena-problems/components/arena-problem-details";
 import { MatchChatInput } from "@/features/chats/components/match-chat-input";
+import { MatchChatMessageList } from "@/features/chats/components/match-chat-message-list";
+import { MatchChatMessage } from "@/features/chats/hooks/use-match-chat-messages";
 import { InfoIcon, MessageSquareIcon } from "lucide-react";
 
 export const ObserverMatchSliderContent = ({
   match,
+  chatMessages,
 }: {
   match: typeof MatchTable.$inferSelect & {
     arenaProblem: typeof ArenaProblemTable.$inferSelect;
   };
+  chatMessages: MatchChatMessage[];
 }) => {
   return (
     <SheetContent side="left" showCloseButton={false}>
@@ -25,10 +29,10 @@ export const ObserverMatchSliderContent = ({
           View match details and observer chat.
         </SheetDescription>
       </SheetHeader>
-      <div className="w-full h-full overflow-y-auto p-4">
+      <div className="w-full h-full p-4">
         <Tabs
           defaultValue="problem-info"
-          className="flex flex-col gap-4 h-full"
+          className="flex flex-col min-h-0 gap-4 h-full"
         >
           <TabsList className="w-full">
             <TabsTrigger value="problem-info">
@@ -40,13 +44,16 @@ export const ObserverMatchSliderContent = ({
               Chat
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="problem-info">
+          <TabsContent
+            value="problem-info"
+            className="w-full h-full overflow-auto"
+          >
             <ArenaProblemDetails isClient arenaProblem={match.arenaProblem} />
           </TabsContent>
-          <TabsContent value="chat">
-            <div className="w-full h-full flex flex-col">
-              <div className="p-4 flex-1">messages go here</div>
-              <MatchChatInput />
+          <TabsContent value="chat" className="min-h-0 w-full overflow-hidden">
+            <div className="w-full h-full min-h-0 overflow-hidden flex flex-col">
+              <MatchChatMessageList messages={chatMessages} />
+              <MatchChatInput matchId={match.id} />
             </div>
           </TabsContent>
         </Tabs>

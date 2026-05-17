@@ -4,6 +4,7 @@ import { WebSocketServer } from "ws";
 import { clientMessageSchema } from "../lib/schemas";
 import { ArenaSocketServer, ArenaWebSocket, UpgradeSocket } from "../lib/types";
 import {
+  cleanupUserConnection,
   getArenaWsState,
   getOpponentSocket,
   sendToClient,
@@ -19,8 +20,10 @@ import {
   broadcastUpdatedMatchObserverCount,
   broadcastUserSubmittedCode,
   connectToObservers,
+  leaveObserverMatch,
   subscribeObserverMatch,
 } from "./match-observers";
+import { broadcastChatMessageSent } from "./chats";
 
 const toHeaders = (req: IncomingMessage) => {
   const headers = new Headers();
@@ -51,13 +54,8 @@ const rejectUpgrade = (
 };
 
 export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
-  const {
-    usersInWaitingRoom,
-    activeMatchesByUser,
-    socketsByUser,
-    usersInObservingRoom,
-    activeObserversByUser,
-  } = getArenaWsState();
+  const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
+    getArenaWsState();
   if (server.arenaWsInitialized && server.arenaWss) {
     return server.arenaWss;
   }
@@ -162,6 +160,12 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
           case "match_finished":
             await broadcastMatchFinished(ws, message.matchId, message.reason);
             break;
+          case "chat_message_sent":
+            await broadcastChatMessageSent(ws, message.matchId, message);
+            break;
+          case "leave_observer_match":
+            await leaveObserverMatch(ws, message.matchId);
+            break;
           default:
             throw new Error(
               `Invalid message type: ${messageType satisfies never}`,
@@ -202,16 +206,7 @@ export const initArenaWebSocketServer = (server: ArenaSocketServer) => {
       }
       console.log("client disconnected");
 
-      // FOR TESING PURPOSES: PLEASE REMOVE LATER
-      socketsByUser.delete(userId);
-      console.log("USER SOCKETS CLEARED");
-      activeMatchesByUser.delete(userId);
-      console.log("ACTIVE MATCHES CLEARED");
-      usersInWaitingRoom.delete(userId);
-      console.log("WAITING ROOM CLEARED");
-      usersInObservingRoom.delete(userId);
-      console.log("OBSERVING ROOM CLEARED");
-      activeObserversByUser.delete(userId);
+      cleanupUserConnection(userId);
       await broadcastUpdatedMatchObserverCount(userId);
     });
   });

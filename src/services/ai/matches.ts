@@ -53,6 +53,7 @@ export const generateMatchResults = async (matchId: string) => {
       matchId: existingMatch.id,
       result: "completed",
       winnerId: winnerId === "none" ? null : winnerId,
+      reason: "traditional",
     });
 
     if (!upsertedResult) {

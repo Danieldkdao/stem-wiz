@@ -21,6 +21,21 @@ import {
 import { auth, User } from "@/lib/auth/auth";
 import { headers } from "next/headers";
 
+export const confirmExistingMatch = async (matchId: string) => {
+  const [existingMatch] = await db
+    .select()
+    .from(MatchTable)
+    .where(
+      and(
+        eq(MatchTable.id, matchId),
+        eq(MatchTable.status, "in-progress"),
+        gt(MatchTable.expiresAt, new Date()),
+      ),
+    );
+
+  return existingMatch;
+};
+
 export const checkExistingMatchAction = async ({
   id,
   forResults = false,
@@ -46,6 +61,15 @@ export const checkExistingMatchAction = async ({
         },
       },
       result: true,
+      chats: {
+        with: {
+          messages: {
+            with: {
+              user: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -273,13 +297,16 @@ export const isUserMatchActive = async (matchId: string) => {
   if (!session) return null;
 
   const userMatch = await db.query.UserMatchTable.findFirst({
-    where: eq(UserMatchTable.userId, session.user.id),
+    where: and(
+      eq(UserMatchTable.userId, session.user.id),
+      eq(UserMatchTable.matchId, matchId),
+    ),
     with: {
       match: true,
     },
   });
 
-  return userMatch?.matchId === matchId ? userMatch : null;
+  return userMatch ?? null;
 };
 
 export const getObservableMatches = async () => {
@@ -332,18 +359,6 @@ export const getObservableMatches = async () => {
         gt(MatchTable.expiresAt, new Date()),
       ),
     );
-
-  // const matches = await db.query.MatchTable.findMany({
-  //   where: ,
-  //   with: {
-  //     arenaProblem: true,
-  //     users: {
-  //       with: {
-  //         user: true,
-  //       },
-  //     },
-  //   },
-  // });
 
   return matches;
 };

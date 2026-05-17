@@ -7,3 +7,4 @@ export * from "./schemas/arena-problem";
 export * from "./schemas/match-result";
 export * from "./schemas/match-submission";
 export * from "./schemas/chat";
+export * from "./schemas/chat-message";

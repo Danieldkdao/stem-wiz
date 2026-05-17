@@ -59,8 +59,23 @@ export const getOpponentSocket = (userId: string) => {
 };
 
 export const cleanupUserConnection = (userId: string) => {
-  const { socketsByUser, usersInWaitingRoom } = getArenaWsState();
+  const {
+    socketsByUser,
+    usersInWaitingRoom,
+    activeMatchesByUser,
+    activeObserversByUser,
+    usersInObservingRoom,
+  } = getArenaWsState();
 
+  // FOR TESING PURPOSES: PLEASE CHECK AND CONFIRM LATER
   socketsByUser.delete(userId);
+  console.log("USER SOCKETS CLEARED");
+  activeMatchesByUser.delete(userId);
+  console.log("ACTIVE MATCHES CLEARED");
   usersInWaitingRoom.delete(userId);
+  console.log("WAITING ROOM CLEARED");
+  usersInObservingRoom.delete(userId);
+  console.log("OBSERVING ROOM CLEARED");
+  activeObserversByUser.delete(userId);
+  console.log("ACTIVE OBSERVED MATCHES CLEARED");
 };

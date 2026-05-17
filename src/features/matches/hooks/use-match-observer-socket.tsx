@@ -11,7 +11,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { MatchObserverServerMessage } from "../lib/types";
+import {
+  MatchObserverServerMessage,
+  MatchObserverServerMessageType,
+} from "../lib/types";
 import { MatchResultReasonType } from "@/db/shared";
 
 const getSocketUrl = () => {
@@ -21,15 +24,28 @@ const getSocketUrl = () => {
 };
 
 type MatchObserverSocketContextType = {
-  error: string | null;
   status: SocketStatus;
   lastEvent: ServerMessage | null;
   matchObserverCount: number;
   matchCompletionReason: MatchResultReasonType | null;
+  subscribeObserverEvent: <T extends MatchObserverServerMessageType>(
+    type: T,
+    listener: ObserverEventListener<T>,
+  ) => () => void;
   connect: () => Promise<void>;
   connectToMatchObservers: () => boolean;
   subscribeObserverMatch: (matchId: string) => boolean;
+  broadcastChatMessageSent: (message: {
+    chatId: string;
+    matchId: string;
+    messageId: string;
+  }) => boolean;
+  leaveObserverMatch: (matchId: string) => void;
 };
+
+export type ObserverEventListener<T extends MatchObserverServerMessageType> = (
+  event: Extract<MatchObserverServerMessage, { type: T }>,
+) => void;
 
 const MatchObserverSocketContext =
   createContext<MatchObserverSocketContextType | null>(null);
@@ -39,9 +55,14 @@ export const MatchObserverSocketProvider = ({
 }: {
   children: ReactNode;
 }) => {
+  const listenersRef = useRef(
+    new Map<
+      MatchObserverServerMessageType,
+      Set<(event: MatchObserverServerMessage) => void>
+    >(),
+  );
   const socketRef = useRef<WebSocket | null>(null);
 
-  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<SocketStatus>("idle");
   const [lastEvent, setLastEvent] = useState<MatchObserverServerMessage | null>(
     null,
@@ -49,6 +70,24 @@ export const MatchObserverSocketProvider = ({
   const [matchCompletionReason, setMatchCompletionReason] =
     useState<MatchResultReasonType | null>(null);
   const [matchObserverCount, setMatchObserverCount] = useState(0);
+
+  const subscribeObserverEvent = useCallback(
+    <T extends MatchObserverServerMessageType>(
+      type: T,
+      listener: ObserverEventListener<T>,
+    ) => {
+      const listeners = listenersRef.current.get(type) ?? new Set();
+      listeners.add(listener as (event: MatchObserverServerMessage) => void);
+      listenersRef.current.set(type, listeners);
+
+      return () => {
+        listeners.delete(
+          listener as (event: MatchObserverServerMessage) => void,
+        );
+      };
+    },
+    [],
+  );
 
   const connect = useCallback(async () => {
     if (
@@ -77,6 +116,14 @@ export const MatchObserverSocketProvider = ({
 
         setLastEvent(message);
 
+        listenersRef.current.get(message.type)?.forEach((listener) => {
+          try {
+            listener(message);
+          } catch (error) {
+            console.error(error);
+          }
+        });
+
         const messageType = message.type;
 
         switch (messageType) {
@@ -86,10 +133,6 @@ export const MatchObserverSocketProvider = ({
             break;
           case "connection_error":
             setStatus("error");
-            setError(message.message);
-            break;
-          case "error":
-            setError(message.message);
             break;
           case "match_finished":
             setMatchCompletionReason(message.reason);
@@ -100,6 +143,8 @@ export const MatchObserverSocketProvider = ({
           case "observer_code_output":
           case "observer_running_code":
           case "user_submitted_code":
+          case "new_chat_message":
+          case "error":
             break;
           default:
             throw new Error(
@@ -108,8 +153,6 @@ export const MatchObserverSocketProvider = ({
         }
       } catch (error) {
         console.error(error);
-        setError("Something went wrong behind the scenes.");
-        // todo: implement better error handling and
       }
     };
     socket.onerror = () => {
@@ -143,6 +186,17 @@ export const MatchObserverSocketProvider = ({
     [send],
   );
 
+  const broadcastChatMessageSent = useCallback(
+    (message: { chatId: string; matchId: string; messageId: string }) => {
+      return send({ type: "chat_message_sent", ...message });
+    },
+    [send],
+  );
+
+  const leaveObserverMatch = (matchId: string) => {
+    return send({ type: "leave_observer_match", matchId });
+  };
+
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -151,14 +205,16 @@ export const MatchObserverSocketProvider = ({
   }, []);
 
   const values: MatchObserverSocketContextType = {
-    error,
     status,
     lastEvent,
     matchObserverCount,
     connect,
+    subscribeObserverEvent,
     connectToMatchObservers,
     subscribeObserverMatch,
     matchCompletionReason,
+    broadcastChatMessageSent,
+    leaveObserverMatch,
   };
 
   return (

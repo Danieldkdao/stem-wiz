@@ -1,5 +1,6 @@
 "use client";
 
+import { MatchResultReasonType } from "@/db/shared";
 import { ClientMessage, ServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
@@ -11,8 +12,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { MatchServerMessage } from "../lib/types";
-import { MatchResultReasonType } from "@/db/shared";
+import { MatchServerMessage, MatchServerMessageType } from "../lib/types";
 
 type OpponentStatus = "active" | "disconnected";
 
@@ -23,11 +23,14 @@ const getSocketUrl = () => {
 };
 
 type MatchSocketContextType = {
-  error: string | null;
   status: SocketStatus;
   lastEvent: ServerMessage | null;
   connect: () => Promise<void>;
   connectToMatch: (matchId: string) => boolean;
+  subscribeMatchEvent: <T extends MatchServerMessageType>(
+    type: T,
+    listener: MatchEventListener<T>,
+  ) => () => void;
   opponentStatus: OpponentStatus;
   broadcastCodeSubmission: (matchId: string) => boolean;
   broadcastCodeSnapshot: (props: { matchId: string; code: string }) => boolean;
@@ -43,16 +46,38 @@ type MatchSocketContextType = {
   ) => boolean;
 };
 
+export type MatchEventListener<T extends MatchServerMessageType> = (
+  event: Extract<MatchServerMessage, { type: T }>,
+) => void;
+
 const MatchSocketContext = createContext<MatchSocketContextType | null>(null);
 
 export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
+  const listenersRef = useRef(
+    new Map<MatchServerMessageType, Set<(event: MatchServerMessage) => void>>(),
+  );
   const socketRef = useRef<WebSocket | null>(null);
 
-  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<SocketStatus>("idle");
   const [lastEvent, setLastEvent] = useState<MatchServerMessage | null>(null);
   const [opponentStatus, setOpponentStatus] =
     useState<OpponentStatus>("active");
+
+  const subscribeMatchEvent = useCallback(
+    <T extends MatchServerMessageType>(
+      type: T,
+      listener: MatchEventListener<T>,
+    ) => {
+      const listeners = listenersRef.current.get(type) ?? new Set();
+      listeners.add(listener as (event: MatchServerMessage) => void);
+      listenersRef.current.set(type, listeners);
+
+      return () => {
+        listeners.delete(listener as (event: MatchServerMessage) => void);
+      };
+    },
+    [],
+  );
 
   const connect = useCallback(async () => {
     if (
@@ -81,6 +106,14 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
 
         setLastEvent(message);
 
+        listenersRef.current.get(message.type)?.forEach((listener) => {
+          try {
+            listener(message);
+          } catch (error) {
+            console.error(error);
+          }
+        });
+
         const messageType = message.type;
 
         switch (messageType) {
@@ -91,11 +124,8 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
             setOpponentStatus("active");
             break;
           case "opponent_submitted_code":
-            break;
           case "match_finished":
-            break;
           case "error":
-            setError(message.message);
             break;
           default:
             throw new Error(
@@ -104,8 +134,6 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error(error);
-        setError("Something went wrong behind the scenes.");
-        // todo: implement better error handling and
       }
     };
     socket.onerror = () => {
@@ -182,11 +210,11 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const values: MatchSocketContextType = {
-    error,
     status,
     lastEvent,
     connect,
     connectToMatch,
+    subscribeMatchEvent,
     opponentStatus,
     broadcastCodeSubmission,
     broadcastCodeSnapshot,

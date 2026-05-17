@@ -3,10 +3,10 @@ import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
 import { matchStatusEnum } from "../shared";
 import { ArenaProblemTable } from "./arena-problem";
-import { UserMatchTable } from "./user-match";
+import { ChatTable } from "./chat";
 import { MatchResultTable } from "./match-result";
 import { MatchSubmissionTable } from "./match-submission";
-import { ChatTable } from "./chat";
+import { UserMatchTable } from "./user-match";
 
 export const MatchTable = pgTable("matches", {
   id,

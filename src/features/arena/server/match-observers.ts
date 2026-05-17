@@ -1,6 +1,10 @@
 import { db } from "@/db/db";
 import { ArenaWebSocket, ServerMessage } from "../lib/types";
-import { getArenaWsState, sendToUser } from "./connection-state";
+import {
+  cleanupUserConnection,
+  getArenaWsState,
+  sendToUser,
+} from "./connection-state";
 import { and, eq } from "drizzle-orm";
 import { MatchTable, UserMatchTable } from "@/db/schema";
 import { MatchResultReasonType } from "@/db/schema";
@@ -58,19 +62,27 @@ export const confirmMatchParticipant = async (
   }
 };
 
-export const broadcastUpdatedMatchObserverCount = async (userId: string) => {
+export const broadcastUpdatedMatchObserverCount = async (
+  userId: string,
+  matchId?: string,
+) => {
   const { activeObserversByUser } = getArenaWsState();
-  const matchId = activeObserversByUser.get(userId);
-  if (!matchId) return;
+  let currentMatchId = matchId;
+
+  if (!currentMatchId) {
+    const { activeObserversByUser } = getArenaWsState();
+    currentMatchId = activeObserversByUser.get(userId);
+    if (!currentMatchId) return;
+  }
 
   const activeObserversInMatch = activeObserversByUser
     .entries()
     .filter(([_, value]) => {
-      return value === matchId;
+      return value === currentMatchId;
     })
     .toArray();
 
-  await broadcastToMatchObservers(matchId, {
+  await broadcastToMatchObservers(currentMatchId, {
     type: "match_observer_count_updated",
     newCount: activeObserversInMatch.length,
   });
@@ -201,4 +213,24 @@ export const subscribeObserverMatch = async (
       };
     }),
   });
+};
+
+export const leaveObserverMatch = async (
+  ws: ArenaWebSocket,
+  matchId: string,
+) => {
+  const { activeObserversByUser } = getArenaWsState();
+
+  const userId = ws.user.id;
+
+  if (activeObserversByUser.get(userId) !== matchId) {
+    sendToUser(userId, {
+      type: "error",
+      message: "You cannot leave a match you are not observing.",
+    });
+    return;
+  }
+
+  cleanupUserConnection(userId);
+  broadcastUpdatedMatchObserverCount(userId, matchId);
 };

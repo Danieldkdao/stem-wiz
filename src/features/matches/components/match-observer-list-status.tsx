@@ -8,8 +8,13 @@ import { toast } from "sonner";
 
 export const MatchObserverListStatus = () => {
   const router = useRouter();
-  const { status, connect, error, lastEvent, connectToMatchObservers } =
-    useMatchObserverSocket();
+  const {
+    status,
+    connect,
+    lastEvent,
+    subscribeObserverEvent,
+    connectToMatchObservers,
+  } = useMatchObserverSocket();
 
   useEffect(() => {
     if (status === "connecting" || status === "open") return;
@@ -31,10 +36,14 @@ export const MatchObserverListStatus = () => {
   }, [status, lastEvent]);
 
   useEffect(() => {
-    if (lastEvent?.type === "error" && error) {
-      toast.error(error);
-    }
-  }, [error]);
+    const unsubscribe = subscribeObserverEvent("error", (event) => {
+      toast.error(event.message || "Something went wrong behind the scenes.");
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [subscribeObserverEvent]);
 
   return (
     <div className="flex items-center gap-2 bg-card rounded-md py-2 px-4 border w-fit">

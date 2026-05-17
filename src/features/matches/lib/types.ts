@@ -42,6 +42,18 @@ export type MatchObserverServerMessage =
       output?: string | null;
       error?: string | null;
     }
+  | {
+      type: "new_chat_message";
+      messageId: string;
+      chatId: string;
+      user: {
+        id: string;
+        name: string;
+        image?: string | undefined | null;
+      };
+      message: string;
+      createdAt: Date;
+    }
   | { type: "observer_running_code"; userId: string }
   | { type: "user_submitted_code"; userId: string }
   | { type: "match_finished"; reason: MatchResultReasonType };

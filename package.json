@@ -16,6 +16,7 @@
   "dependencies": {
     "@ai-sdk/mistral": "^3.0.36",
     "@ai-sdk/react": "^3.0.182",
+    "@base-ui/react": "^1.4.1",
     "@hookform/resolvers": "^5.2.2",
     "@mdxeditor/editor": "^4.0.0",
     "@monaco-editor/react": "^4.7.0",
