@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
 import { UserMatchTable } from "./user-match";
-import { UserProfileTable } from "./user-settings";
+import { UserProfileTable } from "./user-profile";
 import { ChatMessageTable } from "./chat-message";
 
 export const user = pgTable("user", {

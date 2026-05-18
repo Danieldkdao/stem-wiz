@@ -3,7 +3,7 @@ import { auth } from "./lib/auth/auth";
 import { db } from "./db/db";
 import { user } from "./db/schema";
 import { eq } from "drizzle-orm";
-import { hasUserSettings } from "./features/user/server/user-settings";
+import { hasUserSettings } from "./features/user/server/user-profiles";
 
 const authRoutes = new Set(["/sign-in", "/sign-up"]);
 const protectedRoutePrefixes = ["/dashboard", "/arena"];

@@ -21,10 +21,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { upsertUserSettingsAction } from "../actions/actions";
+import { upsertUserProfileAction } from "../actions/actions";
 import { onboardingSchema, OnboardingSchemaType } from "../actions/schemas";
 import {
-  formatExperienceLevel,
+  formatUserExperienceLevel,
   formatProgrammingLanguage,
 } from "../lib/formatters";
 
@@ -39,7 +39,7 @@ export const OnboardingForm = () => {
   });
 
   const handleOnboarding = async (data: OnboardingSchemaType) => {
-    const response = await upsertUserSettingsAction(data);
+    const response = await upsertUserProfileAction(data);
     if (response.error) {
       toast.error(response.message);
     } else {
@@ -92,7 +92,7 @@ export const OnboardingForm = () => {
                 <SelectContent>
                   {userExperienceLevels.map((level) => (
                     <SelectItem value={level} key={level}>
-                      {formatExperienceLevel(level)}
+                      {formatUserExperienceLevel(level)}
                     </SelectItem>
                   ))}
                 </SelectContent>

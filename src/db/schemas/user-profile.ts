@@ -26,13 +26,13 @@ export const UserProfileTable = pgTable("user_profiles", {
   collaborationStyle: userCollaborationStyleEnum("collaboration_style"),
   lookingFor: userLookingForEnum("looking_for"),
   availability: jsonb("availability").$type<{
-    days?: UserAvailabilityDayType;
-    timeOfDay?: UserAvailabilityTimeOfDayType;
+    days?: UserAvailabilityDayType[];
+    timeOfDay?: UserAvailabilityTimeOfDayType[];
     hoursPerWeek?: number;
   }>(),
   goals: jsonb("goals").$type<UserGoalType[]>(),
   githubUrl: varchar("github_url"),
-  porfolioUrl: varchar("portfolio_url"),
+  portfolioUrl: varchar("portfolio_url"),
   linkedinUrl: varchar("linkedin_url"),
 });
 

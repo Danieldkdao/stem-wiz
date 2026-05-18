@@ -1,9 +1,9 @@
 import { db } from "@/db/db";
 import { UserProfileTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidateUserSettingsCache } from "./cache/user-settings";
+import { revalidateUserProfileCache } from "./cache/user-profiles";
 
-export const upsertUserSettings = async (
+export const upsertUserProfile = async (
   userSettings: typeof UserProfileTable.$inferInsert,
 ) => {
   const [upsertedUserSettings] = await db
@@ -15,7 +15,7 @@ export const upsertUserSettings = async (
     })
     .returning();
 
-  revalidateUserSettingsCache(upsertedUserSettings.userId);
+  revalidateUserProfileCache(upsertedUserSettings.userId);
 
   return upsertedUserSettings;
 };

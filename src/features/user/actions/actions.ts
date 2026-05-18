@@ -1,16 +1,19 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { onboardingSchema, OnboardingSchemaType } from "./schemas";
 import {
   GENERAL_ERROR_MESSAGE,
   INVALID_DATA_ERROR_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { upsertUserSettings } from "../server/user-settings";
+import { upsertUserProfile } from "../server/user-profiles";
+import { userProfileSchema, UserProfileSchemaType } from "./schemas";
+import { db } from "@/db/db";
+import { UserProfileTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
-export const upsertUserSettingsAction = async (
-  unsafeData: OnboardingSchemaType,
+export const upsertUserProfileAction = async (
+  unsafeData: UserProfileSchemaType,
 ) => {
   const { userId } = await getCurrentUser();
 
@@ -21,7 +24,7 @@ export const upsertUserSettingsAction = async (
     };
   }
 
-  const { data, success } = onboardingSchema.safeParse(unsafeData);
+  const { data, success } = userProfileSchema.safeParse(unsafeData);
   if (!success) {
     return {
       error: true,
@@ -30,7 +33,7 @@ export const upsertUserSettingsAction = async (
   }
 
   try {
-    const response = await upsertUserSettings({ ...data, userId });
+    const response = await upsertUserProfile({ ...data, userId });
 
     if (!response) {
       throw new Error("Failed to update user settings.");
@@ -47,4 +50,16 @@ export const upsertUserSettingsAction = async (
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const getUserProfileAction = async () => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+
+  const [existingUserProfile] = await db
+    .select()
+    .from(UserProfileTable)
+    .where(eq(UserProfileTable.userId, userId));
+
+  return existingUserProfile ?? null;
 };
