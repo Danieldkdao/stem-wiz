@@ -1,15 +1,13 @@
 "use client";
 
-import { Controller, useForm } from "react-hook-form";
-import { onboardingSchema, OnboardingSchemaType } from "../actions/schemas";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
+import { LoadingSwap } from "@/components/ui/loading-swap";
 import {
   Select,
   SelectContent,
@@ -17,15 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { programmingLanguages } from "@/db/shared";
-import { Textarea } from "@/components/ui/textarea";
+import { programmingLanguages, userExperienceLevels } from "@/db/shared";
 import { cn, getInputErrorStyle } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { LoadingSwap } from "@/components/ui/loading-swap";
-import { upsertUserSettingsAction } from "../actions/actions";
-import { toast } from "sonner";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { formatProgrammingLanguage } from "../lib/formatters";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { upsertUserSettingsAction } from "../actions/actions";
+import { onboardingSchema, OnboardingSchemaType } from "../actions/schemas";
+import {
+  formatExperienceLevel,
+  formatProgrammingLanguage,
+} from "../lib/formatters";
 
 export const OnboardingForm = () => {
   const router = useRouter();
@@ -33,15 +34,12 @@ export const OnboardingForm = () => {
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       preferredLanguage: undefined,
-      additionalInformation: undefined,
+      experienceLevel: undefined,
     },
   });
 
-  const handleOnboardingCompletion = async (data: OnboardingSchemaType) => {
-    const response = await upsertUserSettingsAction({
-      ...data,
-      additionalInformation: data.additionalInformation?.trim(),
-    });
+  const handleOnboarding = async (data: OnboardingSchemaType) => {
+    const response = await upsertUserSettingsAction(data);
     if (response.error) {
       toast.error(response.message);
     } else {
@@ -51,10 +49,7 @@ export const OnboardingForm = () => {
   };
 
   return (
-    <form
-      onSubmit={form.handleSubmit(handleOnboardingCompletion)}
-      className="space-y-4"
-    >
+    <form onSubmit={form.handleSubmit(handleOnboarding)} className="space-y-4">
       <Controller
         name="preferredLanguage"
         control={form.control}
@@ -82,26 +77,27 @@ export const OnboardingForm = () => {
         )}
       />
       <Controller
-        name="additionalInformation"
+        name="experienceLevel"
         control={form.control}
         render={({ field: { value, onChange, ...props }, fieldState }) => (
           <Field>
-            <FieldLabel>Additional Information (optional)</FieldLabel>
+            <FieldLabel>Experience Level</FieldLabel>
             <FieldContent>
-              <Textarea
-                {...props}
-                value={value ?? ""}
-                onChange={(e) =>
-                  onChange(e.target.value.trim() ? e.target.value : undefined)
-                }
-                placeholder="I like to learn through examples. I want to learn Python but I am most comfortable with Java."
-                className={cn("max-h-32", getInputErrorStyle(fieldState.error))}
-              />
+              <Select {...props} value={value} onValueChange={onChange}>
+                <SelectTrigger
+                  className={cn("w-full", getInputErrorStyle(fieldState.error))}
+                >
+                  <SelectValue placeholder="Select your experience level..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {userExperienceLevels.map((level) => (
+                    <SelectItem value={level} key={level}>
+                      {formatExperienceLevel(level)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FieldContent>
-            <FieldDescription>
-              Enter any additional preferences or information here that we can
-              use to give you a better experience on our platform.
-            </FieldDescription>
             {fieldState.error && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}

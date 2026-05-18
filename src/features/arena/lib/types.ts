@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { Server as HttpServer } from "http";
-import { UserSettingsTable } from "@/db/schema";
+import { UserProfileTable } from "@/db/schema";
 import z from "zod";
 import { clientMessageSchema } from "./schemas";
 import {
@@ -60,5 +60,5 @@ export type UpgradeSocket = {
 };
 
 export type WaitingRoomUser = UserInfo & {
-  userSettings: typeof UserSettingsTable.$inferSelect;
+  userSettings: typeof UserProfileTable.$inferSelect;
 };

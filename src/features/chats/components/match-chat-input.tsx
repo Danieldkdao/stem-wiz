@@ -41,7 +41,7 @@ export const MatchChatInput = ({ matchId }: { matchId: string }) => {
     <div className="w-full p-4 bg-card">
       <form
         onSubmit={form.handleSubmit(sendChatMessage)}
-        className="flex flex-col gap-2 items-end bg-transparent dark:bg-input/30 p-4 rounded-md"
+        className="flex flex-col gap-2 items-end bg-transparent border dark:border-none dark:bg-input/30 p-4 rounded-md"
       >
         <Controller
           name="text"
@@ -51,7 +51,7 @@ export const MatchChatInput = ({ matchId }: { matchId: string }) => {
               <FieldContent>
                 <Textarea
                   className={cn(
-                    "w-full border-none ring-0 outline-0 max-h-32 focus-visible:ring-0 focus-visible:outline-0 dark:bg-transparent text-lg md:text-lg",
+                    "w-full border-none shadow-none ring-0 outline-0 max-h-32 focus-visible:ring-0 focus-visible:outline-0 dark:bg-transparent text-lg md:text-lg",
                     getInputErrorStyle(fieldState.error),
                   )}
                   placeholder="Please be kind and respectful..."

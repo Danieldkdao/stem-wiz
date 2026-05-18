@@ -1,13 +1,10 @@
-import { programmingLanguages } from "@/db/shared";
+import { programmingLanguages, userExperienceLevels } from "@/db/shared";
 import z from "zod";
 
 export const onboardingSchema = z.object({
   preferredLanguage: z.enum(programmingLanguages, {
     error: "Please select a preferred language.",
   }),
-  additionalInformation: z
-    .string()
-    .min(10, { error: "Please enter at least 10 characters." })
-    .optional(),
+  experienceLevel: z.enum(userExperienceLevels),
 });
 export type OnboardingSchemaType = z.infer<typeof onboardingSchema>;

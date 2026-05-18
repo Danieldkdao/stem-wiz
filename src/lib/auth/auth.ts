@@ -24,6 +24,9 @@ export const auth = betterAuth({
       clientSecret: envServer.GOOGLE_CLIENT_SECRET,
     },
   },
+  user: {
+    additionalFields: {},
+  },
   plugins: [
     emailOTP({
       overrideDefaultEmailVerification: true,

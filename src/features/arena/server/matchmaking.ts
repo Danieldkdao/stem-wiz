@@ -6,7 +6,7 @@ import {
   MatchTable,
   ProgrammingLanguageType,
   UserMatchTable,
-  UserSettingsTable,
+  UserProfileTable,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -17,8 +17,8 @@ export const joinWaitingRoom = async (ws: ArenaWebSocket) => {
 
   const [userSettings] = await db
     .select()
-    .from(UserSettingsTable)
-    .where(eq(UserSettingsTable.userId, userId));
+    .from(UserProfileTable)
+    .where(eq(UserProfileTable.userId, userId));
   if (!userSettings) {
     sendToClient(
       {

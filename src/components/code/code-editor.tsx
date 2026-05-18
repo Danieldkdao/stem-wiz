@@ -1,9 +1,13 @@
 "use client";
 
-import { CODE_EDITOR_THEME } from "@/lib/constants";
+import {
+  CODE_EDITOR_DARK_THEME,
+  CODE_EDITOR_LIGHT_THEME,
+} from "@/lib/constants";
 import { Editor } from "@monaco-editor/react";
 import { ComponentProps, useEffect, useState } from "react";
 import { Skeleton } from "../ui/skeleton";
+import { useTheme } from "next-themes";
 
 export const CodeEditor = ({
   language,
@@ -12,7 +16,10 @@ export const CodeEditor = ({
   options,
   ...props
 }: ComponentProps<typeof Editor>) => {
+  const { resolvedTheme } = useTheme();
   const [isMounted, setIsMounted] = useState(false);
+  const editorTheme =
+    resolvedTheme === "dark" ? CODE_EDITOR_DARK_THEME : CODE_EDITOR_LIGHT_THEME;
 
   useEffect(() => {
     setIsMounted(true);
@@ -25,20 +32,22 @@ export const CodeEditor = ({
       defaultValue={defaultValue}
       language={language}
       beforeMount={(monaco) => {
-        return monaco.editor.defineTheme(CODE_EDITOR_THEME.id, {
-          base: CODE_EDITOR_THEME.base,
-          inherit: CODE_EDITOR_THEME.inherit,
-          rules: CODE_EDITOR_THEME.rules.map((rule) => ({
-            ...rule,
-            foreground: rule.foreground,
-          })),
-          colors: CODE_EDITOR_THEME.colors,
+        [CODE_EDITOR_DARK_THEME, CODE_EDITOR_LIGHT_THEME].forEach((theme) => {
+          monaco.editor.defineTheme(theme.id, {
+            base: theme.base,
+            inherit: theme.inherit,
+            rules: theme.rules.map((rule) => ({
+              ...rule,
+              foreground: rule.foreground,
+            })),
+            colors: theme.colors,
+          });
         });
       }}
-      theme={CODE_EDITOR_THEME.id}
+      theme={editorTheme.id}
       height={height}
       options={{
-        theme: CODE_EDITOR_THEME.id,
+        theme: editorTheme.id,
         minimap: { enabled: false },
         fontSize: 16,
         automaticLayout: true,

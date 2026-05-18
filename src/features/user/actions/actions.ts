@@ -33,12 +33,12 @@ export const upsertUserSettingsAction = async (
     const response = await upsertUserSettings({ ...data, userId });
 
     if (!response) {
-      throw new Error("Failed to upsert user settings.");
+      throw new Error("Failed to update user settings.");
     }
 
     return {
       error: false,
-      message: "User settings upserted successfully!",
+      message: "User settings updated successfully!",
     };
   } catch (error) {
     console.error(error);

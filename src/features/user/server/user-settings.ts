@@ -1,16 +1,16 @@
 import { db } from "@/db/db";
-import { UserSettingsTable } from "@/db/schema";
+import { UserProfileTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidateUserSettingsCache } from "./cache/user-settings";
 
 export const upsertUserSettings = async (
-  userSettings: typeof UserSettingsTable.$inferInsert,
+  userSettings: typeof UserProfileTable.$inferInsert,
 ) => {
   const [upsertedUserSettings] = await db
-    .insert(UserSettingsTable)
+    .insert(UserProfileTable)
     .values(userSettings)
     .onConflictDoUpdate({
-      target: UserSettingsTable.userId,
+      target: UserProfileTable.userId,
       set: userSettings,
     })
     .returning();
@@ -23,8 +23,8 @@ export const upsertUserSettings = async (
 export const hasUserSettings = async (userId: string) => {
   const [userSettings] = await db
     .select()
-    .from(UserSettingsTable)
-    .where(eq(UserSettingsTable.userId, userId));
+    .from(UserProfileTable)
+    .where(eq(UserProfileTable.userId, userId));
 
   return userSettings ?? null;
 };
