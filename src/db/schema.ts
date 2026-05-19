@@ -8,3 +8,5 @@ export * from "./schemas/match-result";
 export * from "./schemas/match-submission";
 export * from "./schemas/chat";
 export * from "./schemas/chat-message";
+export * from "./schemas/friend-request";
+export * from "./schemas/notification";

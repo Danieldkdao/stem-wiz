@@ -125,3 +125,31 @@ export const userGoals = [
 ] as const;
 export type UserGoalType = (typeof userGoals)[number];
 export const userGoalEnum = pgEnum("user_goals", userGoals);
+
+export const notificationEventTypes = [
+  "friend_request_received",
+  "friend_request_accepted",
+  "match_invite",
+  "match_finished",
+  "system",
+] as const;
+export type NotificationEventTypeType = (typeof notificationEventTypes)[number];
+export const notificationEventTypeEnum = pgEnum(
+  "notification_event_types",
+  notificationEventTypes,
+);
+
+export type NotificationPayload =
+  | {
+      type: "friend_request_received";
+      friendRequestId: string;
+      fromUserId: string;
+    }
+  | {
+      type: "friend_request_accepted";
+      friendRequestId: string;
+      acceptedByUserId: string;
+    }
+  | { type: "match_invite"; matchId: string; fromUserId: string }
+  | { type: "match_finished"; matchId: string; winnerId?: string }
+  | { type: "system"; title: string; message: string };

@@ -3,6 +3,8 @@ import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
 import { UserMatchTable } from "./user-match";
 import { UserProfileTable } from "./user-profile";
 import { ChatMessageTable } from "./chat-message";
+import { FriendRequestTable } from "./friend-request";
+import { NotificationTable } from "./notification";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -82,6 +84,9 @@ export const userRelations = relations(user, ({ one, many }) => ({
   matches: many(UserMatchTable),
   profile: one(UserProfileTable),
   chatMessages: many(ChatMessageTable),
+  notifications: many(NotificationTable),
+  fromFriendRequests: many(FriendRequestTable, { relationName: "from_user" }),
+  toFriendRequests: many(FriendRequestTable, { relationName: "to_user" }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
