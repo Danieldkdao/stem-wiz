@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getUserProfileAction } from "@/features/user/actions/actions";
 import { UserProfileForm } from "@/features/user/components/user-profile-form";
 import { getCurrentUser } from "@/lib/auth/helpers";
@@ -14,7 +15,58 @@ const UserAccountPage = () => {
 };
 
 const UserAccountLoading = () => {
-  return <div>loading...</div>;
+  return (
+    <div className="w-full h-full py-10 px-6 overflow-y-auto flex flex-col items-center">
+      <div className="w-full max-w-200">
+        <Card>
+          <CardContent className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-4 w-full max-w-150" />
+              <Skeleton className="h-4 w-4/5 max-w-130" />
+            </div>
+            <Separator />
+            <div className="flex flex-col gap-4 w-full">
+              <ProfileFieldSkeleton />
+              <ProfileFieldSkeleton />
+              <ProfileFieldSkeleton />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ProfileFieldSkeleton />
+                <ProfileFieldSkeleton />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ProfileFieldSkeleton />
+                <ProfileFieldSkeleton />
+              </div>
+              <ProfileFieldSkeleton inputClassName="h-28" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <ProfileFieldSkeleton />
+                <ProfileFieldSkeleton />
+                <ProfileFieldSkeleton />
+              </div>
+              <Skeleton className="h-10 w-full sm:w-40 self-end" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+const ProfileFieldSkeleton = ({
+  inputClassName = "h-9",
+}: {
+  inputClassName?: string;
+}) => {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Skeleton className="size-4 shrink-0" />
+        <Skeleton className="h-4 w-36" />
+      </div>
+      <Skeleton className={`w-full ${inputClassName}`} />
+    </div>
+  );
 };
 
 const UserAccountSuspense = async () => {
