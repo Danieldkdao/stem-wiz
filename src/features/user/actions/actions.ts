@@ -13,7 +13,7 @@ import { user, UserProfileTable } from "@/db/schema";
 import { eq, getTableColumns } from "drizzle-orm";
 import { cacheTag } from "next/cache";
 import { getUserProfileTag } from "../server/cache/user-profiles";
-import { getUserGlobalTag } from "../server/cache/users";
+import { getUserGlobalTag, getUserIdTag } from "../server/cache/users";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -80,4 +80,18 @@ export const getUsersAction = async () => {
     .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id));
 
   return users;
+};
+
+export const getUserAction = async (userId: string) => {
+  "use cache";
+  cacheTag(getUserIdTag(userId));
+
+  const existingUser = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    with: {
+      profile: true,
+    },
+  });
+
+  return existingUser ?? null;
 };
