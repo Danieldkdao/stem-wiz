@@ -9,8 +9,11 @@ import {
 import { upsertUserProfile } from "../server/user-profiles";
 import { userProfileSchema, UserProfileSchemaType } from "./schemas";
 import { db } from "@/db/db";
-import { UserProfileTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { user, UserProfileTable } from "@/db/schema";
+import { eq, getTableColumns } from "drizzle-orm";
+import { cacheTag } from "next/cache";
+import { getUserProfileTag } from "../server/cache/user-profiles";
+import { getUserGlobalTag } from "../server/cache/users";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -52,9 +55,9 @@ export const upsertUserProfileAction = async (
   }
 };
 
-export const getUserProfileAction = async () => {
-  const { userId } = await getCurrentUser();
-  if (!userId) return null;
+export const getUserProfileAction = async (userId: string) => {
+  "use cache";
+  cacheTag(getUserProfileTag(userId));
 
   const [existingUserProfile] = await db
     .select()
@@ -62,4 +65,19 @@ export const getUserProfileAction = async () => {
     .where(eq(UserProfileTable.userId, userId));
 
   return existingUserProfile ?? null;
+};
+
+export const getUsersAction = async () => {
+  "use cache";
+  cacheTag(getUserGlobalTag());
+
+  const users = await db
+    .select({
+      ...getTableColumns(user),
+      profile: getTableColumns(UserProfileTable),
+    })
+    .from(user)
+    .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id));
+
+  return users;
 };

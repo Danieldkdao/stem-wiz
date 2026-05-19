@@ -11,11 +11,11 @@ const options = [
     href: "/arena",
   },
   {
-    title: "Match Up",
+    title: "Community",
     description:
       "Need a teammate for a hackathon or want to find some coding pals? Discover other developers and groups to collaborate and have fun.",
     icon: UsersIcon,
-    href: "/connect",
+    href: "/community",
   },
   {
     title: "The Oracle",

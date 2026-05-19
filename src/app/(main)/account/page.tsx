@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getUserProfileAction } from "@/features/user/actions/actions";
 import { UserProfileForm } from "@/features/user/components/user-profile-form";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { Suspense } from "react";
 
 const UserAccountPage = () => {
@@ -17,7 +18,9 @@ const UserAccountLoading = () => {
 };
 
 const UserAccountSuspense = async () => {
-  const userProfile = await getUserProfileAction();
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+  const userProfile = await getUserProfileAction(userId);
   if (!userProfile) return null;
 
   return (
