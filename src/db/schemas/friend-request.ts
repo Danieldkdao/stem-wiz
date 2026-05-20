@@ -8,10 +8,12 @@ export const FriendRequestTable = pgTable("friend_requests", {
   fromUserId: text("from_user_id")
     .references(() => user.id, { onDelete: "cascade" })
     .notNull(),
-  toUserId: text("to_user_id").references(() => user.id, {
-    onDelete: "cascade",
-  }),
-  accepted: boolean("accepted").notNull(),
+  toUserId: text("to_user_id")
+    .references(() => user.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
+  accepted: boolean("accepted").notNull().default(false),
   acceptedAt: timestamp("accepted_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
