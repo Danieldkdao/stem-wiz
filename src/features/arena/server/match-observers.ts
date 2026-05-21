@@ -1,13 +1,13 @@
 import { db } from "@/db/db";
 import { ArenaWebSocket, ServerMessage } from "../lib/types";
-import {
-  cleanupUserConnection,
-  getArenaWsState,
-  sendToUser,
-} from "./connection-state";
+import { cleanupUserConnection, getArenaWsState } from "./connection-state";
 import { and, eq } from "drizzle-orm";
 import { MatchTable, UserMatchTable } from "@/db/schema";
 import { MatchResultReasonType } from "@/db/schema";
+import {
+  sendToConnection,
+  sendToUser,
+} from "@/features/realtime/server/connection-state";
 
 export const connectToObservers = (ws: ArenaWebSocket) => {
   const { usersInWaitingRoom, usersInObservingRoom } = getArenaWsState();
@@ -32,15 +32,12 @@ export const broadcastToMatchObservers = async (
 
   if (!existingMatch) return;
 
-  const activeObserversInMatch = activeObserversByUser
-    .entries()
-    .filter(([_, value]) => {
-      return value === matchId;
-    })
-    .toArray();
+  const activeObserversInMatch = [...activeObserversByUser.values()].filter(
+    (observer) => observer.matchId === matchId,
+  );
 
-  activeObserversInMatch.forEach(([observer]) => {
-    sendToUser(observer, message);
+  activeObserversInMatch.forEach((observer) => {
+    sendToConnection(observer.connectionId, message);
   });
 };
 
@@ -70,17 +67,13 @@ export const broadcastUpdatedMatchObserverCount = async (
   let currentMatchId = matchId;
 
   if (!currentMatchId) {
-    const { activeObserversByUser } = getArenaWsState();
-    currentMatchId = activeObserversByUser.get(userId);
+    currentMatchId = activeObserversByUser.get(userId)?.matchId;
     if (!currentMatchId) return;
   }
 
-  const activeObserversInMatch = activeObserversByUser
-    .entries()
-    .filter(([_, value]) => {
-      return value === currentMatchId;
-    })
-    .toArray();
+  const activeObserversInMatch = [...activeObserversByUser.values()].filter(
+    (observer) => observer.matchId === currentMatchId,
+  );
 
   await broadcastToMatchObservers(currentMatchId, {
     type: "match_observer_count_updated",
@@ -200,7 +193,10 @@ export const subscribeObserverMatch = async (
   if (usersInWaitingRoom.has(userId)) usersInWaitingRoom.delete(userId);
   activeObserversByUser.delete(userId);
   usersInObservingRoom.delete(userId);
-  activeObserversByUser.set(userId, matchId);
+  activeObserversByUser.set(userId, {
+    matchId,
+    connectionId: ws.id,
+  });
   await broadcastUpdatedMatchObserverCount(userId);
   sendToUser(userId, {
     type: "users_connection_statuses",
@@ -223,8 +219,8 @@ export const leaveObserverMatch = async (
 
   const userId = ws.user.id;
 
-  if (activeObserversByUser.get(userId) !== matchId) {
-    sendToUser(userId, {
+  if (activeObserversByUser.get(userId)?.matchId !== matchId) {
+    sendToConnection(ws.id, {
       type: "error",
       message: "You cannot leave a match you are not observing.",
     });

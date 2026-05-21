@@ -20,7 +20,7 @@ import { MatchResultReasonType } from "@/db/shared";
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
-  return `${protocol}//${window.location.host}/api/arena/ws`;
+  return `${protocol}//${window.location.host}/api/realtime/ws`;
 };
 
 type MatchObserverSocketContextType = {
@@ -98,7 +98,7 @@ export const MatchObserverSocketProvider = ({
 
     setStatus("connecting");
 
-    await fetch("/api/arena", {
+    await fetch("/api/realtime", {
       method: "GET",
       credentials: "include",
     });

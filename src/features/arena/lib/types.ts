@@ -1,26 +1,21 @@
-import { WebSocketServer, WebSocket } from "ws";
-import { Server as HttpServer } from "http";
 import { UserProfileTable } from "@/db/schema";
-import z from "zod";
-import { clientMessageSchema } from "./schemas";
 import {
   MatchObserverServerMessage,
   MatchServerMessage,
 } from "@/features/matches/lib/types";
-
-export type UserInfo = {
-  id: string;
-  name: string;
-  image?: string | null | undefined;
-  // todo: add elo later
-};
+import { RealtimeUser, RealtimeWebSocket } from "@/features/realtime/lib/types";
+import { Server as HttpServer } from "http";
+import { WebSocketServer } from "ws";
+import z from "zod";
+import { arenaClientMessageSchema } from "./schemas";
 
 export type ActiveUser = {
+  connectionId: string;
   matchId: string;
   isConnected: boolean;
 };
 
-export type ClientMessage = z.infer<typeof clientMessageSchema>;
+export type ClientMessage = z.infer<typeof arenaClientMessageSchema>;
 
 export type ServerMessage =
   | ArenaWaitingServerMessage
@@ -31,7 +26,7 @@ export type ArenaWaitingServerMessage =
   | {
       type: "match_found";
       matchId: string;
-      opponent: UserInfo;
+      opponent: RealtimeUser;
     }
   | { type: "no_matches_found" }
   | { type: "no_problems_found" }
@@ -49,16 +44,21 @@ export type ArenaSocketServer = HttpServer & {
   arenaWsInitialized?: boolean;
 };
 
-export type ArenaWebSocket = WebSocket & {
-  isAlive: boolean;
-  user: UserInfo;
-};
+export type ArenaWebSocket = RealtimeWebSocket;
 
 export type UpgradeSocket = {
   write: (chunk: string) => unknown;
   destroy: () => unknown;
 };
 
-export type WaitingRoomUser = UserInfo & {
+export type WaitingRoomUser = RealtimeUser & {
   userSettings: typeof UserProfileTable.$inferSelect;
+  connectionId: string;
 };
+
+export type ActiveObserver = {
+  matchId: string;
+  connectionId: string;
+};
+
+export type PendingConnectionCleanup = ReturnType<typeof setTimeout>;

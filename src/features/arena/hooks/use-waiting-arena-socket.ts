@@ -2,16 +2,13 @@
 
 import { SocketStatus } from "@/lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ArenaWaitingServerMessage,
-  ClientMessage,
-  UserInfo,
-} from "../lib/types";
+import { ArenaWaitingServerMessage, ClientMessage } from "../lib/types";
+import { RealtimeUser } from "@/features/realtime/lib/types";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
-  return `${protocol}//${window.location.host}/api/arena/ws`;
+  return `${protocol}//${window.location.host}/api/realtime/ws`;
 };
 
 export const useWaitingArenaSocket = () => {
@@ -23,7 +20,7 @@ export const useWaitingArenaSocket = () => {
   );
   const [match, setMatch] = useState<{
     matchId: string;
-    opponent: UserInfo;
+    opponent: RealtimeUser;
   } | null>(null);
 
   const connect = useCallback(async () => {
@@ -35,7 +32,7 @@ export const useWaitingArenaSocket = () => {
 
     setStatus("connecting");
 
-    await fetch("/api/arena", {
+    await fetch("/api/realtime", {
       method: "GET",
       credentials: "include",
     });

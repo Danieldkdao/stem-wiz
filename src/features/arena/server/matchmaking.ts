@@ -1,6 +1,6 @@
 import { db } from "@/db/db";
 import { ArenaWebSocket } from "../lib/types";
-import { getArenaWsState, sendToClient, sendToUser } from "./connection-state";
+import { getArenaWsState } from "./connection-state";
 import {
   ArenaProblemTable,
   MatchTable,
@@ -9,10 +9,14 @@ import {
   UserProfileTable,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import {
+  sendToUser,
+  sendToClient,
+  sendToConnection,
+} from "@/features/realtime/server/connection-state";
 
 export const joinWaitingRoom = async (ws: ArenaWebSocket) => {
-  const { usersInWaitingRoom, activeMatchesByUser, socketsByUser } =
-    getArenaWsState();
+  const { usersInWaitingRoom, activeMatchesByUser } = getArenaWsState();
   const userId = ws.user.id;
 
   const [userSettings] = await db
@@ -30,8 +34,11 @@ export const joinWaitingRoom = async (ws: ArenaWebSocket) => {
   }
 
   if (activeMatchesByUser.has(userId) || usersInWaitingRoom.has(userId)) return;
-  usersInWaitingRoom.set(userId, { ...ws.user, userSettings });
-  socketsByUser.set(userId, ws);
+  usersInWaitingRoom.set(userId, {
+    ...ws.user,
+    userSettings,
+    connectionId: ws.id,
+  });
 
   tryPairUsers(userId, userSettings.preferredLanguage);
 };
@@ -40,21 +47,15 @@ const tryPairUsers = async (
   currentUserId: string,
   preferredLanguage: ProgrammingLanguageType,
 ) => {
-  const {
-    usersInWaitingRoom,
-    activeMatchesByUser,
-    socketsByUser,
-    usersInObservingRoom,
-  } = getArenaWsState();
+  const { usersInWaitingRoom, activeMatchesByUser, usersInObservingRoom } =
+    getArenaWsState();
   if (usersInWaitingRoom.size < 2) {
     setTimeout(() => {
-      if (!usersInWaitingRoom.has(currentUserId)) return;
-      sendToClient(
-        {
-          type: "no_matches_found",
-        },
-        socketsByUser.get(currentUserId),
-      );
+      const waitingUser = usersInWaitingRoom.get(currentUserId);
+      if (!waitingUser) return;
+      sendToConnection(waitingUser.connectionId, {
+        type: "no_matches_found",
+      });
     }, 4000);
     return;
   }
@@ -67,15 +68,17 @@ const tryPairUsers = async (
           user.id !== currentUserId,
       )
   ) {
-    sendToClient(
-      {
-        type: "no_matches_found",
-      },
-      socketsByUser.get(currentUserId),
-    );
+    const waitingUser = usersInWaitingRoom.get(currentUserId);
+    if (!waitingUser) return;
+    sendToConnection(waitingUser.connectionId, {
+      type: "no_matches_found",
+    });
+
     return;
   }
   const currentUser = usersInWaitingRoom.get(currentUserId);
+  if (!currentUser) return;
+
   const opponent = usersInWaitingRoom
     .values()
     .find(
@@ -85,21 +88,18 @@ const tryPairUsers = async (
           currentUser?.userSettings.preferredLanguage,
     );
 
-  if (!currentUser || !opponent) {
-    sendToClient(
-      {
-        type: "no_matches_found",
-      },
-      socketsByUser.get(currentUserId),
-    );
+  if (!opponent) {
+    sendToConnection(currentUser.connectionId, {
+      type: "no_matches_found",
+    });
     return;
   }
 
   const devSockets = [
-    { dev: currentUser, ws: socketsByUser.get(currentUser.id), opponent },
+    { dev: currentUser, connectionId: currentUser.connectionId, opponent },
     {
       dev: opponent,
-      ws: socketsByUser.get(opponent.id),
+      connectionId: opponent.connectionId,
       opponent: currentUser,
     },
   ];
@@ -115,12 +115,9 @@ const tryPairUsers = async (
       .limit(1);
     if (!arenaProblem) {
       devSockets.forEach((devSocket) => {
-        sendToClient(
-          {
-            type: "no_problems_found",
-          },
-          devSocket.ws,
-        );
+        sendToConnection(devSocket.connectionId, {
+          type: "no_problems_found",
+        });
       });
       return;
     }
@@ -162,15 +159,17 @@ const tryPairUsers = async (
       activeMatchesByUser.set(devSocket.dev.id, {
         matchId,
         isConnected: false,
+        connectionId: devSocket.connectionId,
       });
-      sendToClient(
-        {
-          type: "match_found",
-          matchId,
-          opponent: devSocket.opponent,
+      sendToConnection(devSocket.connectionId, {
+        type: "match_found",
+        matchId,
+        opponent: {
+          id: devSocket.opponent.id,
+          name: devSocket.opponent.name,
+          image: devSocket.opponent.image,
         },
-        devSocket.ws,
-      );
+      });
     });
     usersInObservingRoom.forEach((userId) => {
       sendToUser(userId, { type: "observable_match_count_updated" });
@@ -178,20 +177,19 @@ const tryPairUsers = async (
   } catch (error) {
     console.error(error);
     devSockets.forEach((devSocket) => {
-      sendToClient(
-        {
-          type: "error",
-          message: "Failed to find match and pair users.",
-        },
-        devSocket.ws,
-      );
+      sendToConnection(devSocket.connectionId, {
+        type: "error",
+        message: "Failed to find match and pair users.",
+      });
     });
   }
 };
 
 export const leaveWaitingRoom = (ws: ArenaWebSocket) => {
-  const { usersInWaitingRoom, socketsByUser } = getArenaWsState();
+  const { usersInWaitingRoom } = getArenaWsState();
   const userId = ws.user.id;
-  usersInWaitingRoom.delete(userId);
-  socketsByUser.delete(userId);
+
+  if (usersInWaitingRoom.get(userId)?.connectionId === ws.id) {
+    usersInWaitingRoom.delete(userId);
+  }
 };

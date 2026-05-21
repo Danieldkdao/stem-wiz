@@ -19,7 +19,7 @@ type OpponentStatus = "active" | "disconnected";
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
-  return `${protocol}//${window.location.host}/api/arena/ws`;
+  return `${protocol}//${window.location.host}/api/realtime/ws`;
 };
 
 type MatchSocketContextType = {
@@ -88,7 +88,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
 
     setStatus("connecting");
 
-    await fetch("/api/arena", {
+    await fetch("/api/realtime", {
       method: "GET",
       credentials: "include",
     });

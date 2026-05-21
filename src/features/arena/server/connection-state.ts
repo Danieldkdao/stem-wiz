@@ -1,17 +1,17 @@
 import {
+  ActiveObserver,
   ActiveUser,
-  ArenaWebSocket,
-  ServerMessage,
+  PendingConnectionCleanup,
   WaitingRoomUser,
 } from "../lib/types";
 
 const globalForArenaWs = globalThis as typeof globalThis & {
   __arenaWsState?: {
     activeMatchesByUser: Map<string, ActiveUser>;
-    socketsByUser: Map<string, ArenaWebSocket>;
     usersInWaitingRoom: Map<string, WaitingRoomUser>;
     usersInObservingRoom: Set<string>;
-    activeObserversByUser: Map<string, string>;
+    activeObserversByUser: Map<string, ActiveObserver>;
+    pendingConnectionCleanupByUser: Map<string, PendingConnectionCleanup>;
   };
 };
 
@@ -19,63 +19,45 @@ export const getArenaWsState = () => {
   if (!globalForArenaWs.__arenaWsState) {
     globalForArenaWs.__arenaWsState = {
       activeMatchesByUser: new Map(),
-      socketsByUser: new Map(),
       usersInWaitingRoom: new Map(),
       usersInObservingRoom: new Set(),
       activeObserversByUser: new Map(),
+      pendingConnectionCleanupByUser: new Map(),
     };
   }
 
   return globalForArenaWs.__arenaWsState;
 };
 
-export const sendToClient = (message: ServerMessage, ws?: ArenaWebSocket) => {
-  if (!ws || ws.readyState !== ws.OPEN) return;
-
-  ws.send(JSON.stringify(message));
-};
-
-export const sendToUser = (userId: string, message: ServerMessage) => {
-  const { socketsByUser } = getArenaWsState();
-  sendToClient(message, socketsByUser.get(userId));
-};
-
-export const getOpponentSocket = (userId: string) => {
-  const { activeMatchesByUser, socketsByUser } = getArenaWsState();
+export const getOpponentConnectionId = (userId: string) => {
+  const { activeMatchesByUser } = getArenaWsState();
 
   const userMatch = activeMatchesByUser.get(userId);
   if (!userMatch) return;
 
-  const opponentUserId = [...activeMatchesByUser.entries()].find(
-    ([otherUserId, otherMatchId]) =>
-      otherUserId !== userId && otherMatchId.matchId === userMatch.matchId,
-  )?.[0];
-  if (!opponentUserId) return;
-
-  return {
-    userId: opponentUserId,
-    socket: socketsByUser.get(opponentUserId),
-  };
+  return [...activeMatchesByUser.entries()].find(
+    ([otherUserId, otherMatch]) =>
+      otherUserId !== userId && otherMatch.matchId === userMatch.matchId,
+  )?.[1].connectionId;
 };
 
 export const cleanupUserConnection = (userId: string) => {
   const {
-    socketsByUser,
     usersInWaitingRoom,
     activeMatchesByUser,
     activeObserversByUser,
     usersInObservingRoom,
+    pendingConnectionCleanupByUser,
   } = getArenaWsState();
 
-  // FOR TESING PURPOSES: PLEASE CHECK AND CONFIRM LATER
-  socketsByUser.delete(userId);
-  console.log("USER SOCKETS CLEARED");
+  const pendingCleanup = pendingConnectionCleanupByUser.get(userId);
+  if (pendingCleanup) {
+    clearTimeout(pendingCleanup);
+    pendingConnectionCleanupByUser.delete(userId);
+  }
+
   activeMatchesByUser.delete(userId);
-  console.log("ACTIVE MATCHES CLEARED");
   usersInWaitingRoom.delete(userId);
-  console.log("WAITING ROOM CLEARED");
   usersInObservingRoom.delete(userId);
-  console.log("OBSERVING ROOM CLEARED");
   activeObserversByUser.delete(userId);
-  console.log("ACTIVE OBSERVED MATCHES CLEARED");
 };

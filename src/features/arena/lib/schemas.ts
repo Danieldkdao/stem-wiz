@@ -1,7 +1,7 @@
 import { matchResultReasons } from "@/db/shared";
 import z from "zod";
 
-export const clientMessageSchema = z.discriminatedUnion("type", [
+export const arenaClientMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("join_waiting_room"),
   }),
@@ -58,3 +58,4 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
     matchId: z.uuid(),
   }),
 ]);
+export type ArenaClientMessage = z.infer<typeof arenaClientMessageSchema>;
