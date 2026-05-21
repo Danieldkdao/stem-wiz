@@ -10,7 +10,7 @@ import z from "zod";
 import { arenaClientMessageSchema } from "./schemas";
 
 export type ActiveUser = {
-  connectionId: string;
+  connectionId: string | null;
   matchId: string;
   isConnected: boolean;
 };

@@ -149,11 +149,7 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
   }
 
   const existingMatch = await db.query.MatchTable.findFirst({
-    where: and(
-      eq(MatchTable.id, matchId),
-      eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
-    ),
+    where: and(eq(MatchTable.id, matchId)),
     with: {
       users: true,
     },
@@ -166,6 +162,13 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
     return {
       error: true,
       message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+
+  if (existingMatch.status === "finished") {
+    return {
+      error: false,
+      message: "This match has ended.",
     };
   }
 

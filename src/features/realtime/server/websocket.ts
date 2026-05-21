@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth/auth";
 import { IncomingMessage } from "node:http";
-import { WebSocketServer } from "ws";
+import { RawData, WebSocketServer } from "ws";
 import {
   RealtimeSocketServer,
   RealtimeWebSocket,
@@ -35,21 +35,41 @@ const rejectUpgrade = (
   socket.destroy();
 };
 
+const getMessageByteLength = (data: RawData) => {
+  if (Array.isArray(data)) {
+    return data.reduce((total, chunk) => total + chunk.byteLength, 0);
+  }
+
+  return data.byteLength;
+};
+
 export const initRealtimeWebSocket = (server: RealtimeSocketServer) => {
   if (server.realtimeWsInitialized && server.realtimeWss) {
+    console.log("[realtime:server] already initialized");
     return server.realtimeWss;
   }
 
   const wss = new WebSocketServer({ noServer: true });
+  console.log("[realtime:server] initializing websocket server", {
+    wsPath: "/api/realtime/ws",
+  });
 
   server.on("upgrade", async (request, socket, head) => {
     const url = new URL(request.url ?? "", `http://${request.headers.host}`);
 
     if (url.pathname !== "/api/realtime/ws") return;
 
+    console.log("[realtime:upgrade] received websocket upgrade", {
+      path: url.pathname,
+      host: request.headers.host,
+    });
+
     const session = await auth.api.getSession({ headers: toHeaders(request) });
 
     if (!session) {
+      console.log("[realtime:upgrade] rejected unauthenticated socket", {
+        path: url.pathname,
+      });
       rejectUpgrade(socket, 401, "Unauthorized");
       return;
     }
@@ -64,22 +84,52 @@ export const initRealtimeWebSocket = (server: RealtimeSocketServer) => {
         image: session.user.image,
       };
 
+      console.log("[realtime:upgrade] accepted authenticated socket", {
+        userId: authedWs.user.id,
+        connectionId: authedWs.id,
+        path: url.pathname,
+      });
+
       wss.emit("connection", authedWs, request);
     });
   });
 
   wss.on("connection", (ws: RealtimeWebSocket) => {
+    console.log("[realtime:connection] client connected", {
+      userId: ws.user.id,
+      connectionId: ws.id,
+    });
+
     ws.isAlive = true;
     ws.on("pong", () => (ws.isAlive = true));
-    ws.on("error", console.error);
+    ws.on("error", (error) => {
+      console.error("[realtime:connection] socket error", {
+        userId: ws.user.id,
+        connectionId: ws.id,
+        error,
+      });
+    });
 
     registerSocket(ws);
+    console.log("[realtime:connection] socket registered", {
+      userId: ws.user.id,
+      connectionId: ws.id,
+    });
 
     ws.on("message", async (data) => {
+      console.log("[realtime:message] received message", {
+        userId: ws.user.id,
+        connectionId: ws.id,
+        byteLength: getMessageByteLength(data),
+      });
       await handleRealtimeMessage(ws, data as Buffer);
     });
 
     ws.on("close", async () => {
+      console.log("[realtime:connection] client disconnected", {
+        userId: ws.user.id,
+        connectionId: ws.id,
+      });
       unregisterSocket(ws);
       await handleArenaDisconnect(ws.user.id, ws.id);
     });
@@ -90,6 +140,10 @@ export const initRealtimeWebSocket = (server: RealtimeSocketServer) => {
       const ws = originalWs as RealtimeWebSocket;
 
       if (!ws.isAlive) {
+        console.log("[realtime:heartbeat] terminating stale socket", {
+          userId: ws.user.id,
+          connectionId: ws.id,
+        });
         unregisterSocket(ws);
         void handleArenaDisconnect(ws.user.id, ws.id);
         return ws.terminate();
@@ -104,6 +158,7 @@ export const initRealtimeWebSocket = (server: RealtimeSocketServer) => {
 
   server.realtimeWss = wss;
   server.realtimeWsInitialized = true;
+  console.log("[realtime:server] websocket server initialized");
 
   return wss;
 };
