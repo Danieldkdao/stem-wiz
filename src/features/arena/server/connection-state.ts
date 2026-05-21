@@ -1,9 +1,4 @@
-import {
-  ActiveObserver,
-  ActiveUser,
-  PendingConnectionCleanup,
-  WaitingRoomUser,
-} from "../lib/types";
+import { ActiveObserver, ActiveUser, WaitingRoomUser } from "../lib/types";
 
 const globalForArenaWs = globalThis as typeof globalThis & {
   __arenaWsState?: {
@@ -11,7 +6,6 @@ const globalForArenaWs = globalThis as typeof globalThis & {
     usersInWaitingRoom: Map<string, WaitingRoomUser>;
     usersInObservingRoom: Set<string>;
     activeObserversByUser: Map<string, ActiveObserver>;
-    pendingConnectionCleanupByUser: Map<string, PendingConnectionCleanup>;
   };
 };
 
@@ -22,7 +16,6 @@ export const getArenaWsState = () => {
       usersInWaitingRoom: new Map(),
       usersInObservingRoom: new Set(),
       activeObserversByUser: new Map(),
-      pendingConnectionCleanupByUser: new Map(),
     };
   }
 
@@ -47,14 +40,7 @@ export const cleanupUserConnection = (userId: string) => {
     activeMatchesByUser,
     activeObserversByUser,
     usersInObservingRoom,
-    pendingConnectionCleanupByUser,
   } = getArenaWsState();
-
-  const pendingCleanup = pendingConnectionCleanupByUser.get(userId);
-  if (pendingCleanup) {
-    clearTimeout(pendingCleanup);
-    pendingConnectionCleanupByUser.delete(userId);
-  }
 
   activeMatchesByUser.delete(userId);
   usersInWaitingRoom.delete(userId);

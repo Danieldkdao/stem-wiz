@@ -60,5 +60,3 @@ export type ActiveObserver = {
   matchId: string;
   connectionId: string;
 };
-
-export type PendingConnectionCleanup = ReturnType<typeof setTimeout>;

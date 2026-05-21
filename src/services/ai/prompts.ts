@@ -24,7 +24,7 @@ You must respond with exactly one of the allowed choices provided in the user pr
 
 Be somewhat strict. Do not award a winner just because a submission has code, has good style, or appears related to the prompt. A winning submission should substantially solve the requested problem and should be plausible code for the requested language and constraints.
 
-At the same time, judging is nuanced and depends heavily on the situation. Mediocre code can still deserve the win when it is the best meaningful attempt. For example, if only one user submitted code that is clearly related to the problem, shows genuine effort, and appears to work for the core requirements, you should usually award that user the win even if the solution is not elegant, not perfectly optimized, or has some rough edges. Do not choose "none" merely because the best submission is imperfect. Choose "none" only when no submission meaningfully solves or attempts the actual task.
+At the same time, judging is nuanced and depends heavily on the situation. Mediocre code can still deserve the win when it is the best meaningful attempt. However, if only one user submitted code, that submission is not automatically the winner. Judge a single submission by the same standards you would use in a two-submission match: it should be a valid attempt, show decent effort, be related to the actual problem, avoid gibberish or placeholder content, and be somewhat or fully correct on the core requirements. Do not choose "none" merely because the best submission is imperfect. Choose "none" when no submission meaningfully solves or attempts the actual task.
 
 Use "none" when:
 - No user submitted code.
@@ -84,6 +84,8 @@ Allowed choice options:
 ${choiceOptions.map((option) => `- ${option}`).join("\n")}
 
 You must choose exactly one of those options. Choose a user ID only if that user has the strongest valid solution. Choose "none" if none of the submissions answer the question at all, or if all submissions are too incorrect, incomplete, unrelated, or empty to deserve a win.
+
+You may sometimes receive only one submitted solution. A lone submission is not automatically the winner. Grade it against the same standards as a normal match: it must be a valid attempt, show decent effort, be relevant to the problem, not be gibberish or placeholder code, and be somewhat or fully correct for the core requirements. If the only submitted solution does not clear that bar, choose "none".
 
 Problem:
 Title: ${arenaProblem.title}

@@ -13,20 +13,12 @@ import {
   sendToConnection,
   sendToUser,
 } from "@/features/realtime/server/connection-state";
+import { upsertMatchResult } from "@/features/matches/server/match-results";
 
 export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
-  const {
-    usersInWaitingRoom,
-    activeMatchesByUser,
-    pendingConnectionCleanupByUser,
-  } = getArenaWsState();
+  const { usersInWaitingRoom, activeMatchesByUser } = getArenaWsState();
 
   const userId = ws.user.id;
-  console.log("[arena:connect_to_match] start", {
-    userId,
-    matchId,
-    connectionId: ws.id,
-  });
 
   const [activeUserMatch] = await db
     .select({
@@ -44,11 +36,6 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
     );
 
   if (!activeUserMatch) {
-    console.log("[arena:connect_to_match] no active match found", {
-      userId,
-      matchId,
-      connectionId: ws.id,
-    });
     cleanupUserConnection(userId);
     // todo: maybe terminate socket later?
     return;
@@ -56,23 +43,7 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
 
   const userInWaitingRoom = usersInWaitingRoom.get(userId);
 
-  const pendingCleanup = pendingConnectionCleanupByUser.get(userId);
-  if (pendingCleanup) {
-    clearTimeout(pendingCleanup);
-    pendingConnectionCleanupByUser.delete(userId);
-    console.log("[arena:connect_to_match] cleared pending connection cleanup", {
-      userId,
-      matchId,
-      connectionId: ws.id,
-    });
-  }
-
   if (userInWaitingRoom) {
-    console.log("[arena:connect_to_match] removing user from waiting room", {
-      userId,
-      waitingRoomConnectionId: userInWaitingRoom.connectionId,
-      matchConnectionId: ws.id,
-    });
     usersInWaitingRoom.delete(userId);
   }
 
@@ -81,35 +52,11 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
       otherUserId !== userId && otherMatchId.matchId === matchId,
   );
 
-  console.log("[arena:connect_to_match] opponent state", {
-    userId,
-    matchId,
-    opponentUserId: opponent?.[0],
-    opponentMatchState: opponent?.[1],
-  });
-
   if (!opponent) {
-    console.log("[arena:connect_to_match] opponent missing from arena state", {
-      userId,
-      matchId,
-      connectionId: ws.id,
-    });
     sendToConnection(ws.id, { type: "opponent_left_match" });
-  } else if (!opponent[1].isConnected) {
-    console.log("[arena:connect_to_match] opponent matched but not connected", {
-      userId,
-      matchId,
-      opponentUserId: opponent[0],
-      opponentConnectionId: opponent[1].connectionId,
-    });
   }
 
   const hasActiveInMap = activeMatchesByUser.get(userId);
-  console.log("[arena:connect_to_match] current user arena state", {
-    userId,
-    matchId,
-    activeState: hasActiveInMap,
-  });
 
   if (!hasActiveInMap || !hasActiveInMap.isConnected) {
     activeMatchesByUser.set(activeUserMatch.userId, {
@@ -117,43 +64,17 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
       isConnected: true,
       connectionId: ws.id,
     });
-    console.log("[arena:connect_to_match] marked user connected", {
-      userId,
-      matchId: activeUserMatch.matchId,
-      connectionId: ws.id,
-    });
   }
 
   const opponentConnectionId = getOpponentConnectionId(userId);
-  console.log("[arena:connect_to_match] opponent connection lookup", {
-    userId,
-    matchId,
-    opponentConnectionId,
-  });
 
   if (opponentConnectionId) {
-    console.log("[arena:connect_to_match] notifying opponent joined", {
-      userId,
-      matchId,
-      opponentConnectionId,
-    });
     sendToConnection(opponentConnectionId, { type: "opponent_joined_match" });
   }
 
-  console.log("[arena:connect_to_match] broadcasting observer status", {
-    userId,
-    matchId,
-    isConnected: true,
-  });
   broadcastToMatchObservers(matchId, {
     type: "users_connection_statuses",
     users: [{ userId, isConnected: true }],
-  });
-
-  console.log("[arena:connect_to_match] complete", {
-    userId,
-    matchId,
-    connectionId: ws.id,
   });
 };
 
@@ -238,9 +159,26 @@ export const broadcastCodeSubmission = async (
 
   if (!allUsersSubmitted) return;
 
-  const response = await generateMatchResults(latestMatch.id);
+  const winnerId = await generateMatchResults(latestMatch.id);
 
-  if (!response) {
+  if (!winnerId) {
+    latestMatch.users.forEach((user) => {
+      sendToUser(user.userId, {
+        type: "error",
+        message: "Failed to generate match results.",
+      });
+    });
+    return;
+  }
+
+  const upsertedResult = await upsertMatchResult({
+    matchId: existingMatch.id,
+    result: "completed",
+    winnerId: winnerId === "none" ? null : winnerId,
+    reason: "traditional",
+  });
+
+  if (!upsertedResult) {
     latestMatch.users.forEach((user) => {
       sendToUser(user.userId, {
         type: "error",

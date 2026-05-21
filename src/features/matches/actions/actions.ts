@@ -3,6 +3,7 @@
 import { db } from "@/db/db";
 import {
   ArenaProblemTable,
+  MatchSubmissionTable,
   MatchTable,
   user,
   UserMatchTable,
@@ -20,6 +21,7 @@ import {
 } from "../server/match-results";
 import { auth, User } from "@/lib/auth/auth";
 import { headers } from "next/headers";
+import { generateMatchResults } from "@/services/ai/matches";
 
 export const confirmExistingMatch = async (matchId: string) => {
   const [existingMatch] = await db
@@ -167,11 +169,23 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
     };
   }
 
+  const [existingSubmission] = await db
+    .select()
+    .from(MatchSubmissionTable)
+    .where(eq(MatchSubmissionTable.matchId, existingMatch.id));
+
+  let winnerId = null;
+  if (existingSubmission) {
+    const winnerIdResponse = await generateMatchResults(existingMatch.id);
+    winnerId = winnerIdResponse ? winnerIdResponse : null;
+  }
+
   try {
     const upsertedResult = await upsertMatchResult({
       matchId: existingMatch.id,
       result: "completed",
       reason: "timeout",
+      winnerId,
     });
 
     if (!upsertedResult) throw new Error("Failed to timeout match.");

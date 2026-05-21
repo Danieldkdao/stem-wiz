@@ -7,7 +7,6 @@ import {
   GENERATE_MATCH_RESULTS_SYSTEM,
   generateMatchResultsPrompt,
 } from "./prompts";
-import { upsertMatchResult } from "@/features/matches/server/match-results";
 
 export const generateMatchResults = async (matchId: string) => {
   const existingMatch = await db.query.MatchTable.findFirst({
@@ -23,7 +22,7 @@ export const generateMatchResults = async (matchId: string) => {
     },
   });
 
-  if (!existingMatch || existingMatch.result) return false;
+  if (!existingMatch || existingMatch.result) return;
 
   try {
     const response = await generateText({
@@ -49,20 +48,9 @@ export const generateMatchResults = async (matchId: string) => {
     const parsed = JSON.parse(output);
     const winnerId = parsed.result;
 
-    const upsertedResult = await upsertMatchResult({
-      matchId: existingMatch.id,
-      result: "completed",
-      winnerId: winnerId === "none" ? null : winnerId,
-      reason: "traditional",
-    });
-
-    if (!upsertedResult) {
-      throw new Error("Failed to upsert match result.");
-    }
-
-    return true;
+    return winnerId;
   } catch (error) {
     console.error(error);
-    return false;
+    return null;
   }
 };
