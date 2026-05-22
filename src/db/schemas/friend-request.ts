@@ -1,7 +1,7 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
 import { user } from "./user";
-import { relations } from "drizzle-orm";
 
 export const FriendRequestTable = pgTable("friend_requests", {
   id,
@@ -13,10 +13,7 @@ export const FriendRequestTable = pgTable("friend_requests", {
       onDelete: "cascade",
     })
     .notNull(),
-  accepted: boolean("accepted").notNull().default(false),
-  acceptedAt: timestamp("accepted_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   createdAt,
   updatedAt,
 });

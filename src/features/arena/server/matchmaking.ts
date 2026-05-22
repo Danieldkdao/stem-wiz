@@ -25,10 +25,10 @@ export const joinWaitingRoom = async (ws: ArenaWebSocket) => {
     .where(eq(UserProfileTable.userId, userId));
   if (!userSettings) {
     sendToClient(
+      ws,
       {
         type: "no_user_settings",
       },
-      ws,
     );
     return;
   }

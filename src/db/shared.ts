@@ -153,3 +153,5 @@ export type NotificationPayload =
   | { type: "match_invite"; matchId: string; fromUserId: string }
   | { type: "match_finished"; matchId: string; winnerId?: string }
   | { type: "system"; title: string; message: string };
+export type NotificationPayloadEvent<T extends NotificationPayload["type"]> =
+  Extract<NotificationPayload, { type: T }>;

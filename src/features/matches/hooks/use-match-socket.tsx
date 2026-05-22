@@ -1,7 +1,7 @@
 "use client";
 
 import { MatchResultReasonType } from "@/db/shared";
-import { ClientMessage, ServerMessage } from "@/features/arena/lib/types";
+import { ClientMessage, ArenaServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -24,7 +24,7 @@ const getSocketUrl = () => {
 
 type MatchSocketContextType = {
   status: SocketStatus;
-  lastEvent: ServerMessage | null;
+  lastEvent: ArenaServerMessage | null;
   connect: () => Promise<void>;
   connectToMatch: (matchId: string) => boolean;
   subscribeMatchEvent: <T extends MatchServerMessageType>(

@@ -1,4 +1,4 @@
-import { RealtimeWebSocket } from "../lib/types";
+import { RealtimeServerMessage, RealtimeWebSocket } from "../lib/types";
 
 const globalForRealtime = globalThis as typeof globalThis & {
   __realtimeState?: {
@@ -42,17 +42,20 @@ export const unregisterSocket = (ws: RealtimeWebSocket) => {
   }
 };
 
-export const sendToClient = (message: unknown, ws?: RealtimeWebSocket) => {
+export const sendToClient = (
+  ws: RealtimeWebSocket | undefined,
+  message: RealtimeServerMessage,
+) => {
   if (!ws || ws.readyState !== ws.OPEN) return;
 
   ws.send(JSON.stringify(message));
 };
 
-export const sendToUser = (userId: string, message: unknown) => {
+export const sendToUser = (userId: string, message: RealtimeServerMessage) => {
   const { socketsById, connectionIdsByUser } = getRealtimeState();
 
   connectionIdsByUser.get(userId)?.forEach((connectionId) => {
-    sendToClient(message, socketsById.get(connectionId));
+    sendToClient(socketsById.get(connectionId), message);
   });
 };
 
@@ -60,8 +63,11 @@ export const getSocketById = (connectionId: string) => {
   return getRealtimeState().socketsById.get(connectionId);
 };
 
-export const sendToConnection = (connectionId: string, message: unknown) => {
-  sendToClient(message, getSocketById(connectionId));
+export const sendToConnection = (
+  connectionId: string,
+  message: RealtimeServerMessage,
+) => {
+  sendToClient(getSocketById(connectionId), message);
 };
 
 export const hasUserConnections = (userId: string) => {

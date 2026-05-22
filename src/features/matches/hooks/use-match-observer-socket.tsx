@@ -1,6 +1,6 @@
 "use client";
 
-import { ClientMessage, ServerMessage } from "@/features/arena/lib/types";
+import { ClientMessage, ArenaServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -25,7 +25,7 @@ const getSocketUrl = () => {
 
 type MatchObserverSocketContextType = {
   status: SocketStatus;
-  lastEvent: ServerMessage | null;
+  lastEvent: ArenaServerMessage | null;
   matchObserverCount: number;
   matchCompletionReason: MatchResultReasonType | null;
   subscribeObserverEvent: <T extends MatchObserverServerMessageType>(

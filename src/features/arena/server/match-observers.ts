@@ -1,5 +1,5 @@
 import { db } from "@/db/db";
-import { ArenaWebSocket, ServerMessage } from "../lib/types";
+import { ArenaWebSocket, ArenaServerMessage } from "../lib/types";
 import { cleanupUserConnection, getArenaWsState } from "./connection-state";
 import { and, eq } from "drizzle-orm";
 import { MatchTable, UserMatchTable } from "@/db/schema";
@@ -22,7 +22,7 @@ export const connectToObservers = (ws: ArenaWebSocket) => {
 
 export const broadcastToMatchObservers = async (
   matchId: string,
-  message: ServerMessage,
+  message: ArenaServerMessage,
 ) => {
   const { activeObserversByUser } = getArenaWsState();
 

@@ -3,6 +3,8 @@ import { realtimeClientMessageSchema } from "../lib/schemas";
 import { RealtimeWebSocket } from "../lib/types";
 import { sendToClient } from "./connection-state";
 import { handleArenaMessage } from "@/features/arena/server/handle-arena-message";
+import { notificationClientMessageSchema } from "@/features/notifications/lib/schemas";
+import { handleNotificationMessage } from "@/features/notifications/server/handle-notification-message";
 
 export const handleRealtimeMessage = async (
   ws: RealtimeWebSocket,
@@ -13,24 +15,32 @@ export const handleRealtimeMessage = async (
     const result = realtimeClientMessageSchema.safeParse(json);
 
     if (!result.success) {
-      sendToClient({ type: "error", message: "Invalid message format." }, ws);
+      sendToClient(ws, { type: "error", message: "Invalid message format." });
       return;
     }
 
     const message = result.data;
 
-    if (arenaClientMessageSchema.safeParse(message).success) {
-      await handleArenaMessage(ws, message);
+    const arenaResult = arenaClientMessageSchema.safeParse(message);
+    if (arenaResult.success) {
+      await handleArenaMessage(ws, arenaResult.data);
       return;
     }
 
-    sendToClient({ type: "error", message: "Unknown message type" }, ws);
+    const notificationResult =
+      notificationClientMessageSchema.safeParse(message);
+    if (notificationResult.success) {
+      await handleNotificationMessage(ws, notificationResult.data);
+      return;
+    }
+
+    sendToClient(ws, { type: "error", message: "Unknown message type" });
   } catch (error) {
     console.error("[realtime:router] failed to handle message", {
       userId: ws.user.id,
       connectionId: ws.id,
       error,
     });
-    sendToClient({ type: "error", message: "Invalid message format." }, ws);
+    sendToClient(ws, { type: "error", message: "Invalid message format." });
   }
 };

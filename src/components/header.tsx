@@ -1,6 +1,6 @@
 import { BellIcon, CodeIcon } from "lucide-react";
-import { Button } from "./ui/button";
 import { TooltipWrapper } from "./tooltip-wrapper";
+import { Button } from "./ui/button";
 
 export const Header = () => {
   return (
@@ -11,8 +11,11 @@ export const Header = () => {
       </div>
       <div className="flex items-center gap-2">
         <TooltipWrapper content="Your notifications" align="end">
-          <Button variant="ghost" size="icon">
-            <BellIcon />
+          <Button variant="ghost" size="icon" className="relative">
+            <BellIcon className="size-6!" />
+            <span className="absolute size-5 rounded-full bg-destructive text-white font-semibold -top-1 text-sm -right-1 flex items-center justify-center">
+              1
+            </span>
           </Button>
         </TooltipWrapper>
       </div>

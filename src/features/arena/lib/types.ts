@@ -17,7 +17,7 @@ export type ActiveUser = {
 
 export type ClientMessage = z.infer<typeof arenaClientMessageSchema>;
 
-export type ServerMessage =
+export type ArenaServerMessage =
   | ArenaWaitingServerMessage
   | MatchServerMessage
   | MatchObserverServerMessage;
@@ -45,11 +45,6 @@ export type ArenaSocketServer = HttpServer & {
 };
 
 export type ArenaWebSocket = RealtimeWebSocket;
-
-export type UpgradeSocket = {
-  write: (chunk: string) => unknown;
-  destroy: () => unknown;
-};
 
 export type WaitingRoomUser = RealtimeUser & {
   userSettings: typeof UserProfileTable.$inferSelect;
