@@ -61,16 +61,21 @@ export const MatchHeader = ({
   const hasSubmittedCode = match.submissions.length > 0;
 
   useEffect(() => {
-    if (status === "connecting" || status === "open" || isMatchFinished) return;
+    const shouldConnect =
+      status !== "connecting" && status !== "open" && !isMatchFinished;
+
+    if (!shouldConnect) return;
 
     void connect();
-  }, [connect, status, match.status]);
+  }, [connect, status, isMatchFinished]);
 
   useEffect(() => {
-    if (status !== "open" || isMatchFinished) return;
+    const shouldConnectToMatch = status === "open" && !isMatchFinished;
+
+    if (!shouldConnectToMatch) return;
 
     connectToMatch(match.id);
-  }, [connectToMatch, match.id, status, match.status, isMatchFinished]);
+  }, [connectToMatch, match.id, status, isMatchFinished]);
 
   useEffect(() => {
     if (isMatchFinished) return;

@@ -56,6 +56,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
   const listenersRef = useRef(
     new Map<MatchServerMessageType, Set<(event: MatchServerMessage) => void>>(),
   );
+  const ongoingConnectionRef = useRef<Promise<void> | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   const [status, setStatus] = useState<SocketStatus>("idle");
@@ -83,76 +84,93 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     if (
       socketRef.current?.readyState === WebSocket.OPEN ||
       socketRef.current?.readyState === WebSocket.CONNECTING
-    )
+    ) {
       return;
+    }
+    if (ongoingConnectionRef.current) {
+      return ongoingConnectionRef.current;
+    }
 
-    setStatus("connecting");
+    ongoingConnectionRef.current = (async () => {
+      setStatus("connecting");
+      await fetch("/api/realtime", {
+        method: "GET",
+        credentials: "include",
+      });
 
-    await fetch("/api/realtime", {
-      method: "GET",
-      credentials: "include",
-    });
+      const socket = new WebSocket(getSocketUrl());
+      socketRef.current = socket;
 
-    const socket = new WebSocket(getSocketUrl());
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      setStatus("open");
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data) as MatchServerMessage;
-
-        setLastEvent(message);
-
-        listenersRef.current.get(message.type)?.forEach((listener) => {
+      await new Promise<void>((resolve, reject) => {
+        socket.onopen = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("open");
+          resolve();
+        };
+        socket.onmessage = (event) => {
+          if (socketRef.current !== socket) return;
           try {
-            listener(message);
+            const message = JSON.parse(event.data) as MatchServerMessage;
+
+            setLastEvent(message);
+
+            listenersRef.current.get(message.type)?.forEach((listener) => {
+              try {
+                listener(message);
+              } catch (error) {
+                console.error(error);
+              }
+            });
+
+            const messageType = message.type;
+
+            switch (messageType) {
+              case "opponent_left_match":
+                setOpponentStatus("disconnected");
+                break;
+              case "opponent_joined_match":
+                setOpponentStatus("active");
+                break;
+              case "opponent_submitted_code":
+              case "match_finished":
+              case "error":
+                break;
+              default:
+                throw new Error(
+                  `Unknown match response type: ${messageType satisfies never}`,
+                );
+            }
           } catch (error) {
             console.error(error);
           }
-        });
+        };
+        socket.onerror = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("error");
+          reject();
+        };
+        socket.onclose = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("closed");
+          reject();
 
-        const messageType = message.type;
+          if (socketRef.current === socket) {
+            socketRef.current = null;
+          }
+        };
+      });
+    })().finally(() => {
+      ongoingConnectionRef.current = null;
+    });
 
-        switch (messageType) {
-          case "opponent_left_match":
-            setOpponentStatus("disconnected");
-            break;
-          case "opponent_joined_match":
-            setOpponentStatus("active");
-            break;
-          case "opponent_submitted_code":
-          case "match_finished":
-          case "error":
-            break;
-          default:
-            throw new Error(
-              `Unknown match response type: ${messageType satisfies never}`,
-            );
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    socket.onerror = () => {
-      setStatus("error");
-    };
-
-    socket.onclose = () => {
-      setStatus("closed");
-
-      if (socketRef.current === socket) {
-        socketRef.current = null;
-      }
-    };
+    return ongoingConnectionRef.current;
   }, []);
 
   const send = useCallback((message: ClientMessage) => {
-    if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== socket.OPEN) return false;
 
-    socketRef.current.send(JSON.stringify(message));
+    socket.send(JSON.stringify(message));
     return true;
   }, []);
 
