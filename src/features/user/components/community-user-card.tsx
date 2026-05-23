@@ -1,17 +1,15 @@
-import { TooltipWrapper } from "@/components/tooltip-wrapper";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import { UserProfileTable } from "@/db/schema";
 import { User } from "@/lib/auth/auth";
 import { cn } from "@/lib/utils";
-import { UserPlusIcon } from "lucide-react";
 import {
   formatProgrammingLanguage,
   formatUserExperienceLevel,
 } from "../lib/formatters";
 import { CommunityUserBadges } from "./community-user-badges";
 import Link from "next/link";
+import { FriendRequestButton } from "@/features/friend-requests/components/friend-request-button";
 
 export const CommunityUserCard = ({
   user,
@@ -34,11 +32,7 @@ export const CommunityUserCard = ({
                   <h2 className="text-3xl font-semibold truncate flex-1 min-w-0 w-full">
                     {user.name}
                   </h2>
-                  <TooltipWrapper content="Add user to friends">
-                    <Button variant="outline" size="icon">
-                      <UserPlusIcon />
-                    </Button>
-                  </TooltipWrapper>
+                  <FriendRequestButton userId={user.id} />
                 </div>
 
                 <p className="text-base text-center md:text-start text-muted-foreground">

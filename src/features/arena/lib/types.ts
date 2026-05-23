@@ -15,7 +15,7 @@ export type ActiveUser = {
   isConnected: boolean;
 };
 
-export type ClientMessage = z.infer<typeof arenaClientMessageSchema>;
+export type ArenaClientMessage = z.infer<typeof arenaClientMessageSchema>;
 
 export type ArenaServerMessage =
   | ArenaWaitingServerMessage

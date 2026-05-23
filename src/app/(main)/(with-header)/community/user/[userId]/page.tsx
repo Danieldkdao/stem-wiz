@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user-avatar";
+import { FriendRequestButton } from "@/features/friend-requests/components/friend-request-button";
 import { getUserAction } from "@/features/user/actions/actions";
 import {
   formatProgrammingLanguage,
@@ -213,6 +214,7 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
                 label="LinkedIn"
                 icon="linkedin"
               />
+              <FriendRequestButton userId={user.id} />
             </div>
           </CardContent>
         </Card>

@@ -1,6 +1,9 @@
 "use client";
 
-import { ClientMessage, ArenaServerMessage } from "@/features/arena/lib/types";
+import {
+  ArenaClientMessage,
+  ArenaServerMessage,
+} from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -168,7 +171,7 @@ export const MatchObserverSocketProvider = ({
     };
   }, []);
 
-  const send = useCallback((message: ClientMessage) => {
+  const send = useCallback((message: ArenaClientMessage) => {
     if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
 
     socketRef.current.send(JSON.stringify(message));

@@ -1,14 +1,22 @@
 import { SearchIcon } from "lucide-react";
 import { getUsersAction } from "../actions/actions";
 import { CommunityUserCard } from "./community-user-card";
+import { auth } from "@/lib/auth/auth";
+import { headers } from "next/headers";
 
 export const CommunityView = async () => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return null;
   const users = await getUsersAction();
 
   return (
     <div className="mx-auto w-full max-w-250 grid grid-cols-1 gap-4">
       {users.length ? (
-        users.map((user) => <CommunityUserCard key={user.id} user={user} />)
+        users.map((user) =>
+          user.id === session.user.id ? null : (
+            <CommunityUserCard key={user.id} user={user} />
+          ),
+        )
       ) : (
         <div className="w-full rounded-md border-4 border-dashed bg-card p-5 sm:p-10 flex items-center justify-center gap-2">
           <SearchIcon className="size-10" />

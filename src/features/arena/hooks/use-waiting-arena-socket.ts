@@ -2,7 +2,7 @@
 
 import { SocketStatus } from "@/lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArenaWaitingServerMessage, ClientMessage } from "../lib/types";
+import { ArenaWaitingServerMessage, ArenaClientMessage } from "../lib/types";
 import { RealtimeUser } from "@/features/realtime/lib/types";
 
 const getSocketUrl = () => {
@@ -72,7 +72,7 @@ export const useWaitingArenaSocket = () => {
     };
   }, []);
 
-  const send = useCallback((message: ClientMessage) => {
+  const send = useCallback((message: ArenaClientMessage) => {
     if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
 
     socketRef.current.send(JSON.stringify(message));

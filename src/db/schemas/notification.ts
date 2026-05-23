@@ -1,7 +1,7 @@
 import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createdAt, id } from "../helpers";
 import { user } from "./user";
-import { notificationEventTypeEnum, NotificationPayload } from "../shared";
+import { NotificationPayload } from "../shared";
 import { relations } from "drizzle-orm";
 
 export const NotificationTable = pgTable("notifications", {
@@ -10,7 +10,6 @@ export const NotificationTable = pgTable("notifications", {
     .references(() => user.id, { onDelete: "cascade" })
     .notNull(),
   readAt: timestamp("read_at"),
-  type: notificationEventTypeEnum("type").notNull(),
   payload: jsonb("payload").$type<NotificationPayload>().notNull(),
   createdAt,
 });

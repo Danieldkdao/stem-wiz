@@ -1,7 +1,10 @@
 "use client";
 
 import { MatchResultReasonType } from "@/db/shared";
-import { ClientMessage, ArenaServerMessage } from "@/features/arena/lib/types";
+import {
+  ArenaClientMessage,
+  ArenaServerMessage,
+} from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -166,7 +169,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     return ongoingConnectionRef.current;
   }, []);
 
-  const send = useCallback((message: ClientMessage) => {
+  const send = useCallback((message: ArenaClientMessage) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== socket.OPEN) return false;
 

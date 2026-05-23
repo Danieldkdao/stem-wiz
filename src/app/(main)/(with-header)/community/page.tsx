@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { CommunityView } from "@/features/user/components/community-view";
+import { Suspense } from "react";
 
 const CommunityPage = () => {
   return (
@@ -11,9 +12,15 @@ const CommunityPage = () => {
         className="text-3xl md:text-4xl shrink-0 max-w-200 rounded-full h-14 border bg-accent-foreground md:h-18 px-6 md:px-8"
         placeholder="Search for developers..."
       />
-      <CommunityView />
+      <Suspense fallback={<CommunityLoading />}>
+        <CommunityView />
+      </Suspense>
     </div>
   );
+};
+
+const CommunityLoading = () => {
+  return <div>loading state</div>;
 };
 
 export default CommunityPage;

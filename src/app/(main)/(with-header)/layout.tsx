@@ -1,4 +1,4 @@
-import { Header } from "@/components/header";
+import { Header } from "@/components/dashboard/header";
 import { ReactNode } from "react";
 
 const WithHeaderLayout = ({ children }: { children: ReactNode }) => {

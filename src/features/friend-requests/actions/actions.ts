@@ -1,22 +1,28 @@
 "use server";
 
 import { db } from "@/db/db";
-import { user } from "@/db/schema";
+import { FriendRequestTable, user } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   NOT_FOUND_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { insertFriendRequest } from "../server/friend-requests";
 
 export const createFriendRequestAction = async (friendUserId: string) => {
-  const { userId } = await getCurrentUser();
-  if (!userId) {
+  const { userId, user: currentUser } = await getCurrentUser({ allData: true });
+  if (!userId || !currentUser) {
     return {
       error: true,
       message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+  if (userId === friendUserId) {
+    return {
+      error: true,
+      message: "You cannot send a friend request to yourself.",
     };
   }
 
@@ -32,18 +38,33 @@ export const createFriendRequestAction = async (friendUserId: string) => {
     };
   }
 
+  const [existingFriendRequest] = await db
+    .select()
+    .from(FriendRequestTable)
+    .where(
+      and(
+        eq(FriendRequestTable.fromUserId, userId),
+        eq(FriendRequestTable.toUserId, friendUserId),
+      ),
+    );
+
+  if (existingFriendRequest) {
+    return {
+      error: true,
+      message: "You have already sent a friend request to this user.",
+    };
+  }
+
   try {
-    const insertedFriendRequest = await insertFriendRequest({
+    const notification = await insertFriendRequest(currentUser?.name, {
       fromUserId: userId,
       toUserId: friendUserId,
     });
-    if (!insertedFriendRequest) {
-      throw new Error("Failed to create friend request.");
-    }
 
     return {
       error: false,
-      message: "Friend request created successfully!",
+      message: "Friend request sent successfully!",
+      notificationId: notification.id,
     };
   } catch (error) {
     console.error(error);

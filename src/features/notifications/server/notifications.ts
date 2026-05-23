@@ -1,13 +1,17 @@
-import { RealtimeWebSocket } from "@/features/realtime/lib/types";
-import { NotificationClientEventType } from "../lib/schemas";
 import { db } from "@/db/db";
 import { NotificationTable } from "@/db/schema";
+import { RealtimeWebSocket } from "@/features/realtime/lib/types";
+import {
+  sendToConnection,
+  sendToUser,
+} from "@/features/realtime/server/connection-state";
 import { eq } from "drizzle-orm";
-import { sendToConnection } from "@/features/realtime/server/connection-state";
+import { NotificationClientEventType } from "../lib/schemas";
 import {
   handleAcceptFriendRequestEvent,
-  handleFriendRequestReceivedEvent,
+  handleFriendRequestSentEvent,
 } from "./notification-events";
+import { getNotificationListItem } from "../lib/formatters";
 
 export const handleNewNotification = async (
   ws: RealtimeWebSocket,
@@ -29,24 +33,31 @@ export const handleNewNotification = async (
   const payload = existingNotification.payload;
   const eventType = payload.type;
 
+  let recipientUserId: string | null = null;
+
   try {
     switch (eventType) {
       case "friend_request_accepted":
-        await handleAcceptFriendRequestEvent(connectionId, payload);
+        recipientUserId = await handleAcceptFriendRequestEvent(payload);
         break;
-      case "friend_request_received":
-        await handleFriendRequestReceivedEvent(connectionId, payload);
+      case "friend_request_sent":
+        recipientUserId = await handleFriendRequestSentEvent(payload);
         break;
       case "match_finished":
-        break;
       case "match_invite":
-        break;
       case "system":
         break;
       default:
         throw new Error(
           `Unknown notification event type: ${eventType satisfies never}`,
         );
+    }
+
+    if (recipientUserId) {
+      sendToUser(recipientUserId, {
+        type: "new_notification",
+        notification: getNotificationListItem(existingNotification),
+      });
     }
   } catch (error) {
     console.error(error);
