@@ -22,7 +22,7 @@ const options = [
     description:
       "Feeling shaky on some concepts? Head to the oracle to get personalized traning and feedback to improve your skills.",
     icon: SparklesIcon,
-    href: "/oracle",
+    href: "/oracle/sessions",
   },
 ];
 

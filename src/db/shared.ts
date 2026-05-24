@@ -131,7 +131,7 @@ export const friendRequestStatuses = [
   "accepted",
   "rejected",
 ] as const;
-export type FriendRequestType = (typeof friendRequestStatuses)[number];
+export type FriendRequestStatusType = (typeof friendRequestStatuses)[number];
 export const friendRequestStatusEnum = pgEnum(
   "friend_request_statuses",
   friendRequestStatuses,
@@ -164,3 +164,27 @@ export type NotificationPayload =
   | { type: "system"; title: string; message: string };
 export type NotificationPayloadEvent<T extends NotificationPayload["type"]> =
   Extract<NotificationPayload, { type: T }>;
+
+export const oracleSessionStatuses = [
+  "active",
+  "completed",
+  "abandoned",
+] as const;
+export type OracleSessionStatusType = (typeof oracleSessionStatuses)[number];
+export const oracleSessionStatusEnum = pgEnum(
+  "oracle_session_statuses",
+  oracleSessionStatuses,
+);
+
+export const oracleSessionModes = [
+  "guided",
+  "debug",
+  "interview",
+  "socratic",
+  "review",
+] as const;
+export type OracleSessionMode = (typeof oracleSessionModes)[number];
+export const oracleSessionModeEnum = pgEnum(
+  "oracle_session_modes",
+  oracleSessionModes,
+);

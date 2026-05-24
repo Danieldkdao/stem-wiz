@@ -10,3 +10,5 @@ export * from "./schemas/chat";
 export * from "./schemas/chat-message";
 export * from "./schemas/friend-request";
 export * from "./schemas/notification";
+export * from "./schemas/oracle-problem";
+export * from "./schemas/oracle-session";
