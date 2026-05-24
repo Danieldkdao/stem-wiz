@@ -40,24 +40,29 @@ export const FriendRequestButton = ({
     <TooltipWrapper
       content={
         existingFriendRequest
-          ? existingFriendRequest.acceptedAt
-            ? "You are friends with this user."
-            : "Your friend request is pending"
+          ? existingFriendRequest.status === "pending"
+            ? "Your friend request is pending"
+            : existingFriendRequest.status === "accepted"
+              ? "You are friends with this user."
+              : "Add user to friends"
           : "Add user to friends"
       }
     >
       <Button
         variant="outline"
         size="icon"
-        disabled={!!existingFriendRequest || isPending}
+        disabled={isPending}
         onClick={sendFriendRequest}
       >
         <LoadingSwap isLoading={isPending}>
+          {/* todo: fix this up and make sure that depending on if the user is the recipient or the sender they will have different uis (popover w/ accept/reject options vs tooltip message) */}
           {existingFriendRequest ? (
-            existingFriendRequest.acceptedAt ? (
+            existingFriendRequest.status === "pending" ? (
+              <UserCircleIcon />
+            ) : existingFriendRequest.status === "accepted" ? (
               <UserCheckIcon className="text-emerald-500" />
             ) : (
-              <UserCircleIcon />
+              <UserPlusIcon />
             )
           ) : (
             <UserPlusIcon />

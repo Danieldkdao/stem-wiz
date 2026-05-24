@@ -9,8 +9,8 @@ import {
 import { upsertUserProfile } from "../server/user-profiles";
 import { userProfileSchema, UserProfileSchemaType } from "./schemas";
 import { db } from "@/db/db";
-import { user, UserProfileTable } from "@/db/schema";
-import { eq, getTableColumns } from "drizzle-orm";
+import { FriendRequestTable, user, UserProfileTable } from "@/db/schema";
+import { eq, getTableColumns, sql } from "drizzle-orm";
 import { cacheTag } from "next/cache";
 import { getUserProfileTag } from "../server/cache/user-profiles";
 import { getUserGlobalTag, getUserIdTag } from "../server/cache/users";
@@ -67,7 +67,7 @@ export const getUserProfileAction = async (userId: string) => {
   return existingUserProfile ?? null;
 };
 
-export const getUsersAction = async () => {
+export const getUsersAction = async (userId: string) => {
   "use cache";
   cacheTag(getUserGlobalTag());
 
@@ -75,6 +75,27 @@ export const getUsersAction = async () => {
     .select({
       ...getTableColumns(user),
       profile: getTableColumns(UserProfileTable),
+      existingFriendRequest: sql<typeof FriendRequestTable.$inferSelect>`
+          (
+            SELECT 
+                jsonb_build_object(
+                'id', fr.id,
+                'fromUserId', fr.from_user_id,
+                'toUserId', fr.to_user_id,
+                'status', fr.status,
+                'respondedAt', fr.responded_at,
+                'createdAt', fr.created_at,
+                'updatedAt', fr.updated_at
+              )
+            FROM ${FriendRequestTable} fr
+            WHERE
+              (fr.from_user_id = ${user.id} AND fr.to_user_id = ${userId})
+              OR
+              (fr.to_user_id = ${user.id} AND fr.from_user_id = ${userId})
+              AND fr.status != 'rejected'
+            LIMIT 1
+          )
+      `,
     })
     .from(user)
     .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id));
@@ -86,12 +107,35 @@ export const getUserAction = async (userId: string) => {
   "use cache";
   cacheTag(getUserIdTag(userId));
 
-  const existingUser = await db.query.user.findFirst({
-    where: eq(user.id, userId),
-    with: {
-      profile: true,
-    },
-  });
+  const [existingUser] = await db
+    .select({
+      ...getTableColumns(user),
+      profile: getTableColumns(UserProfileTable),
+      existingFriendRequest: sql<typeof FriendRequestTable.$inferSelect>`
+          (
+            SELECT 
+                jsonb_build_object(
+                'id', fr.id,
+                'fromUserId', fr.from_user_id,
+                'toUserId', fr.to_user_id,
+                'status', fr.status,
+                'respondedAt', fr.responded_at,
+                'createdAt', fr.created_at,
+                'updatedAt', fr.updated_at
+              )
+            FROM ${FriendRequestTable} fr
+            WHERE
+              (fr.from_user_id = ${user.id} AND fr.to_user_id = ${userId})
+              OR
+              (fr.to_user_id = ${user.id} AND fr.from_user_id = ${userId})
+              AND fr.status != 'rejected'
+            LIMIT 1
+          )
+      `,
+    })
+    .from(user)
+    .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id))
+    .where(eq(user.id, userId));
 
   return existingUser ?? null;
 };

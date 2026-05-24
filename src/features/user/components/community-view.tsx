@@ -7,7 +7,7 @@ import { headers } from "next/headers";
 export const CommunityView = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
-  const users = await getUsersAction();
+  const users = await getUsersAction(session.user.id);
 
   return (
     <div className="mx-auto w-full max-w-250 grid grid-cols-1 gap-4">

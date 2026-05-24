@@ -126,6 +126,17 @@ export const userGoals = [
 export type UserGoalType = (typeof userGoals)[number];
 export const userGoalEnum = pgEnum("user_goals", userGoals);
 
+export const friendRequestStatuses = [
+  "pending",
+  "accepted",
+  "rejected",
+] as const;
+export type FriendRequestType = (typeof friendRequestStatuses)[number];
+export const friendRequestStatusEnum = pgEnum(
+  "friend_request_statuses",
+  friendRequestStatuses,
+);
+
 export const notificationEventTypes = [
   "friend_request_sent",
   "friend_request_accepted",

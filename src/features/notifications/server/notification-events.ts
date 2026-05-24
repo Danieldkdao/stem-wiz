@@ -13,7 +13,8 @@ export const handleAcceptFriendRequestEvent = async (
       and(
         eq(FriendRequestTable.id, event.friendRequestId),
         eq(FriendRequestTable.toUserId, event.acceptedByUserId),
-        isNotNull(FriendRequestTable.acceptedAt),
+        eq(FriendRequestTable.status, "accepted"),
+        isNotNull(FriendRequestTable.respondedAt),
       ),
     );
 
@@ -34,7 +35,8 @@ export const handleFriendRequestSentEvent = async (
       and(
         eq(FriendRequestTable.id, event.friendRequestId),
         eq(FriendRequestTable.fromUserId, event.fromUserId),
-        isNull(FriendRequestTable.acceptedAt),
+        eq(FriendRequestTable.status, "pending"),
+        isNull(FriendRequestTable.respondedAt),
       ),
     );
 

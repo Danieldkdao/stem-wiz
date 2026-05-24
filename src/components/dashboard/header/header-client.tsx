@@ -44,7 +44,7 @@ export const HeaderClient = ({
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className="w-full rounded-md bg-muted p-5 flex flex-col gap-0.5"
+              className="w-full rounded-md bg-muted p-4 flex flex-col gap-0.5"
             >
               <h2 className="text-lg font-semibold">{notification.title}</h2>
               <p className="text-muted-foreground">{notification.message}</p>

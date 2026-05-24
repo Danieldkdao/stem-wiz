@@ -214,7 +214,10 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
                 label="LinkedIn"
                 icon="linkedin"
               />
-              <FriendRequestButton userId={user.id} />
+              <FriendRequestButton
+                userId={user.id}
+                existingFriendRequest={user.existingFriendRequest}
+              />
             </div>
           </CardContent>
         </Card>

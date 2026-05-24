@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
-import { UserProfileTable } from "@/db/schema";
+import { FriendRequestTable, UserProfileTable } from "@/db/schema";
 import { User } from "@/lib/auth/auth";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +14,10 @@ import { FriendRequestButton } from "@/features/friend-requests/components/frien
 export const CommunityUserCard = ({
   user,
 }: {
-  user: User & { profile: typeof UserProfileTable.$inferSelect };
+  user: User & {
+    profile: typeof UserProfileTable.$inferSelect;
+    existingFriendRequest: typeof FriendRequestTable.$inferSelect;
+  };
 }) => {
   return (
     <Link href={`/community/user/${user.id}`} className="w-full h-full">
@@ -32,7 +35,10 @@ export const CommunityUserCard = ({
                   <h2 className="text-3xl font-semibold truncate flex-1 min-w-0 w-full">
                     {user.name}
                   </h2>
-                  <FriendRequestButton userId={user.id} />
+                  <FriendRequestButton
+                    userId={user.id}
+                    existingFriendRequest={user.existingFriendRequest}
+                  />
                 </div>
 
                 <p className="text-base text-center md:text-start text-muted-foreground">

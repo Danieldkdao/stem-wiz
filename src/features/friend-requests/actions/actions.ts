@@ -45,6 +45,7 @@ export const createFriendRequestAction = async (friendUserId: string) => {
       and(
         eq(FriendRequestTable.fromUserId, userId),
         eq(FriendRequestTable.toUserId, friendUserId),
+        eq(FriendRequestTable.status, "pending"),
       ),
     );
 
@@ -56,10 +57,14 @@ export const createFriendRequestAction = async (friendUserId: string) => {
   }
 
   try {
-    const notification = await insertFriendRequest(currentUser?.name, {
-      fromUserId: userId,
-      toUserId: friendUserId,
-    });
+    const notification = await insertFriendRequest(
+      currentUser.id,
+      currentUser.name,
+      {
+        fromUserId: userId,
+        toUserId: friendUserId,
+      },
+    );
 
     return {
       error: false,

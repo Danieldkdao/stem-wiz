@@ -1,7 +1,9 @@
 import { db } from "@/db/db";
 import { FriendRequestTable, NotificationTable } from "@/db/schema";
+import { revalidateUserCache } from "@/features/user/server/cache/users";
 
 export const insertFriendRequest = async (
+  userId: string,
   userName: string,
   friendRequest: typeof FriendRequestTable.$inferInsert,
 ) => {
@@ -34,6 +36,8 @@ export const insertFriendRequest = async (
 
     return insertedNotification;
   });
+
+  revalidateUserCache(userId);
 
   return insertedNotification;
 };
