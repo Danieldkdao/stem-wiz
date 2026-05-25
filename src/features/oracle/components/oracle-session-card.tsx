@@ -15,17 +15,19 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
   ORACLE_SESSION_MODE_ICONS,
-  ORACLE_SESSION_STATUS_ICONS,
+  ORACLE_SESSION_STATE,
 } from "../lib/constants";
 import { ClockIcon, LucideIcon, SquareStackIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const OracleSessionCard = ({
   session,
 }: {
   session: typeof OracleSessionTable.$inferSelect;
 }) => {
-  const StatusIcon = ORACLE_SESSION_STATUS_ICONS[session.status];
+  const statusState = ORACLE_SESSION_STATE[session.status];
+  const StatusIcon = statusState.icon;
   const ModeIcon = ORACLE_SESSION_MODE_ICONS[session.mode];
 
   const listPoints: { icon: LucideIcon; data: string }[] = [
@@ -70,7 +72,7 @@ export const OracleSessionCard = ({
             const PointIcon = point.icon;
 
             return (
-              <div className="flex items-center gap-2">
+              <div key={point.data} className="flex items-center gap-2">
                 <PointIcon className="text-muted-foreground size-5" />
                 <span className="text-muted-foreground text-base font-medium">
                   {point.data}
@@ -80,23 +82,18 @@ export const OracleSessionCard = ({
           })}
         </div>
         <Button
-          variant={
-            session.status === "upcoming" || session.status === "active"
-              ? "default"
-              : "outline"
-          }
-          disabled={
-            session.status === "completed" || session.status === "abandoned"
-          }
+          variant={statusState.buttonVariant}
+          disabled={statusState.isDisabled}
           className="w-full"
+          asChild
         >
-          {session.status === "upcoming"
-            ? "Start session"
-            : session.status === "active"
-              ? "Resume session"
-              : session.status === "completed"
-                ? "Session completed"
-                : "Session abandoned"}
+          {statusState.href ? (
+            <Link href={statusState.href(session.id)}>
+              {statusState.buttonText}
+            </Link>
+          ) : (
+            statusState.buttonText
+          )}
         </Button>
       </CardContent>
     </Card>

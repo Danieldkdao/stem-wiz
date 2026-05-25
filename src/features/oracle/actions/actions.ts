@@ -12,10 +12,13 @@ import {
 } from "@/lib/constants";
 import { insertOracleSession } from "../server/oracle-sessions";
 import { cacheTag } from "next/cache";
-import { getOracleSessionUserTag } from "../server/cache/oracle-sessions";
+import {
+  getOracleSessionIdTag,
+  getOracleSessionUserTag,
+} from "../server/cache/oracle-sessions";
 import { db } from "@/db/db";
 import { OracleSessionTable } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 export const createNewSessionAction = async (
   unsafeData: OracleSessionCreationSchemaType,
@@ -71,4 +74,21 @@ export const getUserSessionsAction = async (userId: string) => {
     .orderBy(desc(OracleSessionTable.createdAt));
 
   return userSessions;
+};
+
+export const getOneSessionAction = async (
+  userId: string,
+  sessionId: string,
+) => {
+  "use cache";
+  cacheTag(getOracleSessionIdTag(sessionId));
+
+  const existingSession = await db.query.OracleSessionTable.findFirst({
+    where: and(
+      eq(OracleSessionTable.userId, userId),
+      eq(OracleSessionTable.id, sessionId),
+    ),
+  });
+
+  return existingSession ?? null;
 };
