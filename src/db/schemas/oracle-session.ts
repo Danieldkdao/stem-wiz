@@ -13,9 +13,8 @@ export const OracleSessionTable = pgTable("oracle_sessions", {
   numberOfProblems: integer("number_of_problems").notNull(),
   status: oracleSessionStatusEnum("status").notNull().default("active"),
   mode: oracleSessionModeEnum("mode").notNull(),
-  startedAt: timestamp("started_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  additionalInstructions: text("additional_instructions"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt,
   updatedAt,

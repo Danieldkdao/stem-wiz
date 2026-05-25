@@ -183,7 +183,7 @@ export const oracleSessionModes = [
   "socratic",
   "review",
 ] as const;
-export type OracleSessionMode = (typeof oracleSessionModes)[number];
+export type OracleSessionModeType = (typeof oracleSessionModes)[number];
 export const oracleSessionModeEnum = pgEnum(
   "oracle_session_modes",
   oracleSessionModes,

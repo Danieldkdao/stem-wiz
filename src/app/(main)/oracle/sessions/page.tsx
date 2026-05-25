@@ -1,5 +1,5 @@
 import { Header } from "@/components/dashboard/header";
-import { Button } from "@/components/ui/button";
+import { NewSessionDialog } from "@/features/oracle/components/new-session-dialog";
 import { PlusIcon } from "lucide-react";
 
 const OracleSessionsListPage = () => {
@@ -8,7 +8,7 @@ const OracleSessionsListPage = () => {
       <Header />
       <div className="w-full flex-1 overflow-y-auto">
         <div className="w-full h-full pt-10 px-6 overflow-y-auto">
-          <div className="w-full max-w-250 flex flex-col gap-4">
+          <div className="w-full max-w-7xl mx-auto flex flex-col gap-4">
             <div className="flex items-center gap-2 justify-between">
               <div className="flex flex-col gap-0.5">
                 <h1 className="text-3xl font-semibold">Oracle Sessions</h1>
@@ -17,10 +17,15 @@ const OracleSessionsListPage = () => {
                   session, or start a new session.
                 </p>
               </div>
-              <Button>
-                <PlusIcon />
-                New Session
-              </Button>
+              <NewSessionDialog
+                useButton
+                buttonChildren={
+                  <>
+                    <PlusIcon />
+                    New Session
+                  </>
+                }
+              />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
           </div>
