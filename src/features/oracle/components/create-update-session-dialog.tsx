@@ -29,47 +29,64 @@ import { oracleSessionModes } from "@/db/shared";
 import { SetterType } from "@/lib/types";
 import { cn, getInputErrorStyle } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ReactNode, useState } from "react";
+import { ComponentProps, ReactNode, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-  oracleSessionCreationSchema,
-  OracleSessionCreationSchemaType,
+  oracleSessionActionSchema,
+  OracleSessionActionSchemaType,
 } from "../actions/schemas";
 import { formatOracleSessionMode } from "../lib/formatters";
 import { Checkbox } from "@/components/ui/checkbox";
-import { createNewSessionAction } from "../actions/actions";
+import {
+  createNewSessionAction,
+  updateSessionAction,
+} from "../actions/actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { OracleSession } from "../lib/types";
 
-type NewSessionDialogProps = {
+type CreateUpdateSessionDialogProps = {
   open?: boolean;
   setOpen?: SetterType<boolean>;
   useButton: boolean;
-  buttonClassName?: string;
   buttonChildren?: ReactNode;
-};
+  existingSession?: OracleSession;
+} & ComponentProps<typeof Button>;
 
-export const NewSessionDialog = ({
+export const CreateUpdateSessionDialog = ({
   open,
   setOpen,
   useButton = false,
-  buttonClassName,
   buttonChildren,
-}: NewSessionDialogProps) => {
+  existingSession,
+  onClick,
+  ...buttonProps
+}: CreateUpdateSessionDialogProps) => {
   const router = useRouter();
   const [hasChildrenOpen, setHasChildrenOpen] = useState(false);
-  const [startAfterCreation, setStartAfterCreation] = useState(true);
-  const form = useForm<OracleSessionCreationSchemaType>({
-    resolver: zodResolver(oracleSessionCreationSchema),
-    defaultValues: {
-      additionalInformation: "",
-    },
+  const [startAfterCreation, setStartAfterCreation] =
+    useState(!existingSession);
+  const form = useForm<OracleSessionActionSchemaType>({
+    resolver: zodResolver(oracleSessionActionSchema),
+    defaultValues: existingSession
+      ? {
+          title: existingSession.title,
+          additionalInstructions:
+            existingSession.additionalInstructions ?? undefined,
+          description: existingSession.description ?? undefined,
+          mode: existingSession.mode,
+          numberOfProblems: existingSession.numberOfProblems,
+        }
+      : {
+          additionalInstructions: "",
+        },
   });
 
-  const handleSessionCreation = async (
-    data: OracleSessionCreationSchemaType,
-  ) => {
-    const response = await createNewSessionAction(data);
+  const handleSessionCreation = async (data: OracleSessionActionSchemaType) => {
+    const action = existingSession
+      ? updateSessionAction(existingSession.id, data)
+      : createNewSessionAction(data);
+    const response = await action;
     if (response.error) {
       toast.error(response.message);
     } else {
@@ -87,8 +104,13 @@ export const NewSessionDialog = ({
     <>
       {useButton && (
         <Button
-          className={buttonClassName}
-          onClick={() => setHasChildrenOpen(true)}
+          {...buttonProps}
+          onClick={(event) => {
+            onClick?.(event);
+            if (!event.defaultPrevented) {
+              setHasChildrenOpen(true);
+            }
+          }}
         >
           {buttonChildren}
         </Button>
@@ -99,9 +121,13 @@ export const NewSessionDialog = ({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Session</DialogTitle>
+            <DialogTitle>
+              {existingSession ? "Update session" : "New Session"}
+            </DialogTitle>
             <DialogDescription>
-              Configure a new session with the Oracle.
+              {existingSession
+                ? "Adjust the details of your session."
+                : "Configure a new session with the Oracle."}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -222,15 +248,15 @@ export const NewSessionDialog = ({
             />
             <Controller
               control={form.control}
-              name="additionalInformation"
+              name="additionalInstructions"
               render={({ field: { value, ...props }, fieldState }) => (
                 <Field>
-                  <FieldLabel>Additional Information (Optional)</FieldLabel>
+                  <FieldLabel>Additional Instructions (Optional)</FieldLabel>
                   <FieldContent>
                     <Textarea
                       {...props}
                       value={value ?? ""}
-                      placeholder="Additional information that the Oracle should know about you during the session..."
+                      placeholder="Additional instructions that the Oracle should know..."
                       className={cn(
                         "max-h-32",
                         getInputErrorStyle(fieldState.error),
@@ -243,33 +269,35 @@ export const NewSessionDialog = ({
                 </Field>
               )}
             />
-            <Field className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <FieldContent className="flex-0">
-                  <Checkbox
-                    id="start_immediately_checkbox"
-                    checked={startAfterCreation}
-                    onCheckedChange={(checked) =>
-                      setStartAfterCreation(
-                        checked === "indeterminate" ? false : checked,
-                      )
-                    }
-                  />
-                </FieldContent>
-                <FieldLabel
-                  className="cursor-pointer"
-                  htmlFor="start_immediately_checkbox"
-                >
-                  Start immediately
-                </FieldLabel>
-              </div>
-              <FieldDescription>
-                Start the session immediately after it is created.
-              </FieldDescription>
-            </Field>
+            {!existingSession && (
+              <Field className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <FieldContent className="flex-0">
+                    <Checkbox
+                      id="start_immediately_checkbox"
+                      checked={startAfterCreation}
+                      onCheckedChange={(checked) =>
+                        setStartAfterCreation(
+                          checked === "indeterminate" ? false : checked,
+                        )
+                      }
+                    />
+                  </FieldContent>
+                  <FieldLabel
+                    className="cursor-pointer"
+                    htmlFor="start_immediately_checkbox"
+                  >
+                    Start immediately
+                  </FieldLabel>
+                </div>
+                <FieldDescription>
+                  Start the session immediately after it is created.
+                </FieldDescription>
+              </Field>
+            )}
             <Button className="w-full" disabled={form.formState.isSubmitting}>
               <LoadingSwap isLoading={form.formState.isSubmitting}>
-                Create Session
+                {existingSession ? "Save changes" : "Create Session"}
               </LoadingSwap>
             </Button>
           </form>

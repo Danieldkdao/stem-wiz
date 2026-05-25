@@ -1,7 +1,7 @@
 import { oracleSessionModes } from "@/db/shared";
 import z from "zod";
 
-export const oracleSessionCreationSchema = z.object({
+export const oracleSessionActionSchema = z.object({
   title: z
     .string()
     .trim()
@@ -27,8 +27,8 @@ export const oracleSessionCreationSchema = z.object({
     })
     .max(5, { error: "Cannot be greater than 5." }),
   mode: z.enum(oracleSessionModes, { error: "Please select a mode." }),
-  additionalInformation: z.string().optional(),
+  additionalInstructions: z.string().optional(),
 });
-export type OracleSessionCreationSchemaType = z.infer<
-  typeof oracleSessionCreationSchema
+export type OracleSessionActionSchemaType = z.infer<
+  typeof oracleSessionActionSchema
 >;

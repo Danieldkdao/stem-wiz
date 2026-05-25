@@ -1,7 +1,7 @@
 import { Header } from "@/components/dashboard/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { getUserSessionsAction } from "@/features/oracle/actions/actions";
-import { NewSessionDialog } from "@/features/oracle/components/new-session-dialog";
+import { CreateUpdateSessionDialog } from "@/features/oracle/components/create-update-session-dialog";
 import { OracleSessionCard } from "@/features/oracle/components/oracle-session-card";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { PlusIcon } from "lucide-react";
@@ -22,7 +22,7 @@ const OracleSessionsListPage = () => {
                   session, or start a new session.
                 </p>
               </div>
-              <NewSessionDialog
+              <CreateUpdateSessionDialog
                 useButton
                 buttonChildren={
                   <>
@@ -70,9 +70,9 @@ const OracleSessionsListSuspense = async () => {
           You haven't created any sessions yet. Click on the button below to get
           started.
         </p>
-        <NewSessionDialog
+        <CreateUpdateSessionDialog
           useButton
-          buttonClassName="mx-auto w-full max-w-100 mt-4"
+          className="mx-auto w-full max-w-100 mt-4"
           buttonChildren={
             <>
               <PlusIcon />

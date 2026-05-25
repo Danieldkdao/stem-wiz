@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
+import { CreateUpdateSessionDialog } from "@/features/oracle/components/create-update-session-dialog";
 import {
   ORACLE_SESSION_MODE_ICONS,
   ORACLE_SESSION_STATE,
@@ -134,9 +135,13 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
               </div>
             </div>
             <TooltipWrapper content="Edit session configuration">
-              <Button variant="ghost" size="icon">
-                <EditIcon />
-              </Button>
+              <CreateUpdateSessionDialog
+                useButton
+                buttonChildren={<EditIcon />}
+                existingSession={existingSession}
+                variant="ghost"
+                size="icon"
+              />
             </TooltipWrapper>
           </div>
 
