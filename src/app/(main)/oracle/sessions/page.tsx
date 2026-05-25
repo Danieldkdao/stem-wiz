@@ -1,6 +1,11 @@
 import { Header } from "@/components/dashboard/header";
+import { Card, CardContent } from "@/components/ui/card";
+import { getUserSessionsAction } from "@/features/oracle/actions/actions";
 import { NewSessionDialog } from "@/features/oracle/components/new-session-dialog";
+import { OracleSessionCard } from "@/features/oracle/components/oracle-session-card";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { PlusIcon } from "lucide-react";
+import { Suspense } from "react";
 
 const OracleSessionsListPage = () => {
   return (
@@ -27,11 +32,56 @@ const OracleSessionsListPage = () => {
                 }
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+            <Suspense fallback={<OracleSessionsListLoading />}>
+              <OracleSessionsListSuspense />
+            </Suspense>
           </div>
         </div>
       </div>
     </div>
+  );
+};
+
+const OracleSessionsListLoading = () => {
+  return <div>loading</div>;
+};
+
+const OracleSessionsListSuspense = async () => {
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return <div>unauthenticated state maybe just null</div>;
+  }
+
+  const oracleSessions = await getUserSessionsAction(userId);
+
+  return oracleSessions.length ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {oracleSessions.map((session) => (
+        <OracleSessionCard key={session.id} session={session} />
+      ))}
+    </div>
+  ) : (
+    <Card className="ring-0 border-4 border-dashed bg-card/75">
+      <CardContent className="flex flex-col items-center gap-2 py-4 w-full">
+        <h1 className="text-3xl font-semibold text-center">
+          No sessions created yet
+        </h1>
+        <p className="text-muted-foreground text-center max-w-150">
+          You haven't created any sessions yet. Click on the button below to get
+          started.
+        </p>
+        <NewSessionDialog
+          useButton
+          buttonClassName="mx-auto w-full max-w-100 mt-4"
+          buttonChildren={
+            <>
+              <PlusIcon />
+              Create your first session
+            </>
+          }
+        />
+      </CardContent>
+    </Card>
   );
 };
 

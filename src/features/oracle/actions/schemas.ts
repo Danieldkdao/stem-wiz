@@ -2,6 +2,12 @@ import { oracleSessionModes } from "@/db/shared";
 import z from "zod";
 
 export const oracleSessionCreationSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .max(100, { error: "Cannot be longer than 100 characters." })
+    .optional(),
+  description: z.string().optional(),
   numberOfProblems: z
     .number({
       error:

@@ -3,19 +3,25 @@ import { HeaderClient } from "./header-client";
 import { Suspense } from "react";
 import { getUserNotificationsAction } from "@/features/notifications/actions/actions";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Header = () => {
   return (
-    <nav className="flex w-full items-center gap-2 p-4 bg-card border-b justify-between">
-      <Link href="/dashboard">
+    <nav className="w-full p-4 bg-card border-b">
+      <div className="flex items-center gap-2 mx-auto w-full max-w-7xl justify-between">
+        <Link href="/dashboard">
+          <div className="flex items-center gap-2">
+            <CodeIcon className="text-primary" />
+            <span className="text-xl font-semibold text-primary">Synapse</span>
+          </div>
+        </Link>
         <div className="flex items-center gap-2">
-          <CodeIcon className="text-primary" />
-          <span className="text-xl font-semibold text-primary">Synapse</span>
+          <Suspense fallback={<HeaderLoading />}>
+            <HeaderSuspense />
+          </Suspense>
+          <ThemeToggle />
         </div>
-      </Link>
-      <Suspense fallback={<HeaderLoading />}>
-        <HeaderSuspense />
-      </Suspense>
+      </div>
     </nav>
   );
 };

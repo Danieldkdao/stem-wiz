@@ -13,6 +13,6 @@ export const revalidateOracleSessionCache = (
   userId: string,
   sessionId: string,
 ) => {
-  revalidateTag(getOracleSessionUserTag(sessionId), { expire: 0 });
-  revalidateTag(getOracleSessionIdTag(userId), { expire: 0 });
+  revalidateTag(getOracleSessionUserTag(userId), { expire: 0 });
+  revalidateTag(getOracleSessionIdTag(sessionId), { expire: 0 });
 };

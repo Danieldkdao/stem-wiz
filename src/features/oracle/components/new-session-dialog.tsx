@@ -45,6 +45,7 @@ type NewSessionDialogProps = {
   open?: boolean;
   setOpen?: SetterType<boolean>;
   useButton: boolean;
+  buttonClassName?: string;
   buttonChildren?: ReactNode;
 };
 
@@ -52,6 +53,7 @@ export const NewSessionDialog = ({
   open,
   setOpen,
   useButton = false,
+  buttonClassName,
   buttonChildren,
 }: NewSessionDialogProps) => {
   const router = useRouter();
@@ -84,7 +86,10 @@ export const NewSessionDialog = ({
   return (
     <>
       {useButton && (
-        <Button onClick={() => setHasChildrenOpen(true)}>
+        <Button
+          className={buttonClassName}
+          onClick={() => setHasChildrenOpen(true)}
+        >
           {buttonChildren}
         </Button>
       )}
@@ -103,6 +108,49 @@ export const NewSessionDialog = ({
             onSubmit={form.handleSubmit(handleSessionCreation)}
             className="flex flex-col gap-4 w-full"
           >
+            <Controller
+              control={form.control}
+              name="title"
+              render={({ field: { value, ...props }, fieldState }) => (
+                <Field>
+                  <FieldLabel>Title (Optional)</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      {...props}
+                      value={value ?? ""}
+                      placeholder="A memorable title for your session..."
+                      className={getInputErrorStyle(fieldState.error)}
+                    />
+                  </FieldContent>
+                  {fieldState.error && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="description"
+              render={({ field: { value, ...props }, fieldState }) => (
+                <Field>
+                  <FieldLabel>Description (Optional)</FieldLabel>
+                  <FieldContent>
+                    <Textarea
+                      {...props}
+                      value={value ?? ""}
+                      placeholder="An optional description that explains the purpose of this session + other notes..."
+                      className={cn(
+                        "max-h-32",
+                        getInputErrorStyle(fieldState.error),
+                      )}
+                    />
+                  </FieldContent>
+                  {fieldState.error && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
             <Controller
               name="numberOfProblems"
               control={form.control}

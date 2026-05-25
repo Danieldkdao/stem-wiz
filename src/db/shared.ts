@@ -166,6 +166,7 @@ export type NotificationPayloadEvent<T extends NotificationPayload["type"]> =
   Extract<NotificationPayload, { type: T }>;
 
 export const oracleSessionStatuses = [
+  "upcoming",
   "active",
   "completed",
   "abandoned",

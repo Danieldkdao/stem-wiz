@@ -1,5 +1,11 @@
 import { relations } from "drizzle-orm";
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
 import { oracleSessionModeEnum, oracleSessionStatusEnum } from "../shared";
 import { OracleProblemTable } from "./oracle-problem";
@@ -10,8 +16,10 @@ export const OracleSessionTable = pgTable("oracle_sessions", {
   userId: text("user_id")
     .references(() => user.id, { onDelete: "cascade" })
     .notNull(),
+  title: varchar("title").notNull(),
+  description: text("description"),
   numberOfProblems: integer("number_of_problems").notNull(),
-  status: oracleSessionStatusEnum("status").notNull().default("active"),
+  status: oracleSessionStatusEnum("status").notNull().default("upcoming"),
   mode: oracleSessionModeEnum("mode").notNull(),
   additionalInstructions: text("additional_instructions"),
   startedAt: timestamp("started_at", { withTimezone: true }),

@@ -11,6 +11,11 @@ import {
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
 import { insertOracleSession } from "../server/oracle-sessions";
+import { cacheTag } from "next/cache";
+import { getOracleSessionUserTag } from "../server/cache/oracle-sessions";
+import { db } from "@/db/db";
+import { OracleSessionTable } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 
 export const createNewSessionAction = async (
   unsafeData: OracleSessionCreationSchemaType,
@@ -32,7 +37,11 @@ export const createNewSessionAction = async (
   }
 
   try {
-    const createdSession = await insertOracleSession({ userId, ...data });
+    const createdSession = await insertOracleSession({
+      userId,
+      ...data,
+      title: data.title ?? "New Session",
+    });
 
     if (!createdSession) {
       throw new Error("Failed to create session.");
@@ -49,4 +58,17 @@ export const createNewSessionAction = async (
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const getUserSessionsAction = async (userId: string) => {
+  "use cache";
+  cacheTag(getOracleSessionUserTag(userId));
+
+  const userSessions = await db
+    .select()
+    .from(OracleSessionTable)
+    .where(eq(OracleSessionTable.userId, userId))
+    .orderBy(desc(OracleSessionTable.createdAt));
+
+  return userSessions;
 };
