@@ -1,6 +1,18 @@
-import { jsonb, pgTable, text, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
-import { difficultyLevelEnum, programmingLanguageEnum } from "../shared";
+import {
+  difficultyLevelEnum,
+  oracleProblemStatusEnum,
+  programmingLanguageEnum,
+} from "../shared";
 import { OracleSessionTable } from "./oracle-session";
 import { relations } from "drizzle-orm";
 
@@ -9,13 +21,17 @@ export const OracleProblemTable = pgTable("oracle_problems", {
   sessionId: uuid("session_id")
     .references(() => OracleSessionTable.id, { onDelete: "cascade" })
     .notNull(),
+  order: integer("order").notNull(),
   title: varchar("title").notNull(),
   description: text("description").notNull(),
+  status: oracleProblemStatusEnum("status").notNull().default("in-progress"),
+  userCode: text("user_code"),
   difficulty: difficultyLevelEnum("difficulty").notNull(),
   starterCode: text("starter_code"),
   language: programmingLanguageEnum("language").notNull(),
   solutionOutline: text("solution_outline").notNull(),
   concepts: jsonb("concepts").$type<string[]>().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt,
   updatedAt,
 });

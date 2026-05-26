@@ -19,10 +19,11 @@ import { cacheTag } from "next/cache";
 import {
   getOracleSessionIdTag,
   getOracleSessionUserTag,
+  revalidateOracleSessionCache,
 } from "../server/cache/oracle-sessions";
 import { db } from "@/db/db";
 import { OracleProblemTable, OracleSessionTable } from "@/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { generateOracleSessionProblems } from "@/services/ai/oracle";
 
 export const createNewSessionAction = async (
@@ -153,6 +154,11 @@ export const getOneSessionAction = async (
       eq(OracleSessionTable.userId, userId),
       eq(OracleSessionTable.id, sessionId),
     ),
+    with: {
+      problems: {
+        orderBy: [asc(OracleProblemTable.order), asc(OracleProblemTable.id)],
+      },
+    },
   });
 
   return existingSession ?? null;
@@ -209,15 +215,14 @@ export const startSessionAction = async (sessionId: string) => {
         throw new Error(response.message);
       }
 
-      await tx
-        .insert(OracleProblemTable)
-        .values(
-          response.problems.map((problem) => ({
-            ...problem,
-            sessionId: existingSession.id,
-            language: existingSession.programmingLanguage,
-          })),
-        );
+      await tx.insert(OracleProblemTable).values(
+        response.problems.map((problem, index) => ({
+          ...problem,
+          sessionId: existingSession.id,
+          language: existingSession.programmingLanguage,
+          order: index + 1,
+        })),
+      );
     });
 
     return {
@@ -229,6 +234,68 @@ export const startSessionAction = async (sessionId: string) => {
     return {
       error: true,
       message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const saveUserCode = async (
+  sessionId: string,
+  problemId: string,
+  userCode: string,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingSession] = await db
+    .select()
+    .from(OracleSessionTable)
+    .where(
+      and(
+        eq(OracleSessionTable.id, sessionId),
+        eq(OracleSessionTable.userId, userId),
+      ),
+    );
+  if (!existingSession) {
+    return {
+      error: true,
+      message: "Failed to your save code.",
+    };
+  }
+
+  try {
+    const [updatedProblem] = await db
+      .update(OracleProblemTable)
+      .set({
+        userCode,
+      })
+      .where(
+        and(
+          eq(OracleProblemTable.id, problemId),
+          eq(OracleProblemTable.sessionId, existingSession.id),
+        ),
+      )
+      .returning();
+
+    if (!updatedProblem) {
+      throw new Error("Failed to save your code.");
+    }
+
+    revalidateOracleSessionCache(userId, sessionId);
+
+    return {
+      error: false,
+      message: "Code saved successfully!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: "Failed to save your code.",
     };
   }
 };

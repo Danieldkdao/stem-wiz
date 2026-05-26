@@ -5,6 +5,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
+import { OracleSessionView } from "@/features/oracle/components/oracle-session-view";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
 import { redirect } from "next/navigation";
@@ -39,15 +40,10 @@ const OracleSessionIdSuspense = async ({ params }: OracleSessionProps) => {
 
   return (
     <div className="w-full h-full bg-card/75">
-      <ResizablePanelGroup orientation="horizontal">
-        <ResizablePanel minSize="20%"></ResizablePanel>
-        <ResizableHandle />
-        <ResizablePanel minSize="30%">
-          <CodeEditor />
-        </ResizablePanel>
-        <ResizableHandle />
-        <ResizablePanel minSize="30%"></ResizablePanel>
-      </ResizablePanelGroup>
+      <OracleSessionView
+        session={existingSession}
+        problems={existingSession.problems}
+      />
     </div>
   );
 };

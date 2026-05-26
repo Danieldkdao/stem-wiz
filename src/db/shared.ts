@@ -188,3 +188,10 @@ export const oracleSessionModeEnum = pgEnum(
   "oracle_session_modes",
   oracleSessionModes,
 );
+
+export const oracleProblemStatuses = ["in-progress", "completed"] as const;
+export type OracleProblemStatusType = (typeof oracleProblemStatuses)[number];
+export const oracleProblemStatusEnum = pgEnum(
+  "oracle_problem_statuses",
+  oracleProblemStatuses,
+);
