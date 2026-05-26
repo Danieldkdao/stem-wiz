@@ -169,7 +169,6 @@ export const oracleSessionStatuses = [
   "upcoming",
   "active",
   "completed",
-  "abandoned",
 ] as const;
 export type OracleSessionStatusType = (typeof oracleSessionStatuses)[number];
 export const oracleSessionStatusEnum = pgEnum(

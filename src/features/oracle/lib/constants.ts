@@ -2,7 +2,6 @@ import { buttonVariants } from "@/components/ui/button";
 import { OracleSessionModeType, OracleSessionStatusType } from "@/db/shared";
 import { VariantProps } from "class-variance-authority";
 import {
-  ArchiveXIcon,
   BugIcon,
   CalendarClockIcon,
   CircleCheckIcon,
@@ -33,13 +32,6 @@ export const ORACLE_SESSION_STATE = {
     icon: CircleCheckIcon,
     buttonVariant: "ghost",
     buttonText: "Session completed",
-    isDisabled: true,
-    href: null,
-  },
-  abandoned: {
-    icon: ArchiveXIcon,
-    buttonVariant: "outline",
-    buttonText: "Session abandoned",
     isDisabled: true,
     href: null,
   },

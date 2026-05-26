@@ -5,7 +5,7 @@ import { FriendRequestTable, user } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
-  NOT_FOUND_MESSAGE,
+  NOT_FOUND_ERROR_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
 import { and, eq } from "drizzle-orm";
@@ -34,7 +34,7 @@ export const createFriendRequestAction = async (friendUserId: string) => {
   if (!existingUserToFriend) {
     return {
       error: true,
-      message: NOT_FOUND_MESSAGE,
+      message: NOT_FOUND_ERROR_MESSAGE,
     };
   }
 

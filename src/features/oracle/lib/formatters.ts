@@ -20,8 +20,6 @@ export const formatOracleSessionMode = (mode: OracleSessionModeType) => {
 
 export const formatOracleSessionStatus = (status: OracleSessionStatusType) => {
   switch (status) {
-    case "abandoned":
-      return "Abandoned";
     case "active":
       return "Active";
     case "completed":
@@ -71,19 +69,4 @@ export const formatSessionDuration = (session: OracleSession) => {
   return remainingMinutes
     ? `${hours} hr ${remainingMinutes} min`
     : `${hours} hr`;
-};
-
-export const getStatusSummary = (status: OracleSession["status"]) => {
-  switch (status) {
-    case "upcoming":
-      return "Not started yet";
-    case "active":
-      return "In progress";
-    case "completed":
-      return "Completed";
-    case "abandoned":
-      return "Abandoned";
-    default:
-      throw new Error(`Unknown session status: ${status satisfies never}`);
-  }
 };

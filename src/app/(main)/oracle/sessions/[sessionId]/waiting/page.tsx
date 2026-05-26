@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
 import { CreateUpdateSessionDialog } from "@/features/oracle/components/create-update-session-dialog";
+import { SessionActionButton } from "@/features/oracle/components/session-action-button";
 import {
   ORACLE_SESSION_MODE_ICONS,
   ORACLE_SESSION_STATE,
@@ -16,15 +17,15 @@ import {
   formatProblemCount,
   formatSessionDate,
   formatSessionDuration,
-  getStatusSummary,
 } from "@/features/oracle/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
 import {
   ArrowLeftIcon,
-  CalendarCheckIcon,
   CalendarPlusIcon,
   ClockIcon,
+  Code2Icon,
   EditIcon,
   FileTextIcon,
   InfoIcon,
@@ -34,6 +35,7 @@ import {
   TimerIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ReactNode, Suspense } from "react";
 
 type SessionWaitingProps = ParamsId<"sessionId">;
@@ -100,11 +102,19 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
     );
   }
 
+  if (existingSession.status === "active")
+    return redirect(`/oracle/sessions/${sessionId}`);
+  if (existingSession.status !== "upcoming")
+    return redirect("/oracle/sessions");
+
   const statusState = ORACLE_SESSION_STATE[existingSession.status];
   const StatusIcon = statusState.icon;
   const ModeIcon = ORACLE_SESSION_MODE_ICONS[existingSession.mode];
   const statusLabel = formatOracleSessionStatus(existingSession.status);
   const modeLabel = formatOracleSessionMode(existingSession.mode);
+  const languageLabel = formatProgrammingLanguage(
+    existingSession.programmingLanguage,
+  );
   const sessionDuration = formatSessionDuration(existingSession);
 
   return (
@@ -121,6 +131,10 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
                 <Badge variant="outline">
                   <ModeIcon />
                   {modeLabel} mode
+                </Badge>
+                <Badge variant="outline">
+                  <Code2Icon />
+                  {languageLabel}
                 </Badge>
               </div>
 
@@ -151,7 +165,7 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
             <SessionInfoRow
               icon={<ModeIcon />}
               label="Mode"
-              value={`${modeLabel} guidance`}
+              value={modeLabel}
             />
             <SessionInfoRow
               icon={<ListChecksIcon />}
@@ -159,9 +173,14 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
               value={formatProblemCount(existingSession.numberOfProblems)}
             />
             <SessionInfoRow
+              icon={<Code2Icon />}
+              label="Language"
+              value={languageLabel}
+            />
+            <SessionInfoRow
               icon={<ClockIcon />}
               label="Status"
-              value={getStatusSummary(existingSession.status)}
+              value={formatOracleSessionStatus(existingSession.status)}
             />
             <SessionInfoRow
               icon={<TimerIcon />}
@@ -184,14 +203,6 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
               value={formatOptionalSessionDate(
                 existingSession.startedAt,
                 "Not started",
-              )}
-            />
-            <SessionInfoRow
-              icon={<CalendarCheckIcon />}
-              label="Completed"
-              value={formatOptionalSessionDate(
-                existingSession.completedAt,
-                "Not completed",
               )}
             />
           </div>
@@ -235,20 +246,18 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
                 Responses will follow {modeLabel.toLowerCase()} mode.
               </SessionChecklistItem>
               <SessionChecklistItem>
+                Code examples and prompts will use {languageLabel}.
+              </SessionChecklistItem>
+              <SessionChecklistItem>
                 Progress is tied to this session and can be resumed later.
               </SessionChecklistItem>
             </div>
 
             <div className="mt-auto flex flex-col gap-3">
-              <Button
-                className="w-full"
-                disabled={
-                  existingSession.status === "completed" ||
-                  existingSession.status === "abandoned"
-                }
-              >
-                {statusState.buttonText}
-              </Button>
+              <SessionActionButton
+                sessionId={existingSession.id}
+                status={existingSession.status}
+              />
             </div>
           </div>
         </aside>

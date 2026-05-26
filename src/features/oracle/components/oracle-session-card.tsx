@@ -11,15 +11,17 @@ import { cn } from "@/lib/utils";
 import {
   formatOracleSessionMode,
   formatOracleSessionStatus,
+  formatSessionDuration,
 } from "../lib/formatters";
 import { Separator } from "@/components/ui/separator";
 import {
   ORACLE_SESSION_MODE_ICONS,
   ORACLE_SESSION_STATE,
 } from "../lib/constants";
-import { ClockIcon, LucideIcon, SquareStackIcon } from "lucide-react";
+import { ClockIcon, CodeIcon, LucideIcon, SquareStackIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 
 export const OracleSessionCard = ({
   session,
@@ -41,9 +43,7 @@ export const OracleSessionCard = ({
     },
     {
       icon: ClockIcon,
-      data: session.startedAt
-        ? `${(session.completedAt?.getTime() ?? Date.now()) - session.startedAt.getTime()}`
-        : "Not Started",
+      data: formatSessionDuration(session),
     },
   ];
 
@@ -62,6 +62,10 @@ export const OracleSessionCard = ({
           <Badge>
             <StatusIcon />
             {formatOracleSessionStatus(session.status)}
+          </Badge>
+          <Badge>
+            <CodeIcon />
+            {formatProgrammingLanguage(session.programmingLanguage)}
           </Badge>
         </div>
       </CardHeader>

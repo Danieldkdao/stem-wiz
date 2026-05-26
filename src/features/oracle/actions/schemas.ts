@@ -1,4 +1,4 @@
-import { oracleSessionModes } from "@/db/shared";
+import { oracleSessionModes, programmingLanguages } from "@/db/shared";
 import z from "zod";
 
 export const oracleSessionActionSchema = z.object({
@@ -8,6 +8,9 @@ export const oracleSessionActionSchema = z.object({
     .max(100, { error: "Cannot be longer than 100 characters." })
     .optional(),
   description: z.string().optional(),
+  programmingLanguage: z.enum(programmingLanguages, {
+    error: "Please select a programming language for this session.",
+  }),
   numberOfProblems: z
     .number({
       error:

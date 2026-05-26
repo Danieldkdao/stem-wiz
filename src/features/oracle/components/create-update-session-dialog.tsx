@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { oracleSessionModes } from "@/db/shared";
+import { oracleSessionModes, programmingLanguages } from "@/db/shared";
 import { SetterType } from "@/lib/types";
 import { cn, getInputErrorStyle } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,6 +44,7 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { OracleSession } from "../lib/types";
+import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 
 type CreateUpdateSessionDialogProps = {
   open?: boolean;
@@ -76,6 +77,7 @@ export const CreateUpdateSessionDialog = ({
           description: existingSession.description ?? undefined,
           mode: existingSession.mode,
           numberOfProblems: existingSession.numberOfProblems,
+          programmingLanguage: existingSession.programmingLanguage,
         }
       : {
           additionalInstructions: "",
@@ -178,6 +180,44 @@ export const CreateUpdateSessionDialog = ({
               )}
             />
             <Controller
+              control={form.control}
+              name="programmingLanguage"
+              render={({
+                field: { value, onChange, ...props },
+                fieldState,
+              }) => (
+                <Field>
+                  <FieldLabel>Programming Language</FieldLabel>
+                  <FieldContent>
+                    <Select {...props} value={value} onValueChange={onChange}>
+                      <SelectTrigger
+                        className={cn(
+                          "w-full",
+                          getInputErrorStyle(fieldState.error),
+                        )}
+                      >
+                        <SelectValue placeholder="Select a programming language..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {programmingLanguages.map((language) => (
+                          <SelectItem key={language} value={language}>
+                            {formatProgrammingLanguage(language)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FieldContent>
+                  <FieldDescription>
+                    The programming language that will be used during the
+                    session.
+                  </FieldDescription>
+                  {fieldState.error && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
               name="numberOfProblems"
               control={form.control}
               render={({
@@ -256,13 +296,17 @@ export const CreateUpdateSessionDialog = ({
                     <Textarea
                       {...props}
                       value={value ?? ""}
-                      placeholder="Additional instructions that the Oracle should know..."
+                      placeholder="I like hard problems, related to this specific topic. I learn best through examples and analogies, along with hands-on coding and building projects."
                       className={cn(
                         "max-h-32",
                         getInputErrorStyle(fieldState.error),
                       )}
                     />
                   </FieldContent>
+                  <FieldDescription>
+                    Additional instructions or preferences that the Oracle
+                    should know about you.
+                  </FieldDescription>
                   {fieldState.error && (
                     <FieldError errors={[fieldState.error]} />
                   )}

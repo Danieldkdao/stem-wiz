@@ -7,7 +7,11 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
-import { oracleSessionModeEnum, oracleSessionStatusEnum } from "../shared";
+import {
+  oracleSessionModeEnum,
+  oracleSessionStatusEnum,
+  programmingLanguageEnum,
+} from "../shared";
 import { OracleProblemTable } from "./oracle-problem";
 import { user } from "./user";
 
@@ -18,6 +22,9 @@ export const OracleSessionTable = pgTable("oracle_sessions", {
     .notNull(),
   title: varchar("title").notNull(),
   description: text("description"),
+  programmingLanguage: programmingLanguageEnum(
+    "programming_language",
+  ).notNull(),
   numberOfProblems: integer("number_of_problems").notNull(),
   status: oracleSessionStatusEnum("status").notNull().default("upcoming"),
   mode: oracleSessionModeEnum("mode").notNull(),
