@@ -11,6 +11,7 @@ import { OracleSessionProblemDetails } from "./oracle-session-problem-details";
 import { OracleSessionViewCodeEditor } from "./oracle-session-view-code-editor";
 import { OracleSessionViewHeader } from "./oracle-session-view-header";
 import { OracleSessionViewOutput } from "./oracle-session-view-output";
+import { OraclePanel } from "./oracle-panel";
 
 export const OracleSessionView = ({
   session,
@@ -31,8 +32,9 @@ export const OracleSessionView = ({
     <div className="flex flex-col w-full h-full overflow-hidden">
       <OracleSessionViewHeader
         session={session}
-        currentProblem={currentProblem}
-        problemCount={problems.length}
+        problems={problems}
+        currentProblemIndex={currentProblemIndex}
+        setCurrentProblemIndex={setCurrentProblemIndex}
       />
       <ResizablePanelGroup
         orientation="horizontal"
@@ -47,7 +49,7 @@ export const OracleSessionView = ({
                 sessionId={session.id}
                 problemId={currentProblem.id}
                 language={session.programmingLanguage}
-                defaultValue={
+                value={
                   currentProblem.userCode ??
                   currentProblem.starterCode ??
                   undefined
@@ -56,12 +58,16 @@ export const OracleSessionView = ({
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel minSize="30%">
-              <OracleSessionViewOutput language={session.programmingLanguage} />
+              <OracleSessionViewOutput
+                language={session.programmingLanguage}
+                sessionId={session.id}
+                problem={currentProblem}
+              />
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
         <ResizableHandle />
-        <ResizablePanel minSize="30%"></ResizablePanel>
+        <OraclePanel problem={currentProblem} />
       </ResizablePanelGroup>
     </div>
   );

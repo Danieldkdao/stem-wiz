@@ -82,19 +82,5 @@
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "pnpm": {
-    "packageExtensions": {
-      "@hookform/resolvers@*": {
-        "peerDependencies": {
-          "zod": "^3.25 || ^4"
-        },
-        "peerDependenciesMeta": {
-          "zod": {
-            "optional": true
-          }
-        }
-      }
-    }
   }
 }

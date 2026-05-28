@@ -3,10 +3,11 @@
 import { CodeEditor } from "@/components/code/code-editor";
 import { EditorProps } from "@monaco-editor/react";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { saveUserCode } from "../actions/actions";
+import { saveUserCodeAction } from "../actions/actions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckIcon, RefreshCwIcon, XIcon } from "lucide-react";
+import { useCodeEditorStore } from "@/store/use-code-editor-store";
 
 export const OracleSessionViewCodeEditor = ({
   sessionId,
@@ -16,11 +17,13 @@ export const OracleSessionViewCodeEditor = ({
   const [saveStatus, setSaveStatus] = useState<
     "saving" | "saved" | "error" | null
   >(null);
+  const setEditor = useCodeEditorStore((state) => state.setEditor);
+
   const handleCodeChange = useDebouncedCallback(
     async (value: string | undefined) => {
       if (!value) return;
       setSaveStatus("saving");
-      const response = await saveUserCode(sessionId, problemId, value);
+      const response = await saveUserCodeAction(sessionId, problemId, value);
       if (response.error) {
         toast.error(response.message);
         setSaveStatus("error");
@@ -36,7 +39,11 @@ export const OracleSessionViewCodeEditor = ({
 
   return (
     <div className="w-full h-full relative">
-      <CodeEditor {...props} onChange={handleCodeChange} />
+      <CodeEditor
+        {...props}
+        onMount={(editor) => setEditor(editor)}
+        onChange={handleCodeChange}
+      />
       <div className="absolute bottom-2 left-2 flex items-center gap-2">
         {saveStatus ? (
           saveStatus === "saving" ? (

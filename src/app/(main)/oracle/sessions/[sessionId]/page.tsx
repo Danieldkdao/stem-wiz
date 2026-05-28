@@ -1,9 +1,3 @@
-import { CodeEditor } from "@/components/code/code-editor";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
 import { OracleSessionView } from "@/features/oracle/components/oracle-session-view";
 import { getCurrentUser } from "@/lib/auth/helpers";
