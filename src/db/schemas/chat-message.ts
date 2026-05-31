@@ -3,12 +3,12 @@ import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id } from "../helpers";
 import { ChatTable } from "./chat";
 import { user } from "./user";
+import { chatMessageRoleEnum } from "../shared";
 
 export const ChatMessageTable = pgTable("chat-messages", {
   id,
-  userId: text("user_id")
-    .references(() => user.id, { onDelete: "cascade" })
-    .notNull(),
+  role: chatMessageRoleEnum("role").notNull().default("user"),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   chatId: uuid("chat_id")
     .references(() => ChatTable.id, { onDelete: "cascade" })
     .notNull(),

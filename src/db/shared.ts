@@ -195,3 +195,10 @@ export const oracleProblemStatusEnum = pgEnum(
   "oracle_problem_statuses",
   oracleProblemStatuses,
 );
+
+export const chatMessageRoles = ["user", "assistant"] as const;
+export type ChatMessageRole = (typeof chatMessageRoles)[number];
+export const chatMessageRoleEnum = pgEnum(
+  "chat_message_roles",
+  chatMessageRoles,
+);

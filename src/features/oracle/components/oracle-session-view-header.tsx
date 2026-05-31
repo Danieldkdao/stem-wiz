@@ -20,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Fragment } from "react/jsx-runtime";
 import { Progress } from "@/components/ui/progress";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const OracleSessionViewHeader = ({
   session,
@@ -105,7 +106,7 @@ export const OracleSessionViewHeader = ({
           </Button>
         </TooltipWrapper>
       </div>
-      <div className="flex items-center justify-end">
+      <div className="flex gap-2 items-center justify-end">
         <Dialog>
           <TooltipWrapper content="Session Info" align="end">
             <DialogTrigger asChild>
@@ -150,6 +151,7 @@ export const OracleSessionViewHeader = ({
             </div>
           </DialogContent>
         </Dialog>
+        <ThemeToggle />
       </div>
     </header>
   );

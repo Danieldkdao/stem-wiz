@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
 const markdownClassNames =
-  "markdown-renderer max-w-none prose prose-neutral dark:prose-invert font-sans prose-headings:scroll-mt-24 prose-headings:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-pre:my-0 prose-pre:bg-transparent prose-code:rounded prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.875em] prose-code:before:content-none prose-code:after:content-none";
+  "markdown-renderer w-full min-w-0 max-w-none prose prose-neutral dark:prose-invert font-sans prose-headings:scroll-mt-24 prose-headings:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-pre:my-0 prose-pre:bg-transparent prose-code:rounded prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.875em] prose-code:before:content-none prose-code:after:content-none";
 
 const sanitizeSchema = {
   ...defaultSchema,
@@ -158,8 +158,8 @@ export const MarkdownRenderer = ({
     },
 
     table: ({ children }: { children: ReactNode }) => (
-      <div className="w-full overflow-x-auto rounded-xl border border-border">
-        <table className="w-full min-w-max border-collapse text-sm">
+      <div className="not-prose my-4 min-w-0 max-w-full overflow-x-auto rounded-xl border border-border">
+        <table className="w-max min-w-full border-collapse text-sm">
           {children}
         </table>
       </div>

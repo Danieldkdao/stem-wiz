@@ -45,7 +45,7 @@ export const ThemeToggle = ({ className }: { className?: string }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className={cn("cursor-pointer", className)} asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="ghost" size="icon">
           {activeTheme === "light" ? (
             <SunIcon className="size-5" />
           ) : activeTheme === "dark" ? (

@@ -5,7 +5,12 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { OracleProblemTable, OracleSessionTable } from "@/db/schema";
+import {
+  ChatMessageTable,
+  ChatTable,
+  OracleProblemTable,
+  OracleSessionTable,
+} from "@/db/schema";
 import { useState } from "react";
 import { OracleSessionProblemDetails } from "./oracle-session-problem-details";
 import { OracleSessionViewCodeEditor } from "./oracle-session-view-code-editor";
@@ -18,7 +23,13 @@ export const OracleSessionView = ({
   problems,
 }: {
   session: typeof OracleSessionTable.$inferSelect;
-  problems: (typeof OracleProblemTable.$inferSelect)[];
+  problems: (typeof OracleProblemTable.$inferSelect & {
+    chat:
+      | (typeof ChatTable.$inferSelect & {
+          messages: (typeof ChatMessageTable.$inferSelect)[];
+        })
+      | null;
+  })[];
 }) => {
   // todo: make sure to handle the all completed case or -1 no index found case
   const lastProblemIndex = problems.findIndex(

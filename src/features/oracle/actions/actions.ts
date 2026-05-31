@@ -1,7 +1,11 @@
 "use server";
 
 import { db } from "@/db/db";
-import { OracleProblemTable, OracleSessionTable } from "@/db/schema";
+import {
+  ChatMessageTable,
+  OracleProblemTable,
+  OracleSessionTable,
+} from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
@@ -159,6 +163,18 @@ export const getOneSessionAction = async (
     ),
     with: {
       problems: {
+        with: {
+          chat: {
+            with: {
+              messages: {
+                orderBy: [
+                  asc(ChatMessageTable.createdAt),
+                  asc(ChatMessageTable.id),
+                ],
+              },
+            },
+          },
+        },
         orderBy: [asc(OracleProblemTable.order), asc(OracleProblemTable.id)],
       },
     },

@@ -15,6 +15,7 @@ import {
 } from "../shared";
 import { OracleSessionTable } from "./oracle-session";
 import { relations } from "drizzle-orm";
+import { ChatTable } from "./chat";
 
 export const OracleProblemTable = pgTable("oracle_problems", {
   id,
@@ -44,5 +45,6 @@ export const oracleProblemRelations = relations(
       fields: [OracleProblemTable.sessionId],
       references: [OracleSessionTable.id],
     }),
+    chat: one(ChatTable),
   }),
 );

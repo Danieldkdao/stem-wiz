@@ -3,14 +3,21 @@
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { OracleProblemTable } from "@/db/schema";
+import { ChatMessageTable, ChatTable, OracleProblemTable } from "@/db/schema";
 import { TabValue, useOracleStore } from "@/store/use-oracle-store";
 import { CircleXIcon, Loader2Icon, MessageSquareDotIcon } from "lucide-react";
+import { OracleSessionChat } from "./oracle-session-chat";
 
 export const OraclePanel = ({
   problem,
 }: {
-  problem: typeof OracleProblemTable.$inferSelect;
+  problem: typeof OracleProblemTable.$inferSelect & {
+    chat:
+      | (typeof ChatTable.$inferSelect & {
+          messages: (typeof ChatMessageTable.$inferSelect)[];
+        })
+      | null;
+  };
 }) => {
   const feedbackGenerationStatus = useOracleStore(
     (state) => state.feedbackGenerationStatus,
@@ -19,7 +26,7 @@ export const OraclePanel = ({
   const setTabValue = useOracleStore((state) => state.setTabValue);
 
   return (
-    <ResizablePanel minSize="30%" className="p-5 h-full">
+    <ResizablePanel minSize="25%" className="p-5 h-full">
       <Tabs
         defaultValue="chat"
         value={tabValue}
@@ -31,7 +38,13 @@ export const OraclePanel = ({
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
         </TabsList>
         <div className="flex-1 w-full overflow-y-auto">
-          <TabsContent value="chat" className="h-full w-full"></TabsContent>
+          <TabsContent value="chat" className="h-full w-full">
+            <OracleSessionChat
+              chat={problem.chat}
+              sessionId={problem.sessionId}
+              problemId={problem.id}
+            />
+          </TabsContent>
           <TabsContent value="feedback" className="h-full w-full">
             {feedbackGenerationStatus === "generating" ? (
               <div className="w-full h-full flex flex-col gap-2 items-center justify-center">
