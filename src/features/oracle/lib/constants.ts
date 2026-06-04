@@ -30,10 +30,10 @@ export const ORACLE_SESSION_STATE = {
   },
   completed: {
     icon: CircleCheckIcon,
-    buttonVariant: "ghost",
-    buttonText: "Session completed",
-    isDisabled: true,
-    href: null,
+    buttonVariant: "outline",
+    buttonText: "View summary",
+    isDisabled: false,
+    href: (sessionId) => `/oracle/sessions/${sessionId}/summary`,
   },
 } satisfies Record<
   OracleSessionStatusType,

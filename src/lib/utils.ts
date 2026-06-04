@@ -16,3 +16,22 @@ export const getTimeValues = (time: number) => {
 
   return { hours, minutes, seconds };
 };
+
+export const formatTime = (
+  date?: Date | string | number | null | undefined,
+) => {
+  if (!date) return "Unknown";
+  const d = new Date(date);
+
+  const formatted = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+    .format(d)
+    .replace(/, (?=\d)/, " at ");
+
+  return formatted;
+};

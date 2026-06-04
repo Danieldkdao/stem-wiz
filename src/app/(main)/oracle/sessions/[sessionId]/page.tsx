@@ -29,7 +29,7 @@ const OracleSessionIdSuspense = async ({ params }: OracleSessionProps) => {
     return <div>session not found</div>;
   }
 
-  if (existingSession.status !== "active")
+  if (existingSession.status === "upcoming")
     return redirect(`/oracle/sessions/${sessionId}/waiting`);
 
   return (

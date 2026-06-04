@@ -17,7 +17,7 @@ import {
   generateOracleSessionProblems,
   generateUserProblemSubmissionFeedback,
 } from "@/services/ai/oracle";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ExtractTablesWithRelations } from "drizzle-orm";
 import { cacheTag } from "next/cache";
 import {
   getOracleSessionIdTag,
@@ -32,6 +32,8 @@ import {
   oracleSessionActionSchema,
   OracleSessionActionSchemaType,
 } from "./schemas";
+import { PgTransaction } from "drizzle-orm/pg-core";
+import { NeonQueryResultHKT } from "drizzle-orm/neon-serverless";
 
 export const createNewSessionAction = async (
   unsafeData: OracleSessionActionSchemaType,
@@ -162,6 +164,7 @@ export const getOneSessionAction = async (
       eq(OracleSessionTable.id, sessionId),
     ),
     with: {
+      user: true,
       problems: {
         with: {
           chat: {
@@ -344,9 +347,29 @@ export const handleUserProblemSubmissionAction = async (
       existingSession.id,
       problemId,
     );
-    if (response.error) {
+    if (response.error || !response.output) {
       throw new Error(response.message);
     }
+
+    await db.transaction(async (tx) => {
+      const updatedProblem = await updateOracleProblem(
+        userId,
+        existingSession.id,
+        problemId,
+        {
+          status: "completed",
+          completedAt: new Date(),
+          feedback: response.output.feedback,
+          score: response.output.score,
+        },
+        tx,
+      );
+      if (!updatedProblem) {
+        throw new Error("Failed to update problem.");
+      }
+
+      await checkSessionCompletionAction(existingSession.id, tx);
+    });
 
     return response;
   } catch (error) {
@@ -355,5 +378,57 @@ export const handleUserProblemSubmissionAction = async (
       error: true,
       message: GENERAL_ERROR_MESSAGE,
     };
+  }
+};
+
+export const checkSessionCompletionAction = async (
+  sessionId: string,
+  tx?: PgTransaction<
+    NeonQueryResultHKT,
+    typeof import("/Users/danieldao/Desktop/stem-wiz/src/db/schema"),
+    ExtractTablesWithRelations<
+      typeof import("/Users/danieldao/Desktop/stem-wiz/src/db/schema")
+    >
+  >,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) throw new Error(UNAUTHED_ERROR_MESSAGE);
+
+  const dbSrc = tx ?? db;
+
+  const [existingOracleSession] = await dbSrc
+    .select()
+    .from(OracleSessionTable)
+    .where(
+      and(
+        eq(OracleSessionTable.userId, userId),
+        eq(OracleSessionTable.id, sessionId),
+      ),
+    );
+  if (!existingOracleSession) throw new Error(NOT_FOUND_ERROR_MESSAGE);
+
+  const sessionProblems = await dbSrc
+    .select()
+    .from(OracleProblemTable)
+    .where(eq(OracleProblemTable.sessionId, existingOracleSession.id));
+  if (sessionProblems.length !== existingOracleSession.numberOfProblems)
+    throw new Error(NOT_FOUND_ERROR_MESSAGE);
+
+  if (
+    sessionProblems.every(
+      (problem) => problem.status === "completed" && problem.completedAt,
+    ) &&
+    (existingOracleSession.status !== "completed" ||
+      !existingOracleSession.completedAt)
+  ) {
+    await updateOracleSession(
+      userId,
+      existingOracleSession.id,
+      {
+        status: "completed",
+        completedAt: new Date(),
+      },
+      tx,
+    );
   }
 };

@@ -42,10 +42,10 @@ export const OracleSessionView = ({
   const currentProblem = problems[currentProblemIndex];
 
   useEffect(() => {
-    if (lastProblemIndex === -1) {
+    if (session.status === "completed" && session.completedAt) {
       setCompletionDialogOpen(true);
     }
-  }, [lastProblemIndex]);
+  }, [session]);
 
   return (
     <>

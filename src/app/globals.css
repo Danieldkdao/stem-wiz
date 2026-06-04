@@ -28,6 +28,9 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -71,7 +74,6 @@
   --shadow-blur: var(--shadow-blur);
   --shadow-opacity: var(--shadow-opacity);
   --color-shadow-color: var(--shadow-color);
-  --color-destructive-foreground: var(--destructive-foreground);
 }
 
 :root {
@@ -88,6 +90,9 @@
   --accent: oklch(0.6999 0.1796 150.1066);
   --accent-foreground: oklch(0.9813 0.0100 238.5069);
   --destructive: oklch(0.6207 0.2306 24.9164);
+  --destructive-foreground: oklch(0.9813 0.0100 238.5069);
+  --warning: oklch(0.6818 0.1924 45.7782);
+  --warning-foreground: oklch(0.1807 0.0207 239.8394);
   --border: oklch(0.8999 0.0196 240.7516);
   --input: oklch(0.8999 0.0196 240.7516);
   --ring: oklch(0.6236 0.1833 147.4139);
@@ -105,7 +110,6 @@
   --sidebar-accent-foreground: oklch(0.9813 0.0100 238.5069);
   --sidebar-border: oklch(0.8999 0.0196 240.7516);
   --sidebar-ring: oklch(0.6236 0.1833 147.4139);
-  --destructive-foreground: oklch(0.9813 0.0100 238.5069);
   --font-sans: Outfit ui-sans-serif, sans-serif, system-ui;
   --font-serif: Outfit, ui-serif, serif;
   --font-mono: Space Mono, ui-monospace, monospace;
@@ -146,6 +150,9 @@
   --accent: oklch(0.7211 0.1805 150.0521);
   --accent-foreground: oklch(0.1004 0.0209 233.5083);
   --destructive: oklch(0.6207 0.2306 24.9164);
+  --destructive-foreground: oklch(0.9813 0.0100 238.5069);
+  --warning: oklch(0.7309 0.1840 51.3191);
+  --warning-foreground: oklch(0.1004 0.0209 233.5083);
   --border: oklch(0.2791 0.0203 242.6079);
   --input: oklch(0.2791 0.0203 242.6079);
   --ring: oklch(0.7007 0.1804 148.9872);
@@ -162,7 +169,6 @@
   --sidebar-accent-foreground: oklch(0.9850 0 0);
   --sidebar-border: oklch(0.2750 0 0);
   --sidebar-ring: oklch(0.4390 0 0);
-  --destructive-foreground: oklch(0.9813 0.0100 238.5069);
   --radius: 0.625rem;
   --font-sans: Outfit, ui-sans-serif, sans-serif, system-ui;
   --font-serif: Outfit, ui-serif, serif;

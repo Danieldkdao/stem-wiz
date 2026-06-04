@@ -36,3 +36,24 @@ export const oracleProblemSchema = z.object({
       "An array of concepts this problem covers. These should be short (1-2 word/s) and relate to the problem.",
     ),
 });
+
+export const oracleProblemFeedbackSchema = z.object({
+  feedback: z
+    .string()
+    .min(1)
+    .describe(
+      [
+        "Renderable markdown feedback for the user's submitted solution.",
+        "Do not include the numeric score in this string.",
+        "Use these level-two headings exactly once and in order: ## Summary, ## What Worked, ## Needs Work, ## Correctness Notes, ## Code Quality, ## Suggested Revision, ## Next Step.",
+      ].join(" "),
+    ),
+  score: z
+    .number()
+    .int()
+    .min(0)
+    .max(10)
+    .describe(
+      "An integer score from 0 to 10 for the user's solution, where 0 is no meaningful attempt and 10 is fully correct, complete, idiomatic, and edge-case aware.",
+    ),
+});

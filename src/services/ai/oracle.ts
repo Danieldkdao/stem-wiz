@@ -15,8 +15,7 @@ import {
   generateOracleProblemFeedbackPrompt,
   generateOracleProblemsPrompt,
 } from "./prompts";
-import { oracleProblemSchema } from "./schemas";
-import { updateOracleProblem } from "@/features/oracle/server/oracle-problems";
+import { oracleProblemFeedbackSchema, oracleProblemSchema } from "./schemas";
 
 export const generateOracleSessionProblems = async (sessionId: string) => {
   const { userId } = await getCurrentUser();
@@ -116,33 +115,26 @@ export const generateUserProblemSubmissionFeedback = async (
   }
 
   try {
-    const { text } = await generateText({
+    const { output } = await generateText({
       model: mistral("mistral-large-latest"),
       system: GENERATE_ORACLE_PROBLEM_FEEDBACK_SYSTEM,
+      output: Output.object({
+        schema: oracleProblemFeedbackSchema,
+      }),
       prompt: generateOracleProblemFeedbackPrompt({
         session: existingSession,
         problem: existingProblem,
         user: user ?? null,
       }),
     });
-    if (!text) {
+    if (!output) {
       throw new Error("Failed to generate solution feedback.");
-    }
-
-    const updatedProblem = await updateOracleProblem(
-      userId,
-      existingSession.id,
-      existingProblem.id,
-      { status: "completed", completedAt: new Date(), feedback: text },
-    );
-
-    if (!updatedProblem) {
-      throw new Error("Failed to update problem.");
     }
 
     return {
       error: false,
       message: "Solution feedback generated successfully!",
+      output,
     };
   } catch (error) {
     console.error(error);
