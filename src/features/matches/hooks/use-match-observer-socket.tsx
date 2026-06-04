@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  ArenaClientMessage,
-  ArenaServerMessage,
-} from "@/features/arena/lib/types";
+import { ArenaServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -19,6 +16,7 @@ import {
   MatchObserverServerMessageType,
 } from "../lib/types";
 import { MatchResultReasonType } from "@/db/shared";
+import { ArenaClientMessage } from "@/features/arena/lib/schemas";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";

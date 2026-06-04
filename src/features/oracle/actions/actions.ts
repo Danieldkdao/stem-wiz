@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/db/db";
+import { db, DbTransaction } from "@/db/db";
 import {
   ChatMessageTable,
   OracleProblemTable,
@@ -17,7 +17,7 @@ import {
   generateOracleSessionProblems,
   generateUserProblemSubmissionFeedback,
 } from "@/services/ai/oracle";
-import { and, asc, desc, eq, ExtractTablesWithRelations } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { cacheTag } from "next/cache";
 import {
   getOracleSessionIdTag,
@@ -32,8 +32,6 @@ import {
   oracleSessionActionSchema,
   OracleSessionActionSchemaType,
 } from "./schemas";
-import { PgTransaction } from "drizzle-orm/pg-core";
-import { NeonQueryResultHKT } from "drizzle-orm/neon-serverless";
 
 export const createNewSessionAction = async (
   unsafeData: OracleSessionActionSchemaType,
@@ -383,13 +381,7 @@ export const handleUserProblemSubmissionAction = async (
 
 export const checkSessionCompletionAction = async (
   sessionId: string,
-  tx?: PgTransaction<
-    NeonQueryResultHKT,
-    typeof import("/Users/danieldao/Desktop/stem-wiz/src/db/schema"),
-    ExtractTablesWithRelations<
-      typeof import("/Users/danieldao/Desktop/stem-wiz/src/db/schema")
-    >
-  >,
+  tx?: DbTransaction,
 ) => {
   const { userId } = await getCurrentUser();
   if (!userId) throw new Error(UNAUTHED_ERROR_MESSAGE);

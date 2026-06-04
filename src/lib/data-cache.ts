@@ -8,6 +8,6 @@ export const getIdTag = (id: string, tag: CacheTag) => {
   return `${tag}:${id}` as const;
 };
 
-export const getUserIdTag = (userId: string, tag: CacheTag) => {
+export const getUserIdResourceTag = (userId: string, tag: CacheTag) => {
   return `user:${userId}:${tag}` as const;
 };

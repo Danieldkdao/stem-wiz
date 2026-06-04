@@ -6,16 +6,12 @@ import {
 import { RealtimeUser, RealtimeWebSocket } from "@/features/realtime/lib/types";
 import { Server as HttpServer } from "http";
 import { WebSocketServer } from "ws";
-import z from "zod";
-import { arenaClientMessageSchema } from "./schemas";
 
 export type ActiveUser = {
   connectionId: string | null;
   matchId: string;
   isConnected: boolean;
 };
-
-export type ArenaClientMessage = z.infer<typeof arenaClientMessageSchema>;
 
 export type ArenaServerMessage =
   | ArenaWaitingServerMessage

@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
 import { CreateUpdateSessionDialog } from "@/features/oracle/components/create-update-session-dialog";
+import { OracleSessionNotFound } from "@/features/oracle/components/oracle-session-not-found";
 import { SessionActionButton } from "@/features/oracle/components/session-action-button";
 import {
   ORACLE_SESSION_MODE_ICONS,
@@ -94,12 +95,7 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
   const existingSession = await getOneSessionAction(userId, sessionId);
 
   if (!existingSession) {
-    return (
-      <SessionWaitingNotice
-        title="Session not found"
-        description="This session may have been deleted, or you may not have access to it."
-      />
-    );
+    return <OracleSessionNotFound />;
   }
 
   if (existingSession.status === "active")

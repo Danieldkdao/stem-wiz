@@ -1,4 +1,5 @@
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
+import { OracleSessionNotFound } from "@/features/oracle/components/oracle-session-not-found";
 import { OracleSessionView } from "@/features/oracle/components/oracle-session-view";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
@@ -26,7 +27,7 @@ const OracleSessionIdSuspense = async ({ params }: OracleSessionProps) => {
 
   const existingSession = await getOneSessionAction(userId, sessionId);
   if (!existingSession) {
-    return <div>session not found</div>;
+    return <OracleSessionNotFound />;
   }
 
   if (existingSession.status === "upcoming")

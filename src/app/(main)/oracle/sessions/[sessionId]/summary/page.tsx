@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
+import { OracleSessionNotFound } from "@/features/oracle/components/oracle-session-not-found";
 import { OracleSessionSummaryView } from "@/features/oracle/components/oracle-session-summary-view";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
@@ -99,7 +100,7 @@ const OracleSessionSummarySuspense = async ({
 
   const session = await getOneSessionAction(userId, sessionId);
   if (!session) {
-    return <div>session not found component</div>;
+    return <OracleSessionNotFound />;
   }
 
   if (session.status !== "completed" || !session.completedAt)

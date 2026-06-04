@@ -1,10 +1,7 @@
 "use client";
 
 import { MatchResultReasonType } from "@/db/shared";
-import {
-  ArenaClientMessage,
-  ArenaServerMessage,
-} from "@/features/arena/lib/types";
+import { ArenaServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -16,6 +13,7 @@ import {
   useState,
 } from "react";
 import { MatchServerMessage, MatchServerMessageType } from "../lib/types";
+import { ArenaClientMessage } from "@/features/arena/lib/schemas";
 
 type OpponentStatus = "active" | "disconnected";
 

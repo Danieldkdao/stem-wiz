@@ -2,8 +2,9 @@
 
 import { SocketStatus } from "@/lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArenaWaitingServerMessage, ArenaClientMessage } from "../lib/types";
+import { ArenaWaitingServerMessage } from "../lib/types";
 import { RealtimeUser } from "@/features/realtime/lib/types";
+import { ArenaClientMessage } from "../lib/schemas";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
