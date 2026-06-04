@@ -4,9 +4,11 @@ import type {
   OracleProblemTable,
   OracleSessionTable,
   UserMatchTable,
+  user as UserTable,
 } from "@/db/schema";
-import type { user as UserTable } from "@/db/schema";
-import { OracleSessionModeType, ProgrammingLanguageType } from "@/db/shared";
+import { OracleSessionModeType } from "@/db/shared";
+import { formatOracleSessionMode } from "@/features/oracle/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 
 type ArenaProblem = typeof ArenaProblemTable.$inferSelect;
 type MatchSubmission = typeof MatchSubmissionTable.$inferSelect;
@@ -32,42 +34,6 @@ type GenerateOracleProblemChatSystemPromptArgs = {
   problem: OracleProblem;
 };
 
-const formatProgrammingLanguageForPrompt = (
-  language: ProgrammingLanguageType,
-) => {
-  switch (language) {
-    case "cpp":
-      return "C++";
-    case "java":
-      return "Java";
-    case "javascript":
-      return "JavaScript";
-    case "python":
-      return "Python";
-    case "typescript":
-      return "TypeScript";
-    default:
-      throw new Error(`Unknown language: ${language satisfies never}`);
-  }
-};
-
-const formatOracleSessionModeForPrompt = (mode: OracleSessionModeType) => {
-  switch (mode) {
-    case "debug":
-      return "Debug";
-    case "guided":
-      return "Guided";
-    case "interview":
-      return "Interview";
-    case "review":
-      return "Review";
-    case "socratic":
-      return "Socratic";
-    default:
-      throw new Error(`Unknown session mode: ${mode satisfies never}`);
-  }
-};
-
 const getOracleSessionModeGuidance = (mode: OracleSessionModeType) => {
   switch (mode) {
     case "debug":
@@ -87,7 +53,8 @@ const getOracleSessionModeGuidance = (mode: OracleSessionModeType) => {
 
 const getDifficultyPlan = (problemCount: number) => {
   if (problemCount <= 1) return "Generate 1 medium problem.";
-  if (problemCount === 2) return "Generate 1 easy problem and 1 medium problem.";
+  if (problemCount === 2)
+    return "Generate 1 easy problem and 1 medium problem.";
   if (problemCount === 3)
     return "Generate 1 easy problem and 2 medium problems.";
   if (problemCount === 4)
@@ -124,10 +91,8 @@ Return only data that matches the requested structured output. Do not include pr
 `.trim();
 
 export const generateOracleProblemsPrompt = (session: OracleSession) => {
-  const languageLabel = formatProgrammingLanguageForPrompt(
-    session.programmingLanguage,
-  );
-  const modeLabel = formatOracleSessionModeForPrompt(session.mode);
+  const languageLabel = formatProgrammingLanguage(session.programmingLanguage);
+  const modeLabel = formatOracleSessionMode(session.mode);
   const additionalInstructions = session.additionalInstructions?.trim();
   const description = session.description?.trim();
 
@@ -219,8 +184,8 @@ export const generateOracleProblemFeedbackPrompt = ({
   problem,
   user,
 }: GenerateOracleProblemFeedbackPromptArgs) => {
-  const languageLabel = formatProgrammingLanguageForPrompt(problem.language);
-  const modeLabel = formatOracleSessionModeForPrompt(session.mode);
+  const languageLabel = formatProgrammingLanguage(problem.language);
+  const modeLabel = formatOracleSessionMode(session.mode);
   const userName = user?.name?.trim();
   const additionalInstructions = session.additionalInstructions?.trim();
   const sessionDescription = session.description?.trim();
@@ -282,13 +247,11 @@ export const generateOracleProblemChatSystemPrompt = ({
   session,
   problem,
 }: GenerateOracleProblemChatSystemPromptArgs) => {
-  const sessionLanguageLabel = formatProgrammingLanguageForPrompt(
+  const sessionLanguageLabel = formatProgrammingLanguage(
     session.programmingLanguage,
   );
-  const problemLanguageLabel = formatProgrammingLanguageForPrompt(
-    problem.language,
-  );
-  const modeLabel = formatOracleSessionModeForPrompt(session.mode);
+  const problemLanguageLabel = formatProgrammingLanguage(problem.language);
+  const modeLabel = formatOracleSessionMode(session.mode);
   const sessionDescription = session.description?.trim();
   const additionalInstructions = session.additionalInstructions?.trim();
   const starterCode = problem.starterCode?.trim();

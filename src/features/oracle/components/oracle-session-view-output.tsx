@@ -63,6 +63,7 @@ export const OracleSessionViewOutput = ({
       const response = await handleUserProblemSubmissionAction(
         sessionId,
         problem.id,
+        code,
       );
       if (response.error) {
         toast.error(response.message);

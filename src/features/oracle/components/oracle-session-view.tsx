@@ -71,13 +71,14 @@ export const OracleSessionView = ({
             <ResizablePanelGroup orientation="vertical">
               <ResizablePanel minSize="30%">
                 <OracleSessionViewCodeEditor
+                  key={currentProblem.id}
                   sessionId={session.id}
                   problemId={currentProblem.id}
                   language={session.programmingLanguage}
-                  value={
+                  serverUserCode={
                     currentProblem.userCode ??
                     currentProblem.starterCode ??
-                    undefined
+                    null
                   }
                 />
               </ResizablePanel>

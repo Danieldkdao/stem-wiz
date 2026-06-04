@@ -19,7 +19,7 @@ import {
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
 import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 import { User } from "@/lib/auth/auth";
-import { cn, formatTime } from "@/lib/utils";
+import { cn, formatTime, getDuration } from "@/lib/utils";
 import {
   ArrowLeftIcon,
   BotIcon,
@@ -42,6 +42,11 @@ import {
 } from "../lib/formatters";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 export const OracleSessionSummaryView = ({
   session,
@@ -151,6 +156,21 @@ export const OracleSessionSummaryView = ({
     },
   ];
 
+  const getProblemMetadata = (started: Date | null, completed: Date | null) => [
+    {
+      label: "Started",
+      data: formatTime(started),
+    },
+    {
+      label: "Completed",
+      data: formatTime(completed),
+    },
+    {
+      label: "Duration",
+      data: getDuration(started, completed),
+    },
+  ];
+
   return (
     <div className="flex flex-col items-start gap-4">
       <Button variant="ghost" asChild>
@@ -238,127 +258,152 @@ export const OracleSessionSummaryView = ({
                     </CollapsibleTrigger>
                     <CollapsibleContent className="flex flex-col gap-6">
                       <Separator />
-                      <div className="px-6 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-                        <div className="min-w-0 flex flex-col gap-4">
-                          <div className="flex flex-col gap-2">
-                            <span className="text-lg text-muted-foreground font-semibold">
-                              Your solution
-                            </span>
-                            <div className="min-w-0 overflow-hidden">
-                              <CodeEditor
-                                options={{ readOnly: true }}
-                                language={problem.language}
-                                value={
-                                  problem.userCode ??
-                                  "The user did not provide a solution."
-                                }
-                                height={
-                                  (problem.userCode?.split(" ").length ?? 25) *
-                                  4
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div className="border rounded-md border-border p-5 flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <TagIcon className="text-primary" />
-                              <span className="text-lg font-semibold text-muted-foreground">
-                                Concepts
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {problem.concepts.map((concept) => (
-                                <Badge
-                                  variant="secondary"
-                                  key={concept}
-                                  className="capitalize"
-                                >
-                                  {concept}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="border rounded-md border-border p-5 flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <InfoIcon />
-                              <span className="text-lg font-semibold text-muted-foreground">
-                                Metadata
-                              </span>
-                            </div>
-                            {/* todo: add started, completed, and duration fields */}
-                          </div>
-                          <div className="border rounded-md border-border p-5 flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <MessageSquareTextIcon />
-                              <span className="text-lg font-semibold text-muted-foreground">
-                                Chat History
-                              </span>
-                            </div>
-                            <div className="overflow-y-auto max-h-300 flex flex-col gap-4">
-                              {problem.chat?.messages?.length ? (
-                                problem.chat.messages.map((message) => (
-                                  <div
-                                    className={cn(
-                                      "flex w-full min-w-0 flex-col gap-2 rounded-md p-4",
-                                      message.role === "user" &&
-                                        "bg-background",
-                                    )}
-                                    key={message.id}
-                                  >
-                                    <div className="flex w-full min-w-0 items-start gap-2.5">
-                                      {message.role === "user" ? (
-                                        <UserAvatar {...session.user} />
-                                      ) : (
-                                        <div className="size-8 shrink-0 rounded-full flex items-center justify-center bg-muted border border-border">
-                                          <BotIcon className="text-primary" />
-                                        </div>
-                                      )}
-                                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-x-hidden">
-                                        <div className="flex min-w-0 items-center gap-2">
-                                          <h2 className="truncate text-lg font-medium">
-                                            {message.role === "user"
-                                              ? `${session.user.name} (You)`
-                                              : "The Oracle"}
-                                          </h2>
-                                          <span>•</span>
-                                          <span className="shrink-0">
-                                            {(
-                                              message.createdAt ?? new Date()
-                                            ).toDateString()}
-                                          </span>
-                                        </div>
-
-                                        {message.role === "user" ? (
-                                          <p className="min-w-0 max-w-full wrap-break-word text-base text-muted-foreground">
-                                            {message.text}
-                                          </p>
-                                        ) : (
-                                          <MarkdownRenderer className="min-w-0 max-w-full text-base">
-                                            {message.text}
-                                          </MarkdownRenderer>
-                                        )}
+                      <div className="px-6 w-full gap-4">
+                        <ResizablePanelGroup orientation="horizontal">
+                          <ResizablePanel minSize="30%">
+                            <div className="min-w-0 flex flex-col gap-4 pr-4">
+                              <div className="flex flex-col gap-2">
+                                <span className="text-lg text-muted-foreground font-semibold">
+                                  Your solution
+                                </span>
+                                <div className="min-w-0 overflow-hidden">
+                                  <CodeEditor
+                                    options={{ readOnly: true }}
+                                    language={problem.language}
+                                    value={
+                                      problem.userCode ??
+                                      "The user did not provide a solution."
+                                    }
+                                    height={
+                                      (problem.userCode?.split(" ").length ??
+                                        25) * 4
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <div className="border rounded-md border-border p-5 flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <TagIcon className="text-primary" />
+                                  <span className="text-lg font-semibold text-muted-foreground">
+                                    Concepts
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {problem.concepts.map((concept) => (
+                                    <Badge
+                                      variant="secondary"
+                                      key={concept}
+                                      className="capitalize"
+                                    >
+                                      {concept}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="border rounded-md border-border p-5 flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <InfoIcon />
+                                  <span className="text-lg font-semibold text-muted-foreground">
+                                    Metadata
+                                  </span>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                  {getProblemMetadata(
+                                    problem.startedAt,
+                                    problem.completedAt,
+                                  ).map((data, index) => (
+                                    <Fragment key={index}>
+                                      <div className="flex items-center gap-2 justify-between flex-wrap">
+                                        <span className="text-lg text-muted-foreground">
+                                          {data.label}
+                                        </span>
+                                        <span className="text-lg font-semibold">
+                                          {data.data}
+                                        </span>
                                       </div>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <h1 className="text-center mx-auto italic text-lg font-medium">
-                                  No chat messages
-                                </h1>
-                              )}
+                                      <Separator className="last:hidden" />
+                                    </Fragment>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="border rounded-md border-border p-5 flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <MessageSquareTextIcon />
+                                  <span className="text-lg font-semibold text-muted-foreground">
+                                    Chat History
+                                  </span>
+                                </div>
+                                <div className="overflow-y-auto max-h-300 flex flex-col gap-4">
+                                  {problem.chat?.messages?.length ? (
+                                    problem.chat.messages.map((message) => (
+                                      <div
+                                        className={cn(
+                                          "flex w-full min-w-0 flex-col gap-2 rounded-md p-4",
+                                          message.role === "user" &&
+                                            "bg-background",
+                                        )}
+                                        key={message.id}
+                                      >
+                                        <div className="flex w-full min-w-0 items-start gap-2.5">
+                                          {message.role === "user" ? (
+                                            <UserAvatar {...session.user} />
+                                          ) : (
+                                            <div className="size-8 shrink-0 rounded-full flex items-center justify-center bg-muted border border-border">
+                                              <BotIcon className="text-primary" />
+                                            </div>
+                                          )}
+                                          <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-x-hidden">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                              <h2 className="truncate text-lg font-medium">
+                                                {message.role === "user"
+                                                  ? `${session.user.name} (You)`
+                                                  : "The Oracle"}
+                                              </h2>
+                                              <span>•</span>
+                                              <span className="shrink-0">
+                                                {(
+                                                  message.createdAt ??
+                                                  new Date()
+                                                ).toDateString()}
+                                              </span>
+                                            </div>
+
+                                            {message.role === "user" ? (
+                                              <p className="min-w-0 max-w-full wrap-break-word text-base text-muted-foreground">
+                                                {message.text}
+                                              </p>
+                                            ) : (
+                                              <MarkdownRenderer className="min-w-0 max-w-full text-base">
+                                                {message.text}
+                                              </MarkdownRenderer>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <h1 className="text-center mx-auto italic text-lg font-medium">
+                                      No chat messages
+                                    </h1>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className="min-w-0 flex flex-col gap-4">
-                          <div className="flex flex-col gap-2">
-                            <span className="text-lg text-muted-foreground font-semibold">
-                              Feedback
-                            </span>
-                            <MarkdownRenderer>
-                              {problem.feedback ?? ""}
-                            </MarkdownRenderer>
-                          </div>
-                        </div>
+                          </ResizablePanel>
+                          <ResizableHandle />
+                          <ResizablePanel minSize="30%">
+                            <div className="min-w-0 flex flex-col gap-4 pl-4">
+                              <div className="flex flex-col gap-2">
+                                <span className="text-lg text-muted-foreground font-semibold">
+                                  Feedback
+                                </span>
+                                <MarkdownRenderer>
+                                  {problem.feedback ?? ""}
+                                </MarkdownRenderer>
+                              </div>
+                            </div>
+                          </ResizablePanel>
+                        </ResizablePanelGroup>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>

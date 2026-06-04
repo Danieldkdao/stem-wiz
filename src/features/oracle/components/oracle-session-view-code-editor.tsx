@@ -4,7 +4,7 @@ import { CodeEditor } from "@/components/code/code-editor";
 import { EditorProps } from "@monaco-editor/react";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { saveUserCodeAction } from "../actions/actions";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckIcon, RefreshCwIcon, XIcon } from "lucide-react";
 import { useCodeEditorStore } from "@/store/use-code-editor-store";
@@ -12,8 +12,15 @@ import { useCodeEditorStore } from "@/store/use-code-editor-store";
 export const OracleSessionViewCodeEditor = ({
   sessionId,
   problemId,
+  serverUserCode,
   ...props
-}: { sessionId: string; problemId: string } & EditorProps) => {
+}: {
+  sessionId: string;
+  problemId: string;
+  serverUserCode: string | null;
+} & EditorProps) => {
+  const saveVersionRef = useRef(0);
+  const [userCode, setUserCode] = useState(serverUserCode ?? "");
   const [saveStatus, setSaveStatus] = useState<
     "saving" | "saved" | "error" | null
   >(null);
@@ -21,9 +28,11 @@ export const OracleSessionViewCodeEditor = ({
 
   const handleCodeChange = useDebouncedCallback(
     async (value: string | undefined) => {
-      if (!value) return;
+      if (value === undefined) return;
+      const saveVersion = ++saveVersionRef.current;
       setSaveStatus("saving");
       const response = await saveUserCodeAction(sessionId, problemId, value);
+      if (saveVersion !== saveVersionRef.current) return;
       if (response.error) {
         toast.error(response.message);
         setSaveStatus("error");
@@ -41,8 +50,13 @@ export const OracleSessionViewCodeEditor = ({
     <div className="w-full h-full relative">
       <CodeEditor
         {...props}
+        value={userCode}
         onMount={(editor) => setEditor(editor)}
-        onChange={handleCodeChange}
+        onChange={(value) => {
+          const nextCode = value ?? "";
+          setUserCode(nextCode);
+          handleCodeChange(nextCode);
+        }}
       />
       <div className="absolute bottom-2 left-2 flex items-center gap-2">
         {saveStatus ? (

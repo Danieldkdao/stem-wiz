@@ -34,6 +34,7 @@ export const OracleProblemTable = pgTable("oracle_problems", {
   concepts: jsonb("concepts").$type<string[]>().notNull(),
   score: integer("score"),
   feedback: text("feedback"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt,
   updatedAt,

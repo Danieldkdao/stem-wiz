@@ -1,5 +1,6 @@
 import { OracleSessionModeType, OracleSessionStatusType } from "@/db/shared";
 import { OracleSession } from "./types";
+import { getDuration } from "@/lib/utils";
 
 export const formatOracleSessionMode = (mode: OracleSessionModeType) => {
   switch (mode) {
@@ -55,18 +56,5 @@ export const formatOptionalSessionDate = (
 export const formatSessionDuration = (session: OracleSession) => {
   if (!session.startedAt) return "Not started";
 
-  const endTime = session.completedAt?.getTime() ?? Date.now();
-  const minutes = Math.max(
-    1,
-    Math.round((endTime - session.startedAt.getTime()) / 60000),
-  );
-
-  if (minutes < 60) return `${minutes} min`;
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  return remainingMinutes
-    ? `${hours} hr ${remainingMinutes} min`
-    : `${hours} hr`;
+  return getDuration(session.startedAt, session.completedAt ?? new Date());
 };

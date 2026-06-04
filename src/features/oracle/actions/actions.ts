@@ -283,7 +283,24 @@ export const saveUserCodeAction = async (
   if (!existingSession) {
     return {
       error: true,
-      message: "Failed to your save code.",
+      message: "Failed to save your code.",
+    };
+  }
+
+  const [existingProblem] = await db
+    .select()
+    .from(OracleProblemTable)
+    .where(
+      and(
+        eq(OracleProblemTable.id, problemId),
+        eq(OracleProblemTable.sessionId, existingSession.id),
+      ),
+    );
+
+  if (!existingProblem) {
+    return {
+      error: true,
+      message: "Failed to save your code.",
     };
   }
 
@@ -292,7 +309,12 @@ export const saveUserCodeAction = async (
       userId,
       existingSession.id,
       problemId,
-      { userCode },
+      {
+        userCode,
+        startedAt: existingProblem.startedAt
+          ? existingProblem.startedAt
+          : new Date(),
+      },
     );
 
     if (!updatedProblem) {
@@ -315,6 +337,7 @@ export const saveUserCodeAction = async (
 export const handleUserProblemSubmissionAction = async (
   sessionId: string,
   problemId: string,
+  code: string,
 ) => {
   const { userId } = await getCurrentUser();
   if (!userId) {
@@ -341,6 +364,9 @@ export const handleUserProblemSubmissionAction = async (
   }
 
   try {
+    await updateOracleProblem(userId, existingSession.id, problemId, {
+      userCode: code,
+    });
     const response = await generateUserProblemSubmissionFeedback(
       existingSession.id,
       problemId,
