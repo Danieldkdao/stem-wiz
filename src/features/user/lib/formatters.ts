@@ -8,6 +8,10 @@ import {
   UserLookingForType,
   UserMeetupPreferenceType,
 } from "@/db/shared";
+import {
+  CommunityFilterByOptionType,
+  CommunitySortByOptionType,
+} from "./params";
 
 export const formatProgrammingLanguage = (lang: ProgrammingLanguageType) => {
   switch (lang) {
@@ -162,5 +166,41 @@ export const formatUserGoals = (goal: UserGoalType) => {
       return "Start Company";
     default:
       throw new Error(`Unknown user goal: ${goal satisfies never}`);
+  }
+};
+
+export const formatCommunitySortByOptions = (
+  option: CommunitySortByOptionType,
+) => {
+  switch (option) {
+    case "friend_count":
+      return "Friend count";
+    case "match_count":
+      return "Match count";
+    case "most_recent":
+      return "Most recent";
+    case "oldest":
+      return "Oldest";
+    default:
+      throw new Error(
+        `Unknown community sort option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const formatCommunityFilterByOptions = (
+  option: CommunityFilterByOptionType,
+) => {
+  switch (option) {
+    case "all":
+      return "All";
+    case "friends":
+      return "Friends";
+    case "pending_friend_requests":
+      return "Pending friend requests";
+    default:
+      throw new Error(
+        `Unknown community filter option: ${option satisfies never}`,
+      );
   }
 };

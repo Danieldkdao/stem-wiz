@@ -27,6 +27,17 @@ export const zodNumberValidation = (min = 0) =>
       error: `Please enter a positive integer greater than ${min}.`,
     });
 
+export const userAvailabilityObjectSchema = z.object({
+  days: z.array(z.enum(userAvailabilityDays)).optional(),
+  timeOfDay: z.array(z.enum(userAvailabilityTimeOfDay)).optional(),
+  hoursPerWeek: zodNumberValidation(1).optional(),
+});
+
+export const userAvailabilitySchema = userAvailabilityObjectSchema
+  .optional()
+  .nullable();
+export type UserAvailabilitySchemaType = z.infer<typeof userAvailabilitySchema>;
+
 export const userProfileSchema = z.object({
   preferredLanguage: z.enum(programmingLanguages),
   yearsProgramming: zodNumberValidation().optional().nullable(),
@@ -42,17 +53,7 @@ export const userProfileSchema = z.object({
   meetupPreference: z.enum(userMeetupPreferences).optional().nullable(),
   collaborationStyle: z.enum(userCollaborationStyles).optional().nullable(),
   lookingFor: z.enum(userLookingFor).optional().nullable(),
-  availability: z
-    .object({
-      days: z.array(z.enum(userAvailabilityDays)).optional(),
-      timeOfDay: z
-        .array(z.enum(userAvailabilityTimeOfDay))
-
-        .optional(),
-      hoursPerWeek: zodNumberValidation(1).optional(),
-    })
-    .optional()
-    .nullable(),
+  availability: userAvailabilitySchema,
   goals: z
     .array(z.enum(userGoals))
     .min(1, { error: "Please enter at least one goal." })

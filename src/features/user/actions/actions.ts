@@ -1,19 +1,59 @@
 "use server";
 
+import { db } from "@/db/db";
+import {
+  FriendRequestTable,
+  ProgrammingLanguageType,
+  user,
+  UserAvailabilityDayType,
+  UserAvailabilityTimeOfDayType,
+  UserCollaborationStyleType,
+  UserExperienceLevelType,
+  UserGoalType,
+  UserLookingForType,
+  UserMatchTable,
+  UserMeetupPreferenceType,
+  UserProfileTable,
+} from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   INVALID_DATA_ERROR_MESSAGE,
+  PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { upsertUserProfile } from "../server/user-profiles";
-import { userProfileSchema, UserProfileSchemaType } from "./schemas";
-import { db } from "@/db/db";
-import { FriendRequestTable, user, UserProfileTable } from "@/db/schema";
-import { eq, getTableColumns, sql } from "drizzle-orm";
+import {
+  and,
+  arrayOverlaps,
+  asc,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  ne,
+  or,
+  SQL,
+  sql,
+} from "drizzle-orm";
 import { cacheTag } from "next/cache";
+import {
+  CommunityFilterByOptionType,
+  CommunitySortByOptionType,
+  HasGithubUrlFilterOptionType,
+  HasLinkedinUrlFilterOptionType,
+  HasPortfolioUrlFilterOptionType,
+  UserAvailabilityFilterSchemaType,
+} from "../lib/params";
 import { getUserProfileTag } from "../server/cache/user-profiles";
 import { getUserGlobalTag, getUserIdTag } from "../server/cache/users";
+import { upsertUserProfile } from "../server/user-profiles";
+import { userProfileSchema, UserProfileSchemaType } from "./schemas";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -67,9 +107,215 @@ export const getUserProfileAction = async (userId: string) => {
   return existingUserProfile ?? null;
 };
 
-export const getUsersAction = async (userId: string) => {
+export const getUsersAction = async (
+  userId: string,
+  filterOptions: {
+    search: string;
+    sortBy: CommunitySortByOptionType;
+    filterBy: CommunityFilterByOptionType;
+    preferredLanguages: ProgrammingLanguageType[];
+    yearsProgrammingLower: number | null | undefined;
+    yearsProgrammingUpper: number | null | undefined;
+    experienceLevels: UserExperienceLevelType[];
+    meetupPreferences: UserMeetupPreferenceType[];
+    collaborationStyles: UserCollaborationStyleType[];
+    lookingFor: UserLookingForType[];
+    availability: UserAvailabilityFilterSchemaType;
+    goals: UserGoalType[];
+    hasGithubUrl: HasGithubUrlFilterOptionType;
+    hasPortfolioUrl: HasPortfolioUrlFilterOptionType;
+    hasLinkedinUrl: HasLinkedinUrlFilterOptionType;
+    page: number;
+  },
+  limit = PAGE_SIZE,
+) => {
   "use cache";
   cacheTag(getUserGlobalTag());
+
+  const {
+    search,
+    page,
+    sortBy,
+    filterBy,
+    preferredLanguages,
+    yearsProgrammingLower,
+    yearsProgrammingUpper,
+    experienceLevels,
+    meetupPreferences,
+    collaborationStyles,
+    lookingFor,
+    availability,
+    goals,
+    hasGithubUrl,
+    hasPortfolioUrl,
+    hasLinkedinUrl,
+  } = filterOptions;
+
+  const offset = (page - 1) * limit;
+
+  const searchFilter = search.trim()
+    ? ilike(user.name, `%${search.trim()}%`)
+    : undefined;
+  const preferredLanguageFilter = preferredLanguages.length
+    ? inArray(UserProfileTable.preferredLanguage, preferredLanguages)
+    : undefined;
+  const yearsProgrammingLowerFilter =
+    yearsProgrammingLower && yearsProgrammingLower >= 0
+      ? gte(UserProfileTable.yearsProgramming, yearsProgrammingLower)
+      : undefined;
+  const yearsProgrammingUpperFilter = yearsProgrammingUpper
+    ? lte(UserProfileTable.yearsProgramming, yearsProgrammingUpper)
+    : undefined;
+  const experienceLevelFilter = experienceLevels.length
+    ? inArray(UserProfileTable.experienceLevel, experienceLevels)
+    : undefined;
+  const meetupPreferenceFilter = meetupPreferences.length
+    ? inArray(UserProfileTable.meetupPreference, meetupPreferences)
+    : undefined;
+  const collaborationStyleFilter = collaborationStyles.length
+    ? inArray(UserProfileTable.collaborationStyle, collaborationStyles)
+    : undefined;
+  const lookingForFilter = lookingFor.length
+    ? inArray(UserProfileTable.lookingFor, lookingFor)
+    : undefined;
+  const goalFilter = goals.length
+    ? arrayOverlaps(UserProfileTable.goals, goals)
+    : undefined;
+
+  const availabilityDays = sql<
+    UserAvailabilityDayType[]
+  >`(${UserProfileTable.availability}->>'days')`;
+  const availabilityTimeOfDay = sql<
+    UserAvailabilityTimeOfDayType[]
+  >`(${UserProfileTable.availability}->>'timeOfDay')`;
+  const availabilityHoursPerWeek = sql<
+    number | null | undefined
+  >`(${UserProfileTable.availability}->>'hoursPerWeek')::int`;
+
+  const availabilityDaysFilter = availability?.days?.length
+    ? arrayOverlaps(availabilityDays, availability.days)
+    : undefined;
+  const availabilityTimeOfDayFilter = availability?.timeOfDay?.length
+    ? arrayOverlaps(availabilityTimeOfDay, availability.timeOfDay)
+    : undefined;
+  const availabilityHoursPerWeekLowerFilter = availability?.hoursPerWeekLower
+    ? gte(availabilityHoursPerWeek, availability.hoursPerWeekLower)
+    : undefined;
+  const availabilityHoursPerWeekUpperFilter = availability?.hoursPerWeekUpper
+    ? lte(availabilityHoursPerWeek, availability.hoursPerWeekUpper)
+    : undefined;
+
+  const hasGithubUrlMap: Record<
+    HasGithubUrlFilterOptionType,
+    SQL<unknown> | undefined
+  > = {
+    all: undefined,
+    has_github_url: isNotNull(UserProfileTable.githubUrl),
+    no_github_url: isNull(UserProfileTable.githubUrl),
+  };
+
+  const hasPortfolioUrlMap: Record<
+    HasPortfolioUrlFilterOptionType,
+    SQL<unknown> | undefined
+  > = {
+    all: undefined,
+    has_portfolio_url: isNotNull(UserProfileTable.portfolioUrl),
+    no_portfolio_url: isNull(UserProfileTable.portfolioUrl),
+  };
+
+  const hasLinkedinUrlMap: Record<
+    HasLinkedinUrlFilterOptionType,
+    SQL<unknown> | undefined
+  > = {
+    all: undefined,
+    has_linkedin_url: isNotNull(UserProfileTable.linkedinUrl),
+    no_linkedin_url: isNull(UserProfileTable.linkedinUrl),
+  };
+
+  const matchCount = sql<number>`(
+    SELECT COUNT(*)::int
+    FROM ${UserMatchTable} umt
+    WHERE umt.user_id = ${user.id}
+  )`.mapWith(Number);
+
+  const friendCount = sql<number>`(
+    SELECT COUNT(*)::int
+    FROM ${FriendRequestTable} frt
+    WHERE frt.status = 'accepted'
+      AND(
+        frt.from_user_id = ${user.id}
+        OR frt.to_user_id = ${user.id}
+      )
+  )`.mapWith(Number);
+
+  const sortByMap: Record<CommunitySortByOptionType, SQL<unknown>> = {
+    most_recent: desc(user.createdAt),
+    oldest: asc(user.createdAt),
+    match_count: desc(matchCount),
+    friend_count: desc(friendCount),
+  };
+
+  const friendsFilter = sql`
+    EXISTS (
+      SELECT 1
+      FROM ${FriendRequestTable} frt
+      WHERE frt.status = 'accepted'
+        AND (
+          (frt.from_user_id = ${userId} AND frt.to_user_id = ${user.id})
+          OR
+          (frt.from_user_id = ${user.id} AND frt.to_user_id = ${userId})
+        )
+    )
+  `;
+  const pendingFriendsFilter = sql`
+    EXISTS (
+      SELECT 1
+      FROM ${FriendRequestTable} frt
+      WHERE frt.status = 'pending'
+        AND (
+          (frt.from_user_id = ${userId} AND frt.to_user_id = ${user.id})
+          OR
+          (frt.from_user_id = ${user.id} AND frt.to_user_id = ${userId})
+        )
+    )
+  `;
+
+  const filterByMap: Record<
+    CommunityFilterByOptionType,
+    SQL<unknown> | undefined
+  > = {
+    all: undefined,
+    friends: friendsFilter,
+    pending_friend_requests: pendingFriendsFilter,
+  };
+
+  const whereQuery = and(
+    ne(user.id, userId),
+    searchFilter,
+    preferredLanguageFilter,
+    or(
+      and(yearsProgrammingLowerFilter, yearsProgrammingUpperFilter),
+      isNull(UserProfileTable.yearsProgramming),
+    ),
+    experienceLevelFilter,
+    meetupPreferenceFilter,
+    collaborationStyleFilter,
+    lookingForFilter,
+    goalFilter,
+    availabilityDaysFilter,
+    availabilityTimeOfDayFilter,
+    or(
+      and(
+        availabilityHoursPerWeekLowerFilter,
+        availabilityHoursPerWeekUpperFilter,
+      ),
+      isNull(availabilityHoursPerWeek),
+    ),
+    hasGithubUrlMap[hasGithubUrl],
+    hasPortfolioUrlMap[hasPortfolioUrl],
+    hasLinkedinUrlMap[hasLinkedinUrl],
+    filterByMap[filterBy],
+  );
 
   const users = await db
     .select({
@@ -89,18 +335,39 @@ export const getUsersAction = async (userId: string) => {
               )
             FROM ${FriendRequestTable} fr
             WHERE
-              (fr.from_user_id = ${user.id} AND fr.to_user_id = ${userId})
+              ((fr.from_user_id = ${user.id} AND fr.to_user_id = ${userId})
               OR
-              (fr.to_user_id = ${user.id} AND fr.from_user_id = ${userId})
+              (fr.to_user_id = ${user.id} AND fr.from_user_id = ${userId}))
               AND fr.status != 'rejected'
             LIMIT 1
           )
       `,
     })
     .from(user)
-    .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id));
+    .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id))
+    .where(whereQuery)
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(limit);
 
-  return users;
+  const [totalUsers] = await db
+    .select({
+      count: count(),
+    })
+    .from(user)
+    .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id))
+    .where(whereQuery);
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalUsers.count;
+
+  return {
+    users,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };
 
 export const getUserAction = async (userId: string) => {

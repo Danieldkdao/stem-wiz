@@ -13,6 +13,9 @@ export const NO_PERMISSION_DATA_MESSAGE =
   "You do not have permission to do this.";
 export const NOT_FOUND_ERROR_MESSAGE = "Resource not found.";
 
+export const DEFAULT_PAGE = 1;
+export const PAGE_SIZE = 10;
+
 export const SEARCH_OPTION_ICONS = {
   "layout-dashboard": LayoutDashboardIcon,
   "landmark-icon": LandmarkIcon,
@@ -227,3 +230,5 @@ export const CODE_EDITOR_LIGHT_THEME = {
 };
 
 export const NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS = 2;
+
+export const SORT_BY_OPTIONS = ["most_recent", "oldest"] as const;
