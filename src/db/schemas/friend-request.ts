@@ -9,6 +9,7 @@ import {
 import { createdAt, id, updatedAt } from "../helpers";
 import { user } from "./user";
 import { friendRequestStatusEnum } from "../shared";
+import { ChatTable } from "./chat";
 
 export const FriendRequestTable = pgTable(
   "friend_requests",
@@ -43,7 +44,7 @@ export const FriendRequestTable = pgTable(
 
 export const friendRequestRelations = relations(
   FriendRequestTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     fromUser: one(user, {
       fields: [FriendRequestTable.fromUserId],
       references: [user.id],
@@ -54,5 +55,6 @@ export const friendRequestRelations = relations(
       references: [user.id],
       relationName: "to_user",
     }),
+    chat: many(ChatTable),
   }),
 );

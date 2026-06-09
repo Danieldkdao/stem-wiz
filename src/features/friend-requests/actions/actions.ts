@@ -18,7 +18,7 @@ import {
   NOT_FOUND_ERROR_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { and, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, or, sql } from "drizzle-orm";
 import {
   insertFriendRequestDb,
   updateFriendRequestDb,
@@ -229,4 +229,40 @@ export const respondFriendRequestAction = async (
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const getUserFriendsAction = async () => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return [];
+
+  const friends = await db
+    .select({
+      ...getTableColumns(FriendRequestTable),
+      user: getTableColumns(user),
+    })
+    .from(FriendRequestTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(user.id, FriendRequestTable.toUserId),
+        ),
+        and(
+          eq(FriendRequestTable.toUserId, userId),
+          eq(user.id, FriendRequestTable.fromUserId),
+        ),
+      ),
+    )
+    .where(
+      and(
+        eq(FriendRequestTable.status, "accepted"),
+        or(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    );
+
+  return friends;
 };

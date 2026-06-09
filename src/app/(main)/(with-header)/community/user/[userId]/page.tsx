@@ -61,7 +61,7 @@ const CommunityUserIdPage = (props: CommunityUserIdParams) => {
 
 const CommunityUserIdLoading = () => {
   return (
-    <div className="w-full h-full overflow-y-auto px-6 py-10">
+    <div className="w-full h-full overflow-y-auto">
       <div className="mx-auto flex w-full max-w-300 flex-col gap-4">
         <Card>
           <CardContent className="flex flex-col gap-6 md:flex-row md:items-center">
@@ -113,8 +113,8 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
 
   if (!user) {
     return (
-      <div className="flex h-full w-full items-center justify-center px-6 py-10">
-        <Card className="w-full max-w-120">
+      <div className="flex h-full w-full items-center justify-center">
+        <Card className="w-full">
           <CardContent className="flex flex-col items-center gap-4 text-center">
             <div className="rounded-full bg-muted p-4">
               <SearchIcon className="size-8 text-muted-foreground" />
@@ -142,8 +142,8 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
   const goals = profile?.goals ?? [];
 
   return (
-    <div className="w-full h-full overflow-y-auto px-6 py-10">
-      <div className="mx-auto flex w-full max-w-300 flex-col gap-4">
+    <div className="w-full h-full overflow-y-auto">
+      <div className="mx-auto flex w-full flex-col gap-4">
         <Card>
           <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-center">
             <UserAvatar

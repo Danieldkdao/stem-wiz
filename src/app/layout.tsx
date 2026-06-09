@@ -1,12 +1,10 @@
-import type { Metadata } from "next";
-import { Outfit, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import "@mdxeditor/editor/style.css";
+import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "next-themes";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import "@mdxeditor/editor/style.css";
+import type { Metadata } from "next";
+import { Geist_Mono, Outfit } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next";
+import "./globals.css";
 
 const outfitSans = Outfit({
   variable: "--font-outfit-sans",
@@ -44,17 +42,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <body className="min-h-full flex flex-col">
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableColorScheme
-            disableTransitionOnChange
-          >
-            <TooltipProvider>
-              <Toaster />
-              {children}
-            </TooltipProvider>
-          </ThemeProvider>
+          <Providers>{children}</Providers>
         </body>
       </html>
     </NuqsAdapter>

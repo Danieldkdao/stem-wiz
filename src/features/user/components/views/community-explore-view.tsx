@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import { CommunityParams } from "../lib/types";
+import { CommunityParams } from "../../lib/types";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { loadCommunitySearchParams } from "../lib/params";
-import { getUsersAction } from "../actions/actions";
+import { loadCommunitySearchParams } from "../../lib/params";
+import { getUsersAction } from "../../actions/actions";
 import { DEFAULT_PAGE } from "@/lib/constants";
-import { CommunityFilters } from "./community-filters";
-import { CommunityUserInfiniteCardList } from "./community-user-infinite-card-list";
+import { CommunityFilters } from "../community-filters";
+import { CommunityUserInfiniteCardList } from "../community-user-infinite-card-list";
 
 export const CommunityExploreView = (props: CommunityParams) => {
   return (

@@ -77,20 +77,20 @@
 }
 
 :root {
-  --card: oklch(1.0000 0 0);
+  --card: oklch(1 0 0);
   --card-foreground: oklch(0.1807 0.0207 239.8394);
-  --popover: oklch(1.0000 0 0);
+  --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.1807 0.0207 239.8394);
   --primary: oklch(0.6236 0.1833 147.4139);
-  --primary-foreground: oklch(0.9813 0.0100 238.5069);
-  --secondary: oklch(0.9396 0.0204 243.4220);
+  --primary-foreground: oklch(0.9813 0.01 238.5069);
+  --secondary: oklch(0.9396 0.0204 243.422);
   --secondary-foreground: oklch(0.2791 0.0203 242.6079);
-  --muted: oklch(0.9396 0.0204 243.4220);
+  --muted: oklch(0.9396 0.0204 243.422);
   --muted-foreground: oklch(0.4501 0.0191 239.4931);
   --accent: oklch(0.6999 0.1796 150.1066);
-  --accent-foreground: oklch(0.9813 0.0100 238.5069);
+  --accent-foreground: oklch(0.9813 0.01 238.5069);
   --destructive: oklch(0.6207 0.2306 24.9164);
-  --destructive-foreground: oklch(0.9813 0.0100 238.5069);
+  --destructive-foreground: oklch(0.9813 0.01 238.5069);
   --warning: oklch(0.6818 0.1924 45.7782);
   --warning-foreground: oklch(0.1807 0.0207 239.8394);
   --border: oklch(0.8999 0.0196 240.7516);
@@ -102,12 +102,12 @@
   --chart-4: oklch(0.6396 0.2105 300.0543);
   --chart-5: oklch(0.6491 0.2201 19.8586);
   --radius: 0.75rem;
-  --sidebar: oklch(0.9813 0.0100 238.5069);
+  --sidebar: oklch(0.9813 0.01 238.5069);
   --sidebar-foreground: oklch(0.1807 0.0207 239.8394);
   --sidebar-primary: oklch(0.6236 0.1833 147.4139);
-  --sidebar-primary-foreground: oklch(0.9813 0.0100 238.5069);
+  --sidebar-primary-foreground: oklch(0.9813 0.01 238.5069);
   --sidebar-accent: oklch(0.6999 0.1796 150.1066);
-  --sidebar-accent-foreground: oklch(0.9813 0.0100 238.5069);
+  --sidebar-accent-foreground: oklch(0.9813 0.01 238.5069);
   --sidebar-border: oklch(0.8999 0.0196 240.7516);
   --sidebar-ring: oklch(0.6236 0.1833 147.4139);
   --font-sans: Outfit ui-sans-serif, sans-serif, system-ui;
@@ -123,14 +123,18 @@
   --spacing: 0.25rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
-  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
-  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-sm:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
-  --background: oklch(0.9813 0.0100 238.5069);
+  --background: oklch(0.9813 0.01 238.5069);
   --foreground: oklch(0.1807 0.0207 239.8394);
 }
 
@@ -150,25 +154,25 @@
   --accent: oklch(0.7211 0.1805 150.0521);
   --accent-foreground: oklch(0.1004 0.0209 233.5083);
   --destructive: oklch(0.6207 0.2306 24.9164);
-  --destructive-foreground: oklch(0.9813 0.0100 238.5069);
-  --warning: oklch(0.7309 0.1840 51.3191);
+  --destructive-foreground: oklch(0.9813 0.01 238.5069);
+  --warning: oklch(0.7309 0.184 51.3191);
   --warning-foreground: oklch(0.1004 0.0209 233.5083);
   --border: oklch(0.2791 0.0203 242.6079);
   --input: oklch(0.2791 0.0203 242.6079);
   --ring: oklch(0.7007 0.1804 148.9872);
   --chart-1: oklch(0.7007 0.1804 148.9872);
   --chart-2: oklch(0.6798 0.1703 250.1921);
-  --chart-3: oklch(0.7309 0.1840 51.3191);
+  --chart-3: oklch(0.7309 0.184 51.3191);
   --chart-4: oklch(0.6928 0.1956 302.0666);
   --chart-5: oklch(0.6899 0.2008 18.6316);
-  --sidebar: oklch(0.2050 0 0);
-  --sidebar-foreground: oklch(0.9850 0 0);
-  --sidebar-primary: oklch(0.4880 0.2430 264.3760);
-  --sidebar-primary-foreground: oklch(0.9850 0 0);
-  --sidebar-accent: oklch(0.2690 0 0);
-  --sidebar-accent-foreground: oklch(0.9850 0 0);
-  --sidebar-border: oklch(0.2750 0 0);
-  --sidebar-ring: oklch(0.4390 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.275 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
   --radius: 0.625rem;
   --font-sans: Outfit, ui-sans-serif, sans-serif, system-ui;
   --font-serif: Outfit, ui-serif, serif;
@@ -183,11 +187,15 @@
   --spacing: 0.25rem;
   --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
-  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
-  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-sm:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 }
 
@@ -202,178 +210,85 @@
   html {
     @apply font-sans;
   }
-  .mdxeditor-root-contenteditable {
-    @apply border-input dark:bg-input/30 rounded-md rounded-t-none border bg-transparent px-3 shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden;
-
-    & * {
-      outline: none;
-    }
-  }
-
-  .mdxeditor-toolbar {
-    @apply bg-card border-card rounded-md rounded-b-none! shadow-sm flex-wrap;
-  }
-
-  .mdxeditor-popup-container {
-    position: fixed !important;
-    inset: 0;
-    pointer-events: none;
-    @apply z-50!;
-  }
-
-  .mdxeditor-select-content {
-    pointer-events: auto;
-    max-height: min(300px, calc(100dvh - 1rem));
-    overflow-y: auto;
-  }
 
   .dark-theme {
     --basePageBg: var(--muted) !important;
   }
+}
 
-  .markdown-renderer {
-    @apply text-foreground break-words leading-7;
+@layer components {
+  .markdown-font-scope {
+    --markdown-sans:
+      var(--font-outfit-sans), Outfit, ui-sans-serif, sans-serif, system-ui;
+    --markdown-mono:
+      var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+      Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: var(--markdown-sans) !important;
   }
 
-  .markdown-renderer > :first-child {
-    @apply mt-0;
+  .markdown-font-scope .wmde-markdown,
+  .markdown-font-scope .wmde-markdown-var,
+  .markdown-font-scope .w-md-editor,
+  .markdown-font-scope .w-md-editor-toolbar,
+  .markdown-font-scope .w-md-editor-content,
+  .markdown-font-scope .w-md-editor-preview,
+  .markdown-font-scope .w-md-editor-text,
+  .markdown-font-scope .w-md-editor-text-pre,
+  .markdown-font-scope .w-md-editor-text-pre > code,
+  .markdown-font-scope .w-md-editor-text-input {
+    font-family: var(--markdown-sans) !important;
   }
 
-  .markdown-renderer > :last-child {
-    @apply mb-0;
+  .markdown-font-scope .w-md-editor {
+    --md-editor-font-family: var(--markdown-sans) !important;
   }
 
-  .markdown-renderer.prose :where(p) {
-    @apply my-3 leading-7;
+  .markdown-font-scope .wmde-markdown pre,
+  .markdown-font-scope .wmde-markdown code,
+  .markdown-font-scope .wmde-markdown tt,
+  .markdown-font-scope .wmde-markdown kbd,
+  .markdown-font-scope .wmde-markdown samp {
+    font-family: var(--markdown-mono) !important;
   }
 
-  .markdown-renderer.prose :where(h1, h2, h3, h4, h5, h6) {
-    @apply relative mb-3 leading-tight text-foreground;
+  .markdown-font-scope .wmde-markdown kbd {
+    font: 11px / 10px var(--markdown-mono) !important;
   }
 
-  .markdown-renderer.prose :where(h1, h2, h3, h4, h5, h6) + :where(p, ul, ol, blockquote, [data-rehype-pretty-code-figure]) {
-    @apply mt-0;
+  .markdown-callout {
+    @apply my-6 rounded-xl border-l-4 px-5 py-4 shadow-xs;
   }
 
-  .markdown-renderer.prose :where(h1) {
-    @apply mt-8;
+  .markdown-callout > * {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
   }
 
-  .markdown-renderer.prose :where(h2) {
-    @apply mt-7;
+  .markdown-callout > :first-child {
+    margin-top: 0;
   }
 
-  .markdown-renderer.prose :where(h3) {
-    @apply mt-6;
+  .markdown-callout > :last-child {
+    margin-bottom: 0;
   }
 
-  .markdown-renderer.prose :where(ul, ol) {
-    @apply my-3;
+  .markdown-callout > p {
+    white-space: pre-line;
   }
 
-  .markdown-renderer.prose :where(li) {
-    @apply my-1.5 leading-7 text-foreground;
+  .markdown-callout-note {
+    @apply border-slate-300 bg-slate-50 text-slate-900 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-100;
   }
 
-  .markdown-renderer.prose :where(li > p) {
-    @apply my-1 leading-7;
+  .markdown-callout-info {
+    @apply border-sky-300 bg-sky-50 text-sky-950 dark:border-sky-700 dark:bg-sky-950/35 dark:text-sky-100;
   }
 
-  .markdown-renderer.prose :where(li)::marker {
-    color: var(--muted-foreground);
+  .markdown-callout-success {
+    @apply border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950/35 dark:text-emerald-100;
   }
 
-  .markdown-renderer .heading-anchor {
-    @apply text-muted-foreground ml-2 opacity-0 transition-opacity no-underline;
-  }
-
-  .markdown-renderer :where(h1, h2, h3, h4, h5, h6):hover .heading-anchor {
-    @apply opacity-100;
-  }
-
-  .markdown-renderer pre {
-    @apply overflow-x-auto;
-  }
-
-  /* rehype-pretty-code dual theme support */
-  .markdown-renderer code[data-theme*=" "],
-  .markdown-renderer code[data-theme*=" "] span {
-    color: var(--shiki-light);
-    background-color: var(--shiki-light-bg);
-  }
-
-  .dark .markdown-renderer code[data-theme*=" "],
-  .dark .markdown-renderer code[data-theme*=" "] span {
-    color: var(--shiki-dark);
-    background-color: var(--shiki-dark-bg);
-  }
-
-  .markdown-renderer pre code {
-    @apply grid min-w-full bg-transparent px-5 py-4 text-base leading-6;
-    counter-reset: line;
-  }
-
-  .markdown-renderer :not(pre) > code {
-    @apply text-foreground bg-muted rounded-md border border-border px-1.5 py-0.5;
-  }
-
-  .markdown-renderer [data-rehype-pretty-code-figure] {
-    @apply my-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm;
-  }
-
-  .markdown-renderer [data-rehype-pretty-code-figure] pre {
-    @apply m-0 bg-transparent;
-  }
-
-  .markdown-renderer [data-rehype-pretty-code-figure] code {
-    background: transparent !important;
-  }
-
-  .markdown-renderer [data-rehype-pretty-code-figure] figcaption {
-    @apply border-border text-muted-foreground border-b bg-muted/50 px-4 py-2 text-xs font-medium;
-  }
-
-  .markdown-renderer [data-line] {
-    @apply -mx-5 block border-l-2 border-transparent px-5;
-  }
-
-  .markdown-renderer [data-highlighted-line] {
-    @apply bg-primary/10 border-primary;
-  }
-
-  .markdown-renderer [data-highlighted-chars] {
-    @apply rounded bg-primary/15 px-1 py-0.5;
-  }
-
-  .markdown-renderer table thead {
-    @apply bg-muted/60;
-  }
-
-  .markdown-renderer table th {
-    @apply text-foreground border-border border-b px-4 py-3 text-left font-semibold;
-  }
-
-  .markdown-renderer table td {
-    @apply border-border border-t px-4 py-3 align-top;
-  }
-
-  .markdown-renderer table tr:nth-child(even) td {
-    @apply bg-muted/20;
-  }
-
-  .markdown-renderer blockquote {
-    @apply border-primary/40 bg-muted/30 my-3 rounded-r-lg border-l-4 px-4 py-1;
-  }
-
-  .markdown-renderer ul.contains-task-list {
-    @apply pl-0;
-  }
-
-  .markdown-renderer .task-list-item {
-    @apply list-none;
-  }
-
-  .markdown-renderer .task-list-item input {
-    @apply mr-2 align-middle;
+  .markdown-callout-warning {
+    @apply border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-100;
   }
 }
