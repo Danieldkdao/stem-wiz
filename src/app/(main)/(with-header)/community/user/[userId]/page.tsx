@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user-avatar";
-import { FriendRequestButton } from "@/features/friend-requests/components/friend-request-button";
+import { FriendRequestStatusButtons } from "@/features/friend-requests/components/friend-request-status-buttons";
 import { getUserAction } from "@/features/user/actions/actions";
 import {
   formatProgrammingLanguage,
@@ -21,6 +21,7 @@ import {
   formatUserLookingFor,
   formatUserMeetupPreference,
 } from "@/features/user/lib/formatters";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
 import {
   CalendarIcon,
@@ -107,7 +108,8 @@ const CommunityUserIdLoading = () => {
 
 const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
   const { userId } = await params;
-  const user = await getUserAction(userId);
+  const { userId: currentUserId } = await getCurrentUser();
+  const user = await getUserAction(userId, currentUserId);
 
   if (!user) {
     return (
@@ -143,7 +145,7 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
     <div className="w-full h-full overflow-y-auto px-6 py-10">
       <div className="mx-auto flex w-full max-w-300 flex-col gap-4">
         <Card>
-          <CardContent className="flex flex-col gap-6 md:flex-row md:items-center">
+          <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-center">
             <UserAvatar
               {...user}
               className="size-28 shrink-0"
@@ -192,7 +194,7 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 md:justify-end">
+            <div className="flex flex-wrap gap-2 lg:justify-end">
               <Button variant="outline" asChild>
                 <Link href={`mailto:${user.email}`}>
                   <MailIcon />
@@ -214,7 +216,7 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
                 label="LinkedIn"
                 icon="linkedin"
               />
-              <FriendRequestButton
+              <FriendRequestStatusButtons
                 userId={user.id}
                 existingFriendRequest={user.existingFriendRequest}
               />

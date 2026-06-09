@@ -15,6 +15,7 @@ import {
   NotificationServerMessage,
   NotificationServerMessageType,
 } from "../lib/types";
+import { FriendRequestStatusType } from "@/db/shared";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -30,7 +31,10 @@ type NotificationSocketContextType = {
     type: T,
     listener: NotificationEventListener<T>,
   ) => () => void;
-  notifyFriendRequestAccepted: (notificationId: string) => boolean;
+  notifyFriendRequestResponse: (
+    notificationId: string,
+    action: Exclude<FriendRequestStatusType, "pending">,
+  ) => void;
   notifyFriendRequestSent: (notificationId: string) => boolean;
 };
 
@@ -171,10 +175,13 @@ export const NotificationSocketProvider = ({
     });
   };
 
-  const notifyFriendRequestAccepted = (notificationId: string) => {
+  const notifyFriendRequestResponse = (
+    notificationId: string,
+    action: Exclude<FriendRequestStatusType, "pending">,
+  ) => {
     return send({
       type: "new_notification",
-      event: { type: "friend_request_accepted", notificationId },
+      event: { type: `friend_request_${action}` as const, notificationId },
     });
   };
 
@@ -190,7 +197,7 @@ export const NotificationSocketProvider = ({
     connect,
     subscribeNotificationEvent,
     lastEvent,
-    notifyFriendRequestAccepted,
+    notifyFriendRequestResponse,
     notifyFriendRequestSent,
   };
 

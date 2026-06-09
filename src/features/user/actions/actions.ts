@@ -160,12 +160,13 @@ export const getUsersAction = async (
     ? inArray(UserProfileTable.preferredLanguage, preferredLanguages)
     : undefined;
   const yearsProgrammingLowerFilter =
-    yearsProgrammingLower && yearsProgrammingLower >= 0
+    yearsProgrammingLower != null && yearsProgrammingLower >= 0
       ? gte(UserProfileTable.yearsProgramming, yearsProgrammingLower)
       : undefined;
-  const yearsProgrammingUpperFilter = yearsProgrammingUpper
-    ? lte(UserProfileTable.yearsProgramming, yearsProgrammingUpper)
-    : undefined;
+  const yearsProgrammingUpperFilter =
+    yearsProgrammingUpper != null
+      ? lte(UserProfileTable.yearsProgramming, yearsProgrammingUpper)
+      : undefined;
   const experienceLevelFilter = experienceLevels.length
     ? inArray(UserProfileTable.experienceLevel, experienceLevels)
     : undefined;
@@ -184,13 +185,13 @@ export const getUsersAction = async (
 
   const availabilityDays = sql<
     UserAvailabilityDayType[]
-  >`(${UserProfileTable.availability}->>'days')`;
+  >`(${UserProfileTable.availability}->'days')`;
   const availabilityTimeOfDay = sql<
     UserAvailabilityTimeOfDayType[]
-  >`(${UserProfileTable.availability}->>'timeOfDay')`;
+  >`(${UserProfileTable.availability}->'timeOfDay')`;
   const availabilityHoursPerWeek = sql<
     number | null | undefined
-  >`(${UserProfileTable.availability}->>'hoursPerWeek')::int`;
+  >`(${UserProfileTable.availability}->'hoursPerWeek')::int`;
 
   const availabilityDaysFilter = availability?.days?.length
     ? arrayOverlaps(availabilityDays, availability.days)
@@ -293,10 +294,12 @@ export const getUsersAction = async (
     ne(user.id, userId),
     searchFilter,
     preferredLanguageFilter,
-    or(
-      and(yearsProgrammingLowerFilter, yearsProgrammingUpperFilter),
-      isNull(UserProfileTable.yearsProgramming),
-    ),
+    yearsProgrammingLower != null || yearsProgrammingUpper !== null
+      ? or(
+          and(yearsProgrammingLowerFilter, yearsProgrammingUpperFilter),
+          isNull(UserProfileTable.yearsProgramming),
+        )
+      : undefined,
     experienceLevelFilter,
     meetupPreferenceFilter,
     collaborationStyleFilter,
@@ -304,13 +307,16 @@ export const getUsersAction = async (
     goalFilter,
     availabilityDaysFilter,
     availabilityTimeOfDayFilter,
-    or(
-      and(
-        availabilityHoursPerWeekLowerFilter,
-        availabilityHoursPerWeekUpperFilter,
-      ),
-      isNull(availabilityHoursPerWeek),
-    ),
+    availability?.hoursPerWeekLower != null ||
+      availability?.hoursPerWeekUpper != null
+      ? or(
+          and(
+            availabilityHoursPerWeekLowerFilter,
+            availabilityHoursPerWeekUpperFilter,
+          ),
+          isNull(availabilityHoursPerWeek),
+        )
+      : undefined,
     hasGithubUrlMap[hasGithubUrl],
     hasPortfolioUrlMap[hasPortfolioUrl],
     hasLinkedinUrlMap[hasLinkedinUrl],
@@ -321,27 +327,6 @@ export const getUsersAction = async (
     .select({
       ...getTableColumns(user),
       profile: getTableColumns(UserProfileTable),
-      existingFriendRequest: sql<typeof FriendRequestTable.$inferSelect>`
-          (
-            SELECT 
-                jsonb_build_object(
-                'id', fr.id,
-                'fromUserId', fr.from_user_id,
-                'toUserId', fr.to_user_id,
-                'status', fr.status,
-                'respondedAt', fr.responded_at,
-                'createdAt', fr.created_at,
-                'updatedAt', fr.updated_at
-              )
-            FROM ${FriendRequestTable} fr
-            WHERE
-              ((fr.from_user_id = ${user.id} AND fr.to_user_id = ${userId})
-              OR
-              (fr.to_user_id = ${user.id} AND fr.from_user_id = ${userId}))
-              AND fr.status != 'rejected'
-            LIMIT 1
-          )
-      `,
     })
     .from(user)
     .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id))
@@ -370,7 +355,10 @@ export const getUsersAction = async (
   };
 };
 
-export const getUserAction = async (userId: string) => {
+export const getUserAction = async (
+  userId: string,
+  currentUserId?: string | null,
+) => {
   "use cache";
   cacheTag(getUserIdTag(userId));
 
@@ -392,9 +380,9 @@ export const getUserAction = async (userId: string) => {
               )
             FROM ${FriendRequestTable} fr
             WHERE
-              (fr.from_user_id = ${user.id} AND fr.to_user_id = ${userId})
+              ((fr.from_user_id = ${user.id} AND fr.to_user_id = ${currentUserId})
               OR
-              (fr.to_user_id = ${user.id} AND fr.from_user_id = ${userId})
+              (fr.to_user_id = ${user.id} AND fr.from_user_id = ${currentUserId}))
               AND fr.status != 'rejected'
             LIMIT 1
           )

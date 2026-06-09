@@ -140,6 +140,7 @@ export const friendRequestStatusEnum = pgEnum(
 export const notificationEventTypes = [
   "friend_request_sent",
   "friend_request_accepted",
+  "friend_request_rejected",
   "match_invite",
   "match_finished",
   "system",
@@ -152,12 +153,24 @@ export type NotificationPayload =
       friendRequestId: string;
       fromUserId: string;
       fromUserName: string;
+      title: string;
+      message: string;
     }
   | {
       type: "friend_request_accepted";
       friendRequestId: string;
       acceptedByUserId: string;
       acceptedByUserName: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "friend_request_rejected";
+      friendRequestId: string;
+      rejectedByUserId: string;
+      rejectedByUserName: string;
+      title: string;
+      message: string;
     }
   | { type: "match_invite"; matchId: string; fromUserId: string }
   | { type: "match_finished"; matchId: string; winnerId?: string }

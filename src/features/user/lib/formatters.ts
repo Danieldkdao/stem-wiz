@@ -11,6 +11,9 @@ import {
 import {
   CommunityFilterByOptionType,
   CommunitySortByOptionType,
+  HasGithubUrlFilterOptionType,
+  HasLinkedinUrlFilterOptionType,
+  HasPortfolioUrlFilterOptionType,
 } from "./params";
 
 export const formatProgrammingLanguage = (lang: ProgrammingLanguageType) => {
@@ -201,6 +204,57 @@ export const formatCommunityFilterByOptions = (
     default:
       throw new Error(
         `Unknown community filter option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const formatCommunityLinkedinFilterOptions = (
+  option: HasLinkedinUrlFilterOptionType,
+) => {
+  switch (option) {
+    case "all":
+      return "All";
+    case "has_linkedin_url":
+      return "Has Linkedin url";
+    case "no_linkedin_url":
+      return "No Linkedin url";
+    default:
+      throw new Error(
+        `Unknown community linkedin filter option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const formatCommunityPortfolioFilterOptions = (
+  option: HasPortfolioUrlFilterOptionType,
+) => {
+  switch (option) {
+    case "all":
+      return "All";
+    case "has_portfolio_url":
+      return "Has portfolio url";
+    case "no_portfolio_url":
+      return "No portfolio url";
+    default:
+      throw new Error(
+        `Unknown community portfolio filter option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const formatCommunityGithubFilterOptions = (
+  option: HasGithubUrlFilterOptionType,
+) => {
+  switch (option) {
+    case "all":
+      return "All";
+    case "has_github_url":
+      return "Has Github url";
+    case "no_github_url":
+      return "No Github url";
+    default:
+      throw new Error(
+        `Unknown community Github filter option: ${option satisfies never}`,
       );
   }
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { FriendRequestTable, UserProfileTable } from "@/db/schema";
+import { UserProfileTable } from "@/db/schema";
 import { User } from "@/lib/auth/auth";
 import { DEFAULT_PAGE } from "@/lib/constants";
 import { Loader2Icon, SearchXIcon } from "lucide-react";
@@ -16,7 +16,6 @@ export const CommunityUserInfiniteCardList = ({
 }: {
   initialUsers: (User & {
     profile: typeof UserProfileTable.$inferSelect;
-    existingFriendRequest: typeof FriendRequestTable.$inferSelect;
   })[];
   initialHasNextPage: boolean;
   userId: string;

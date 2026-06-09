@@ -1,8 +1,10 @@
-import { db } from "@/db/db";
-import { FriendRequestTable, NotificationTable } from "@/db/schema";
+import { db, DbTransaction } from "@/db/db";
+import { FriendRequestTable } from "@/db/schema";
+import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
 import { revalidateUserCache } from "@/features/user/server/cache/users";
+import { eq } from "drizzle-orm";
 
-export const insertFriendRequest = async (
+export const insertFriendRequestDb = async (
   userId: string,
   userName: string,
   friendRequest: typeof FriendRequestTable.$inferInsert,
@@ -13,22 +15,24 @@ export const insertFriendRequest = async (
       .values(friendRequest)
       .returning();
 
-    if (!insertFriendRequest) {
+    if (!insertFriendRequestDb) {
       throw new Error("Failed to insert friend request.");
     }
 
-    const [insertedNotification] = await tx
-      .insert(NotificationTable)
-      .values({
+    const insertedNotification = await insertNotificationDb(
+      {
         payload: {
           type: "friend_request_sent",
           friendRequestId: insertedFriendRequest.id,
           fromUserId: insertedFriendRequest.fromUserId,
           fromUserName: userName,
+          title: "Friend request received",
+          message: `${userName} has sent you a friend request.`,
         },
         userId: friendRequest.toUserId,
-      })
-      .returning();
+      },
+      tx,
+    );
 
     if (!insertedNotification) {
       throw new Error("Failed to create new notification.");
@@ -40,4 +44,21 @@ export const insertFriendRequest = async (
   revalidateUserCache(userId);
 
   return insertedNotification;
+};
+
+export const updateFriendRequestDb = async (
+  friendRequestId: string,
+  friendRequestData: Partial<typeof FriendRequestTable.$inferSelect>,
+  tx?: DbTransaction,
+) => {
+  const [updatedFriendRequest] = await (tx ?? db)
+    .update(FriendRequestTable)
+    .set(friendRequestData)
+    .where(eq(FriendRequestTable.id, friendRequestId))
+    .returning();
+
+  revalidateUserCache(updatedFriendRequest.fromUserId);
+  revalidateUserCache(updatedFriendRequest.toUserId);
+
+  return updatedFriendRequest;
 };

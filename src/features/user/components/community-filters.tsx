@@ -11,6 +11,9 @@ import {
 import { useCommunityParams } from "../hooks/use-community-params";
 import {
   formatCommunityFilterByOptions,
+  formatCommunityGithubFilterOptions,
+  formatCommunityLinkedinFilterOptions,
+  formatCommunityPortfolioFilterOptions,
   formatCommunitySortByOptions,
   formatProgrammingLanguage,
   formatUserAvailabilityDays,
@@ -26,6 +29,12 @@ import {
   COMMUNITY_SORT_BY_OPTIONS,
   CommunityFilterByOptionType,
   CommunitySortByOptionType,
+  HAS_GITHUB_URL_FILTER_OPTIONS,
+  HAS_LINKEDIN_URL_FILTER_OPTIONS,
+  HAS_PORTFOLIO_URL_FILTER_OPTIONS,
+  HasGithubUrlFilterOptionType,
+  HasLinkedinUrlFilterOptionType,
+  HasPortfolioUrlFilterOptionType,
 } from "../lib/params";
 import {
   MultiSelect,
@@ -390,6 +399,73 @@ export const CommunityFilters = () => {
                       step={1}
                       className="w-full"
                     />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-base font-medium">Social</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Select
+                      value={filters.hasLinkedinUrl}
+                      onValueChange={(value) =>
+                        setFilters({
+                          ...filters,
+                          hasLinkedinUrl:
+                            value as HasLinkedinUrlFilterOptionType,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filter by Linkedin url..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HAS_LINKEDIN_URL_FILTER_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {formatCommunityLinkedinFilterOptions(option)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={filters.hasPortfolioUrl}
+                      onValueChange={(value) =>
+                        setFilters({
+                          ...filters,
+                          hasPortfolioUrl:
+                            value as HasPortfolioUrlFilterOptionType,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filter by portfolio url..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HAS_PORTFOLIO_URL_FILTER_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {formatCommunityPortfolioFilterOptions(option)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={filters.hasGithubUrl}
+                      onValueChange={(value) =>
+                        setFilters({
+                          ...filters,
+                          hasGithubUrl: value as HasGithubUrlFilterOptionType,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filter by Github url..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HAS_GITHUB_URL_FILTER_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {formatCommunityGithubFilterOptions(option)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

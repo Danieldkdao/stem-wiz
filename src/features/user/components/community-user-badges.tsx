@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { UserProfileTable } from "@/db/schema";
 import { HourglassIcon, LinkIcon, MapPinIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { FaGithub, FaLinkedin } from "react-icons/fa6";
 
 export const CommunityUserBadges = ({
@@ -11,8 +11,6 @@ export const CommunityUserBadges = ({
 }: {
   profile: typeof UserProfileTable.$inferSelect;
 }) => {
-  const router = useRouter();
-
   return (
     <div className="flex flex-wrap justify-center md:justify-start items-center gap-2">
       {profile.location && (
@@ -28,43 +26,29 @@ export const CommunityUserBadges = ({
         </Badge>
       )}
       {profile.portfolioUrl && (
-        <Badge
-          variant="outline"
-          onClick={(e) => {
-            if (!profile.portfolioUrl) return;
-            e.stopPropagation();
-            router.push(profile.portfolioUrl);
-          }}
-        >
-          <LinkIcon />
-          <span>Portfolio</span>
-        </Badge>
+        <Link href={profile.portfolioUrl}>
+          <Badge variant="outline">
+            <LinkIcon />
+            <span>Portfolio</span>
+          </Badge>
+        </Link>
       )}
+
       {profile.githubUrl && (
-        <Badge
-          variant="outline"
-          onClick={(e) => {
-            if (!profile.githubUrl) return;
-            e.stopPropagation();
-            router.push(profile.githubUrl);
-          }}
-        >
-          <FaGithub />
-          <span>GitHub</span>
-        </Badge>
+        <Link href={profile.githubUrl}>
+          <Badge variant="outline">
+            <FaGithub />
+            <span>GitHub</span>
+          </Badge>
+        </Link>
       )}
       {profile.linkedinUrl && (
-        <Badge
-          variant="outline"
-          onClick={(e) => {
-            if (!profile.linkedinUrl) return;
-            e.stopPropagation();
-            router.push(profile.linkedinUrl);
-          }}
-        >
-          <FaLinkedin />
-          <span>LinkedIn</span>
-        </Badge>
+        <Link href={profile.linkedinUrl}>
+          <Badge variant="outline">
+            <FaLinkedin />
+            <span>LinkedIn</span>
+          </Badge>
+        </Link>
       )}
     </div>
   );
