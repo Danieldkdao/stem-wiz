@@ -270,7 +270,7 @@ export const MarkdownEditor = ({
         name: "callouts",
         groupName: "callouts",
         buttonProps: { "aria-label": "Insert callout" },
-        icon: <div className="text-xs font-semibold">Box</div>,
+        icon: <div className="text-sm font-semibold">Box</div>,
         children: ({ close, getState, textApi, dispatch }) => (
           <div className="flex min-w-44 flex-col gap-1 p-2">
             {calloutCommands.map((command) => {
@@ -312,7 +312,7 @@ export const MarkdownEditor = ({
       data-color-mode={resolvedTheme === "dark" ? "dark" : "light"}
       data-variant={variant}
       className={cn(
-        "markdown-font-scope overflow-hidden border border-input",
+        "markdown-font-scope overflow-visible border border-input",
         isTransparent
           ? "rounded-md bg-transparent shadow-none"
           : "rounded-md bg-transparent shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30",
@@ -339,6 +339,18 @@ export const MarkdownEditor = ({
           isTransparent
             ? "rounded-none bg-transparent! [&>.w-md-editor-toolbar]:border-b! [&>.w-md-editor-toolbar]:border-input! [&>.w-md-editor-toolbar]:bg-transparent! [&_.w-md-editor-content]:bg-transparent! [&_.w-md-editor-input]:bg-transparent! [&_.w-md-editor-preview]:bg-transparent! [&_.w-md-editor-text]:bg-transparent! [&_.wmde-markdown-color]:bg-transparent! [&_.wmde-markdown]:bg-transparent!"
             : "bg-transparent! [&>.w-md-editor-toolbar]:bg-transparent! [&_.w-md-editor-content]:bg-transparent! [&_.w-md-editor-input]:bg-transparent! [&_.w-md-editor-preview]:bg-transparent! [&_.w-md-editor-text]:bg-transparent! [&_.wmde-markdown-color]:bg-transparent! [&_.wmde-markdown]:bg-transparent!",
+          "[&>.w-md-editor-toolbar]:p-2!",
+          "[&>.w-md-editor-toolbar>ul>li>button]:size-8!",
+          "[&>.w-md-editor-toolbar>ul>li>button]:rounded-md!",
+          "[&>.w-md-editor-toolbar>ul>li>button]:flex!",
+          "[&>.w-md-editor-toolbar>ul>li>button]:items-center!",
+          "[&>.w-md-editor-toolbar>ul>li>button]:justify-center!",
+          "[&_.w-md-editor-toolbar_button_svg]:h-4!",
+          "[&_.w-md-editor-toolbar_button_svg]:w-4!",
+          "[&_.w-md-editor-toolbar_button_svg]:stroke-current!",
+          "[&_.w-md-editor-toolbar_button]:p-2!",
+          "[&_.w-md-editor-toolbar-child]:z-9999!",
+          "overflow-visible!",
         )}
       />
     </div>

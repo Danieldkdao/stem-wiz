@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { getFriendChats } from "@/features/chats/actions/actions";
 import { CreateUpdateFriendChatDialog } from "@/features/chats/components/create-update-chat-dialog";
+import { FriendChatCard } from "@/features/chats/components/friend-chat-card";
 import { PlusIcon } from "lucide-react";
 import { Suspense } from "react";
 
@@ -27,5 +29,13 @@ const CommunityChatViewLoading = () => {
 };
 
 const CommunityChatViewSuspense = async () => {
-  return <div>suspense</div>;
+  const chats = await getFriendChats();
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {chats.map((chat) => (
+        <FriendChatCard key={chat.id} chat={chat} />
+      ))}
+    </div>
+  );
 };

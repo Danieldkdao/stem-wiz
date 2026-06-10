@@ -215,3 +215,10 @@ export const chatMessageRoleEnum = pgEnum(
   "chat_message_roles",
   chatMessageRoles,
 );
+
+export const chatMessageStatuses = ["created", "updated", "deleted"] as const;
+export type ChatMessageStatusType = (typeof chatMessageStatuses)[number];
+export const chatMessageStatusEnum = pgEnum(
+  "chat_message_statuses",
+  chatMessageStatuses,
+);

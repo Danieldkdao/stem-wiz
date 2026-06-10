@@ -1,9 +1,9 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id } from "../helpers";
 import { ChatTable } from "./chat";
 import { user } from "./user";
-import { chatMessageRoleEnum } from "../shared";
+import { chatMessageRoleEnum, chatMessageStatusEnum } from "../shared";
 
 export const ChatMessageTable = pgTable("chat-messages", {
   id,
@@ -13,7 +13,8 @@ export const ChatMessageTable = pgTable("chat-messages", {
     .references(() => ChatTable.id, { onDelete: "cascade" })
     .notNull(),
   text: text("text").notNull(),
-  // todo: for dev meetups and social part of this application, implement friend chats
+  status: chatMessageStatusEnum("status").notNull().default("created"),
+  respondedAt: timestamp("responded_at", { withTimezone: true }),
   createdAt,
 });
 

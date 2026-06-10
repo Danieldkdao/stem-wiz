@@ -1,0 +1,132 @@
+"use client";
+
+import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
+import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/user-avatar";
+import { ChatMessageTable } from "@/db/schema";
+import { formatSessionDate } from "@/features/oracle/lib/formatters";
+import { User } from "@/lib/auth/auth";
+import { cn } from "@/lib/utils";
+import { EditIcon, Trash2Icon } from "lucide-react";
+import { useState, useTransition } from "react";
+import { FriendChatMessageInput } from "./friend-chat-message-input";
+import { formatChatMessageStatus } from "../lib/formatters";
+import { useConfirm } from "@/hooks/use-confirm";
+import { deleteFriendChatMessageAction } from "../actions/actions";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { LoadingSwap } from "@/components/ui/loading-swap";
+
+export const FriendChatMessage = ({
+  chatMessage,
+  friendRequestId,
+  currentUserId,
+}: {
+  chatMessage: typeof ChatMessageTable.$inferSelect & { user: User };
+  friendRequestId: string;
+  currentUserId: string;
+}) => {
+  const router = useRouter();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [ConfirmationDialog, confirm] = useConfirm(
+    "Confirm Deletion",
+    "Are you sure you want to delete this chat message?",
+  );
+  const isCurrentUser = chatMessage.userId === currentUserId;
+
+  const handleChatMessageDeletion = async () => {
+    const confirmation = await confirm();
+    if (!confirmation) return null;
+
+    startTransition(async () => {
+      const response = await deleteFriendChatMessageAction(
+        chatMessage.chatId,
+        friendRequestId,
+        chatMessage.id,
+      );
+      if (response.error) {
+        toast.error(response.message);
+      } else {
+        toast.success(response.message);
+        router.refresh();
+      }
+    });
+  };
+
+  return (
+    <>
+      {ConfirmationDialog}
+      <div
+        className={cn(
+          "flex gap-2 items-start rounded-md p-2 w-full",
+          isCurrentUser && "bg-muted/50",
+        )}
+      >
+        <UserAvatar {...chatMessage.user} />
+
+        <div className="flex items-start gap-2 justify-between flex-wrap flex-1">
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold">
+                {isCurrentUser ? "You" : chatMessage.user.name}
+              </span>
+              <span className="text-muted-foreground text-semibold">•</span>
+              <span className="text-base font-medium text-muted-foreground">
+                {formatSessionDate(
+                  chatMessage.respondedAt ?? chatMessage.createdAt,
+                )}{" "}
+                {chatMessage.status !== "created" && (
+                  <span className="italic">
+                    ({formatChatMessageStatus(chatMessage.status)})
+                  </span>
+                )}
+              </span>
+            </div>
+            {isUpdating ? (
+              <FriendChatMessageInput
+                chatId={chatMessage.chatId}
+                friendRequestId={friendRequestId}
+                setIsUpdating={setIsUpdating}
+                existingChatMessage={chatMessage}
+              />
+            ) : (
+              <MarkdownRenderer
+                variant="default"
+                className={cn(
+                  chatMessage.status === "deleted" &&
+                    "[&_p]:text-muted-foreground",
+                )}
+              >
+                {chatMessage.status === "deleted"
+                  ? "*This message was deleted.*"
+                  : chatMessage.text}
+              </MarkdownRenderer>
+            )}
+          </div>
+          {isCurrentUser && chatMessage.status !== "deleted" && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsUpdating(true)}
+                disabled={isPending}
+              >
+                <EditIcon />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={handleChatMessageDeletion}
+              >
+                <LoadingSwap isLoading={isPending}>
+                  <Trash2Icon />
+                </LoadingSwap>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
