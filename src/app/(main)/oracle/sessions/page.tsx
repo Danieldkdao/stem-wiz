@@ -6,6 +6,7 @@ import { OracleSessionCard } from "@/features/oracle/components/oracle-session-c
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { PlusIcon } from "lucide-react";
 import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const OracleSessionsListPage = () => {
   return (
@@ -43,7 +44,32 @@ const OracleSessionsListPage = () => {
 };
 
 const OracleSessionsListLoading = () => {
-  return <div>loading</div>;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <Card key={index}>
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <Skeleton className="h-7 w-3/4" />
+              <Skeleton className="size-8 rounded-md" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+            <div className="space-y-2 pt-1">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-9 w-24" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 };
 
 const OracleSessionsListSuspense = async () => {
@@ -67,8 +93,8 @@ const OracleSessionsListSuspense = async () => {
           No sessions created yet
         </h1>
         <p className="text-muted-foreground text-center max-w-150">
-          You haven't created any sessions yet. Click on the button below to get
-          started.
+          You haven&apos;t created any sessions yet. Click on the button below
+          to get started.
         </p>
         <CreateUpdateSessionDialog
           useButton

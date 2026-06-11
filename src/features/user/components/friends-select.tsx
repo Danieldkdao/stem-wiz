@@ -12,6 +12,7 @@ import { getUserFriendsAction } from "@/features/friend-requests/actions/actions
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { ComponentProps } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const FriendsSelect = ({
   triggerClassName,
@@ -26,7 +27,9 @@ export const FriendsSelect = ({
     queryFn: getUserFriendsAction,
   });
 
-  if (isPending) return <div>loading</div>;
+  if (isPending) {
+    return <Skeleton className={cn("h-9 w-full", triggerClassName)} />;
+  }
   if (error) return <div>error</div>;
   if (!friends || !friends.length) return <div>no data</div>;
 

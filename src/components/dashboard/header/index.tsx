@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { getUserNotificationsAction } from "@/features/notifications/actions/actions";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Header = () => {
   return (
@@ -27,7 +28,7 @@ export const Header = () => {
 };
 
 const HeaderLoading = () => {
-  return <div>loading</div>;
+  return <Skeleton className="size-9 rounded-md" />;
 };
 
 const HeaderSuspense = async () => {
