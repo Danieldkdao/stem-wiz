@@ -4,7 +4,7 @@ import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { ChatMessageTable } from "@/db/schema";
-import { formatSessionDate } from "@/features/oracle/lib/formatters";
+import { formatDate } from "@/features/oracle/lib/formatters";
 import { User } from "@/lib/auth/auth";
 import { cn } from "@/lib/utils";
 import { EditIcon, Trash2Icon } from "lucide-react";
@@ -76,9 +76,7 @@ export const FriendChatMessage = ({
               </span>
               <span className="text-muted-foreground text-semibold">•</span>
               <span className="text-base font-medium text-muted-foreground">
-                {formatSessionDate(
-                  chatMessage.respondedAt ?? chatMessage.createdAt,
-                )}{" "}
+                {formatDate(chatMessage.respondedAt ?? chatMessage.createdAt)}{" "}
                 {chatMessage.status !== "created" && (
                   <span className="italic">
                     ({formatChatMessageStatus(chatMessage.status)})

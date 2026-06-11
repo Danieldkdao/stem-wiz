@@ -141,6 +141,8 @@ export const notificationEventTypes = [
   "friend_request_sent",
   "friend_request_accepted",
   "friend_request_rejected",
+  "new_chat",
+  "chat_deleted",
   "match_invite",
   "match_finished",
   "system",
@@ -169,6 +171,22 @@ export type NotificationPayload =
       friendRequestId: string;
       rejectedByUserId: string;
       rejectedByUserName: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "new_chat";
+      chatId: string;
+      // note: this user id means the creator user id
+      userId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "chat_deleted";
+      chatId: string;
+      // note: this user id means the OTHER PERSON (the receiver) user id
+      userId: string;
       title: string;
       message: string;
     }

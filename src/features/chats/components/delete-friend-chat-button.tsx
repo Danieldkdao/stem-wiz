@@ -8,6 +8,7 @@ import { deleteFriendChatAction } from "../actions/actions";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
 import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
+import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
 
 export const DeleteFriendChatButton = ({
   chatId,
@@ -23,6 +24,7 @@ export const DeleteFriendChatButton = ({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const { broadcastChatDeleted } = useFriendChatSocket();
+  const { notifyFriendChatAction } = useNotificationsSocket();
   const [ConfirmationDialog, confirm] = useConfirm(
     "Confirm Deletion",
     "Are you sure you want to delete this chat? This action cannot be undone and all data associated with this chat will be removed permanently.",
@@ -34,10 +36,11 @@ export const DeleteFriendChatButton = ({
 
     startTransition(async () => {
       const response = await deleteFriendChatAction(chatId);
-      if (response.error || !response.chat) {
+      if (response.error || !response.chat || !response.notificationId) {
         toast.error(response.message);
       } else {
         broadcastChatDeleted(response.chat.id);
+        notifyFriendChatAction(response.notificationId, "chat_deleted");
         toast.success(response.message);
         if (pathname && pathname === "/community/chats") router.refresh();
         else router.push("/community/chats");

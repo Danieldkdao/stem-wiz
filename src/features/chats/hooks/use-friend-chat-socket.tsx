@@ -25,21 +25,23 @@ const getSocketUrl = () => {
 type FriendChatSocketContextType = {
   status: SocketStatus;
   lastEvent: FriendChatServerMessage | null;
-  subscribeEvent: <T extends FriendChatServerMessageType>(
+  subscribeChatEvent: <T extends FriendChatServerMessageType>(
     type: T,
     listener: EventListener<T>,
   ) => () => void;
   friendsConnectionStatuses: Map<string, Set<string>>;
   connect: () => Promise<void>;
   connectToChat: (chatId: string) => boolean;
+  disconnectFromChat: (chatId: string) => boolean;
   sendChatMessage: (messageId: string) => boolean;
+  broadcastChatCreated: (chatId: string) => boolean;
   broadcastMessageUpdates: (messageId: string) => boolean;
   broadcastMessageDeleted: (messageId: string) => boolean;
   broadcastChatUpdated: (chatId: string) => boolean;
   broadcastChatDeleted: (chatId: string) => boolean;
 };
 
-export type EventListener<T extends FriendChatServerMessageType> = (
+type EventListener<T extends FriendChatServerMessageType> = (
   event: Extract<FriendChatServerMessage, { type: T }>,
 ) => void;
 
@@ -68,7 +70,7 @@ export const FriendChatSocketProvider = ({
     Map<string, Set<string>>
   >(new Map());
 
-  const subscribeEvent = useCallback(
+  const subscribeChatEvent = useCallback(
     <T extends FriendChatServerMessageType>(
       type: T,
       listener: EventListener<T>,
@@ -161,6 +163,7 @@ export const FriendChatSocketProvider = ({
                   return next;
                 });
                 break;
+              case "new_chat":
               case "friend_message_sent":
               case "friend_message_updated":
               case "friend_message_deleted":
@@ -213,12 +216,26 @@ export const FriendChatSocketProvider = ({
     return true;
   }, []);
 
+  const broadcastChatCreated = useCallback(
+    (chatId: string) => {
+      return send({ type: "new_chat", chatId });
+    },
+    [send],
+  );
+
   const connectToChat = useCallback(
     (chatId: string) => {
       return send({
         type: "connect_to_friend_chat",
         chatId,
       });
+    },
+    [send],
+  );
+
+  const disconnectFromChat = useCallback(
+    (chatId: string) => {
+      return send({ type: "disconnect_from_friend_chat", chatId });
     },
     [send],
   );
@@ -269,9 +286,11 @@ export const FriendChatSocketProvider = ({
     status,
     lastEvent,
     connect,
+    broadcastChatCreated,
     friendsConnectionStatuses,
-    subscribeEvent,
+    subscribeChatEvent,
     connectToChat,
+    disconnectFromChat,
     sendChatMessage,
     broadcastMessageUpdates,
     broadcastMessageDeleted,

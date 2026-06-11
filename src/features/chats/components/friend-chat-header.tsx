@@ -26,8 +26,9 @@ export const FriendChatHeader = ({
   const {
     connect,
     status,
-    subscribeEvent,
+    subscribeChatEvent,
     connectToChat,
+    disconnectFromChat,
     friendsConnectionStatuses,
   } = useFriendChatSocket();
 
@@ -44,21 +45,25 @@ export const FriendChatHeader = ({
     if (status !== "open") return;
 
     connectToChat(chat.id);
-  }, [chat, status]);
+
+    return () => {
+      disconnectFromChat(chat.id);
+    };
+  }, [chat.id, status, connectToChat, disconnectFromChat]);
 
   useEffect(() => {
     const unsubscribers = [
-      subscribeEvent("connection_error", ({ message }) => {
+      subscribeChatEvent("connection_error", ({ message }) => {
         toast.error(message);
       }),
-      subscribeEvent("error", ({ message }) => {
+      subscribeChatEvent("error", ({ message }) => {
         toast.error(message);
       }),
-      subscribeEvent("friend_chat_updated", ({ message }) => {
+      subscribeChatEvent("friend_chat_updated", ({ message }) => {
         toast.info(message);
         router.refresh();
       }),
-      subscribeEvent("friend_chat_deleted", ({ message }) => {
+      subscribeChatEvent("friend_chat_deleted", ({ message }) => {
         toast.info(message);
         router.push("/community/chats");
       }),
@@ -69,7 +74,7 @@ export const FriendChatHeader = ({
         unsubscribe();
       });
     };
-  }, [subscribeEvent]);
+  }, [subscribeChatEvent]);
 
   return (
     <div className="flex items-center gap-2 w-full">

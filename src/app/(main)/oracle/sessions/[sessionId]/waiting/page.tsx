@@ -16,7 +16,7 @@ import {
   formatOracleSessionMode,
   formatOracleSessionStatus,
   formatProblemCount,
-  formatSessionDate,
+  formatDate,
   formatSessionDuration,
 } from "@/features/oracle/lib/formatters";
 import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
@@ -186,12 +186,12 @@ const SessionWaitingSuspense = async ({ params }: SessionWaitingProps) => {
             <SessionInfoRow
               icon={<CalendarPlusIcon />}
               label="Created"
-              value={formatSessionDate(existingSession.createdAt)}
+              value={formatDate(existingSession.createdAt)}
             />
             <SessionInfoRow
               icon={<SparklesIcon />}
               label="Updated"
-              value={formatSessionDate(existingSession.updatedAt)}
+              value={formatDate(existingSession.updatedAt)}
             />
             <SessionInfoRow
               icon={<ClockIcon />}

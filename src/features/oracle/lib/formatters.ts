@@ -36,7 +36,7 @@ export const formatProblemCount = (count: number) => {
   return `${count} ${count === 1 ? "problem" : "problems"}`;
 };
 
-export const formatSessionDate = (date: Date) => {
+export const formatDate = (date: Date) => {
   return new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",
@@ -50,7 +50,7 @@ export const formatOptionalSessionDate = (
   date: Date | null,
   fallback: string,
 ) => {
-  return date ? formatSessionDate(date) : fallback;
+  return date ? formatDate(date) : fallback;
 };
 
 export const formatSessionDuration = (session: OracleSession) => {

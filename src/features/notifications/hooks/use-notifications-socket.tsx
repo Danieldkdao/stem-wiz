@@ -35,6 +35,10 @@ type NotificationSocketContextType = {
     notificationId: string,
     action: Exclude<FriendRequestStatusType, "pending">,
   ) => void;
+  notifyFriendChatAction: (
+    notificationId: string,
+    action: "new_chat" | "chat_deleted",
+  ) => boolean;
   notifyFriendRequestSent: (notificationId: string) => boolean;
 };
 
@@ -185,6 +189,16 @@ export const NotificationSocketProvider = ({
     });
   };
 
+  const notifyFriendChatAction = (
+    notificationId: string,
+    action: "new_chat" | "chat_deleted",
+  ) => {
+    return send({
+      type: "new_notification",
+      event: { type: action, notificationId },
+    });
+  };
+
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -198,6 +212,7 @@ export const NotificationSocketProvider = ({
     subscribeNotificationEvent,
     lastEvent,
     notifyFriendRequestResponse,
+    notifyFriendChatAction,
     notifyFriendRequestSent,
   };
 

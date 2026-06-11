@@ -9,7 +9,7 @@ export const useFriendChatMessages = (
   initialMessages?: (typeof ChatMessageTable.$inferSelect & { user: User })[],
 ) => {
   const [chatMessages, setChatMessages] = useState(initialMessages ?? []);
-  const { subscribeEvent } = useFriendChatSocket();
+  const { subscribeChatEvent } = useFriendChatSocket();
 
   useEffect(() => {
     setChatMessages(initialMessages ?? []);
@@ -17,7 +17,7 @@ export const useFriendChatMessages = (
 
   useEffect(() => {
     const unsubscribers = [
-      subscribeEvent("friend_message_sent", (event) => {
+      subscribeChatEvent("friend_message_sent", (event) => {
         const { createdAt, respondedAt, ...props } = event.message;
         const newMessage = {
           ...props,
@@ -26,7 +26,7 @@ export const useFriendChatMessages = (
         };
         setChatMessages((prev) => [...prev, newMessage]);
       }),
-      subscribeEvent("friend_message_updated", (event) => {
+      subscribeChatEvent("friend_message_updated", (event) => {
         setChatMessages((prev) =>
           prev.map((msg) => {
             if (msg.id === event.message.id) {
@@ -42,7 +42,7 @@ export const useFriendChatMessages = (
           }),
         );
       }),
-      subscribeEvent("friend_message_deleted", (event) => {
+      subscribeChatEvent("friend_message_deleted", (event) => {
         setChatMessages((prev) =>
           prev.map((msg) => {
             if (msg.id === event.message.id) {
@@ -64,7 +64,7 @@ export const useFriendChatMessages = (
         unsubscribe();
       });
     };
-  }, [subscribeEvent]);
+  }, [subscribeChatEvent]);
 
   return chatMessages;
 };

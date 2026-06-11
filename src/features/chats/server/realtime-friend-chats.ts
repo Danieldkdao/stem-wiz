@@ -9,9 +9,13 @@ import {
   RealtimeServerMessage,
   RealtimeWebSocket,
 } from "@/features/realtime/lib/types";
-import { sendToConnection } from "@/features/realtime/server/connection-state";
-import { and, eq, getTableColumns, or } from "drizzle-orm";
+import {
+  sendToConnection,
+  sendToUser,
+} from "@/features/realtime/server/connection-state";
+import { and, eq, getTableColumns, isNotNull, or } from "drizzle-orm";
 import { getRealtimeFriendChatWsState } from "./connection-state";
+import { NO_PERMISSION_DATA_MESSAGE } from "@/lib/constants";
 
 export const broadcastToFriendChat = (
   chatId: string,
@@ -23,6 +27,71 @@ export const broadcastToFriendChat = (
   activeUsersByChat.get(chatId)?.forEach((_, connectionId) => {
     if (connectionId === exceptConnectionId) return;
     sendToConnection(connectionId, message);
+  });
+};
+
+export const handleBroadcastNewFriendChat = async (
+  ws: RealtimeWebSocket,
+  chatId: string,
+) => {
+  const userId = ws.user.id;
+  const connectionId = ws.id;
+
+  const [existingChat] = await db
+    .select()
+    .from(ChatTable)
+    .where(and(eq(ChatTable.id, chatId), isNotNull(ChatTable.friendRequestId)));
+  if (!existingChat || !existingChat.friendRequestId) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "Chat not found.",
+    });
+    return;
+  }
+
+  const [existingFriendRequest] = await db
+    .select({
+      ...getTableColumns(FriendRequestTable),
+      otherUser: getTableColumns(user),
+    })
+    .from(FriendRequestTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, user.id),
+        ),
+        and(
+          eq(FriendRequestTable.fromUserId, user.id),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    )
+    .where(
+      and(
+        eq(FriendRequestTable.id, existingChat.friendRequestId),
+        eq(FriendRequestTable.status, "accepted"),
+        or(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    );
+  if (!existingFriendRequest) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: NO_PERMISSION_DATA_MESSAGE,
+    });
+  }
+
+  sendToUser(existingFriendRequest.otherUser.id, {
+    type: "new_chat",
+    chat: {
+      ...existingChat,
+      user: existingFriendRequest.otherUser,
+      messageCount: 0,
+    },
   });
 };
 
@@ -101,6 +170,38 @@ export const connectToFriendChat = async (
   );
 };
 
+export const disconnectFromFriendChat = (
+  ws: RealtimeWebSocket,
+  chatId: string,
+) => {
+  const { activeUsersByChat, chatIdsByConnection } =
+    getRealtimeFriendChatWsState();
+
+  const chatConnections = activeUsersByChat.get(chatId);
+  const userId = chatConnections?.get(ws.id);
+
+  chatConnections?.delete(ws.id);
+
+  chatIdsByConnection.get(ws.id)?.delete(chatId);
+
+  if (chatConnections?.size === 0) {
+    activeUsersByChat.delete(chatId);
+  }
+
+  if (!userId) return;
+
+  const stillConnected = [...(chatConnections?.values() ?? [])].includes(
+    userId,
+  );
+  if (!stillConnected) {
+    broadcastToFriendChat(chatId, {
+      type: "friend_disconnected",
+      chatId,
+      userId,
+    });
+  }
+};
+
 export const handleFriendMessage = async (
   ws: RealtimeWebSocket,
   messageId: string,
@@ -156,6 +257,7 @@ export const handleBroadcastChatChanges = async (
       {
         type: "friend_chat_deleted",
         message: `${ws.user.name} deleted this chat.`,
+        chatId,
       },
       connectionId,
     );

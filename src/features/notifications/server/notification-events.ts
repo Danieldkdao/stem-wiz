@@ -1,7 +1,7 @@
 import { db } from "@/db/db";
-import { FriendRequestTable } from "@/db/schema";
+import { ChatTable, FriendRequestTable, user } from "@/db/schema";
 import { NotificationPayloadEvent } from "@/db/shared";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, getTableColumns, isNotNull, isNull, or } from "drizzle-orm";
 
 export const handleRespondFriendRequestEvent = async (
   event: NotificationPayloadEvent<
@@ -55,4 +55,63 @@ export const handleFriendRequestSentEvent = async (
   }
 
   return existingFriendRequest.toUserId;
+};
+
+export const handleFriendChatEvent = async (
+  event: NotificationPayloadEvent<"new_chat" | "chat_deleted">,
+) => {
+  const eventType = event.type;
+  const userId = event.userId;
+
+  const [existingChat] = await db
+    .select()
+    .from(ChatTable)
+    .where(eq(ChatTable.id, event.chatId));
+
+  if (eventType === "chat_deleted") {
+    if (existingChat) {
+      throw new Error("Chat not deleted.");
+    } else {
+      return userId;
+    }
+  }
+
+  if (!existingChat || !existingChat.friendRequestId) {
+    throw new Error("Chat not found.");
+  }
+
+  const [existingFriendRequest] = await db
+    .select({
+      ...getTableColumns(FriendRequestTable),
+      otherUserId: user.id,
+    })
+    .from(FriendRequestTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, user.id),
+        ),
+        and(
+          eq(FriendRequestTable.fromUserId, user.id),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    )
+    .where(
+      and(
+        eq(FriendRequestTable.id, existingChat.friendRequestId),
+        eq(FriendRequestTable.status, "accepted"),
+        or(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    );
+  if (!existingFriendRequest) {
+    throw new Error("Friend request not found.");
+  }
+
+  return existingFriendRequest.otherUserId;
 };

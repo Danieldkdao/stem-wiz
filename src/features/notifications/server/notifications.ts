@@ -8,6 +8,7 @@ import {
 import { eq } from "drizzle-orm";
 import { NotificationClientEventType } from "../lib/schemas";
 import {
+  handleFriendChatEvent,
   handleFriendRequestSentEvent,
   handleRespondFriendRequestEvent,
 } from "./notification-events";
@@ -44,6 +45,10 @@ export const handleNewNotification = async (
         break;
       case "friend_request_sent":
         recipientUserId = await handleFriendRequestSentEvent(payload);
+        break;
+      case "new_chat":
+      case "chat_deleted":
+        recipientUserId = await handleFriendChatEvent(payload);
         break;
       case "match_finished":
       case "match_invite":

@@ -1,6 +1,8 @@
 import { NotificationPayload, NotificationTable } from "@/db/schema";
 import { NotificationListItem } from "./types";
 import { RespondFriendRequestButton } from "@/features/friend-requests/components/respond-friend-request-button";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const getNotificationListItem = (
   notification: typeof NotificationTable.$inferSelect,
@@ -20,6 +22,18 @@ export const getNotificationListItem = (
         message: notification.payload.message,
       };
     case "friend_request_sent":
+      return {
+        ...notification,
+        title: notification.payload.title,
+        message: notification.payload.message,
+      };
+    case "new_chat":
+      return {
+        ...notification,
+        title: notification.payload.title,
+        message: notification.payload.message,
+      };
+    case "chat_deleted":
       return {
         ...notification,
         title: notification.payload.title,
@@ -64,6 +78,13 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
           </RespondFriendRequestButton>
         </div>
       );
+    case "new_chat":
+      return (
+        <Button className="w-full" asChild>
+          <Link href={`/community/chats/${payload.chatId}`}>View chat</Link>
+        </Button>
+      );
+    case "chat_deleted":
     case "friend_request_accepted":
     case "friend_request_rejected":
     case "match_finished":

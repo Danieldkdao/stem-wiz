@@ -2,7 +2,15 @@ import z from "zod";
 
 export const friendChatClientMessageSchema = z.discriminatedUnion("type", [
   z.object({
+    type: z.literal("new_chat"),
+    chatId: z.uuid(),
+  }),
+  z.object({
     type: z.literal("connect_to_friend_chat"),
+    chatId: z.uuid(),
+  }),
+  z.object({
+    type: z.literal("disconnect_from_friend_chat"),
     chatId: z.uuid(),
   }),
   z.object({

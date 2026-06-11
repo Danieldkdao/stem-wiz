@@ -23,6 +23,7 @@ import {
 } from "../actions/actions";
 import { friendChatSchema, FriendChatSchemaType } from "../actions/schemas";
 import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
+import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
 
 export const CreateUpdateFriendChatForm = ({
   existingChat,
@@ -32,7 +33,8 @@ export const CreateUpdateFriendChatForm = ({
   afterAction?: () => void;
 }) => {
   const router = useRouter();
-  const { broadcastChatUpdated } = useFriendChatSocket();
+  const { broadcastChatCreated, broadcastChatUpdated } = useFriendChatSocket();
+  const { notifyFriendChatAction } = useNotificationsSocket();
   const form = useForm<FriendChatSchemaType>({
     resolver: zodResolver(friendChatSchema),
     defaultValues: existingChat
@@ -49,8 +51,12 @@ export const CreateUpdateFriendChatForm = ({
     const action = existingChat
       ? updateFriendChatAction(existingChat.id, data)
       : createFriendChatAction(data);
-    const response: { error: boolean; message: string; chatId?: string } =
-      await action;
+    const response: {
+      error: boolean;
+      message: string;
+      chatId?: string;
+      notificationId?: string;
+    } = await action;
     if (response.error || !response.chatId) {
       toast.error(response.message);
     } else {
@@ -59,7 +65,15 @@ export const CreateUpdateFriendChatForm = ({
       if (existingChat) {
         router.refresh();
         broadcastChatUpdated(response.chatId);
-      } else router.push(`/community/chats/${response.chatId}`);
+      } else {
+        broadcastChatCreated(response.chatId);
+        // @ts-expect-error This will always be defined because if
+        // existingChat does not exist, then the create action must
+        // have ran and since being in this part of the code guarantees
+        // no errors occurred, the notification id must be defined.
+        notifyFriendChatAction(response.notificationId, "new_chat");
+        router.push(`/community/chats/${response.chatId}`);
+      }
       afterAction?.();
     }
   };

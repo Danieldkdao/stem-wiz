@@ -42,6 +42,8 @@ import {
   friendChatSchema,
   FriendChatSchemaType,
 } from "./schemas";
+import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
+import { formatDate } from "@/features/oracle/lib/formatters";
 
 export const createMatchChatMessageAction = async (
   matchId: string,
@@ -121,8 +123,8 @@ export const createMatchChatMessageAction = async (
 export const createFriendChatAction = async (
   unsafeData: FriendChatSchemaType,
 ) => {
-  const { userId } = await getCurrentUser();
-  if (!userId) {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
     return {
       error: true,
       message: UNAUTHED_ERROR_MESSAGE,
@@ -138,8 +140,24 @@ export const createFriendChatAction = async (
   }
 
   const [existingFriendRequest] = await db
-    .select()
+    .select({
+      id: FriendRequestTable.id,
+      otherUserId: user.id,
+    })
     .from(FriendRequestTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, user.id),
+        ),
+        and(
+          eq(FriendRequestTable.fromUserId, user.id),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    )
     .where(
       and(
         eq(FriendRequestTable.id, data.friendRequestId),
@@ -158,18 +176,48 @@ export const createFriendChatAction = async (
   }
 
   try {
-    const insertedChat = await insertChatDb({
-      ...data,
-      friendRequestId: existingFriendRequest.id,
-    });
-    if (!insertedChat) {
-      throw new Error("Failed to create chat.");
-    }
+    const { insertedChatId, notificationId } = await db.transaction(
+      async (tx) => {
+        const insertedChat = await insertChatDb(
+          {
+            ...data,
+            friendRequestId: existingFriendRequest.id,
+          },
+          tx,
+        );
+        if (!insertedChat) {
+          throw new Error("Failed to create chat.");
+        }
+
+        const insertedNotification = await insertNotificationDb(
+          {
+            userId: existingFriendRequest.otherUserId,
+            payload: {
+              type: "new_chat",
+              chatId: insertedChat.id,
+              userId,
+              title: `New Chat`,
+              message: `${userInfo.name} created a new chat and invited you.`,
+            },
+          },
+          tx,
+        );
+        if (!insertedNotification) {
+          throw new Error("Failed to create notification.");
+        }
+
+        return {
+          insertedChatId: insertedChat.id,
+          notificationId: insertedNotification.id,
+        };
+      },
+    );
 
     return {
       error: false,
       message: "Chat created successfully!",
-      chatId: insertedChat.id,
+      chatId: insertedChatId,
+      notificationId,
     };
   } catch (error) {
     console.error(error);
@@ -584,8 +632,24 @@ export const deleteFriendChatMessageAction = async (
   }
 
   const [existingFriendRequest] = await db
-    .select()
+    .select({
+      id: FriendRequestTable.id,
+      otherUserId: user.id,
+    })
     .from(FriendRequestTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, user.id),
+        ),
+        and(
+          eq(FriendRequestTable.fromUserId, user.id),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    )
     .where(
       and(
         eq(FriendRequestTable.id, friendRequestId),
@@ -627,6 +691,7 @@ export const deleteFriendChatMessageAction = async (
     if (!deletedChatMessage) {
       throw new Error("Failed to delete chat message.");
     }
+
     return {
       error: false,
       message: "Chat message deleted successfully!",
@@ -642,8 +707,8 @@ export const deleteFriendChatMessageAction = async (
 };
 
 export const deleteFriendChatAction = async (chatId: string) => {
-  const { userId } = await getCurrentUser();
-  if (!userId) {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
     return {
       error: true,
       message: UNAUTHED_ERROR_MESSAGE,
@@ -662,8 +727,24 @@ export const deleteFriendChatAction = async (chatId: string) => {
   }
 
   const [existingFriendRequest] = await db
-    .select()
+    .select({
+      id: FriendRequestTable.id,
+      otherUserId: user.id,
+    })
     .from(FriendRequestTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, user.id),
+        ),
+        and(
+          eq(FriendRequestTable.fromUserId, user.id),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    )
     .where(
       and(
         eq(FriendRequestTable.id, existingChat.friendRequestId),
@@ -682,15 +763,37 @@ export const deleteFriendChatAction = async (chatId: string) => {
   }
 
   try {
-    const deletedChat = await deleteChatDb(existingChat.id);
-    if (!deletedChat) {
-      throw new Error("Failed to delete chat.");
-    }
+    const { deletedChat, notificationId } = await db.transaction(async (tx) => {
+      const deletedChat = await deleteChatDb(existingChat.id, tx);
+      if (!deletedChat) {
+        throw new Error("Failed to delete chat.");
+      }
+
+      const insertedNotification = await insertNotificationDb(
+        {
+          userId: existingFriendRequest.otherUserId,
+          payload: {
+            type: "chat_deleted",
+            chatId: deletedChat.id,
+            userId: existingFriendRequest.otherUserId,
+            title: "Chat Deleted",
+            message: `${userInfo.name} deleted the following chat: "${deletedChat.title}".`,
+          },
+        },
+        tx,
+      );
+      if (!insertedNotification) {
+        throw new Error("Failed to created notification.");
+      }
+
+      return { deletedChat, notificationId: insertedNotification.id };
+    });
 
     return {
       error: false,
       message: "Chat deleted successfully!",
       chat: deletedChat,
+      notificationId,
     };
   } catch (error) {
     console.error(error);
