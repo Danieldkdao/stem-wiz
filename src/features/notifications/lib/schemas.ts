@@ -1,7 +1,7 @@
 import { notificationEventTypes } from "@/db/shared";
 import z from "zod";
 
-export const notificationClientEventSchema = z.object({
+const notificationClientEventSchema = z.object({
   type: z.enum(notificationEventTypes),
   notificationId: z.uuid(),
 });

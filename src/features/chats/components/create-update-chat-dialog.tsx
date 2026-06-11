@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Dialog,
   DialogContent,
@@ -7,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ChatTable } from "@/db/schema";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { CreateUpdateFriendChatForm } from "./create-update-friend-chat-form";
 
 export const CreateUpdateFriendChatDialog = ({
@@ -17,8 +19,10 @@ export const CreateUpdateFriendChatDialog = ({
   children: ReactNode;
   existingChat?: typeof ChatTable.$inferSelect;
 }) => {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -29,7 +33,12 @@ export const CreateUpdateFriendChatDialog = ({
             {existingChat ? "Update an existing chat." : "Create a new chat."}
           </DialogDescription>
         </DialogHeader>
-        <CreateUpdateFriendChatForm existingChat={existingChat} />
+        <CreateUpdateFriendChatForm
+          existingChat={existingChat}
+          afterAction={() => {
+            setOpen(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

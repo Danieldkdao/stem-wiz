@@ -35,7 +35,7 @@ export const OracleSessionProblemDetails = ({
         </div>
       </div>
       <Separator />
-      <MarkdownRenderer isClient>{problem.description}</MarkdownRenderer>
+      <MarkdownRenderer>{problem.description}</MarkdownRenderer>
     </ResizablePanel>
   );
 };

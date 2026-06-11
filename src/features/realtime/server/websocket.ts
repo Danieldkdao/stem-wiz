@@ -10,6 +10,7 @@ import { handleRealtimeMessage } from "./message-router";
 import { registerSocket, unregisterSocket } from "./connection-state";
 import { handleArenaDisconnect } from "@/features/arena/server/disconnect";
 import { randomUUID } from "node:crypto";
+import { cleanupFriendChatConnection } from "@/features/chats/server/connection-state";
 
 const toHeaders = (req: IncomingMessage) => {
   const headers = new Headers();
@@ -87,6 +88,7 @@ export const initRealtimeWebSocket = (server: RealtimeSocketServer) => {
 
     ws.on("close", async () => {
       unregisterSocket(ws);
+      cleanupFriendChatConnection(ws.id);
       await handleArenaDisconnect(ws.user.id, ws.id);
     });
   });
@@ -97,6 +99,7 @@ export const initRealtimeWebSocket = (server: RealtimeSocketServer) => {
 
       if (!ws.isAlive) {
         unregisterSocket(ws);
+        cleanupFriendChatConnection(ws.id);
         void handleArenaDisconnect(ws.user.id, ws.id);
         return ws.terminate();
       }

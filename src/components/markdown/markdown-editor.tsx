@@ -9,7 +9,9 @@ import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import type { ICommand, MDEditorProps } from "@uiw/react-md-editor";
 import {
+  useEffect,
   useMemo,
+  useState,
   type ComponentPropsWithoutRef,
   type KeyboardEvent,
 } from "react";
@@ -37,6 +39,7 @@ import {
 } from "./callouts";
 import { katexMacros, rehypeKatexOptions } from "./katex-config";
 import { MarkdownImage } from "./markdown-image";
+import { Skeleton } from "../ui/skeleton";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
   ssr: false,
@@ -140,8 +143,13 @@ export const MarkdownEditor = ({
   variant?: MarkdownEditorVariant;
 }) => {
   const { resolvedTheme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
   const isMobile = useIsMobile();
   const isTransparent = variant === "transparent";
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleListEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Enter" || event.shiftKey) {
@@ -306,6 +314,8 @@ export const MarkdownEditor = ({
     ],
     [],
   );
+
+  if (!isMounted) return <Skeleton className="w-full rounded-md h-[200px]" />;
 
   return (
     <div

@@ -15,6 +15,7 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   INVALID_DATA_ERROR_MESSAGE,
+  NO_PERMISSION_DATA_MESSAGE,
   NOT_FOUND_ERROR_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
@@ -34,7 +35,7 @@ import {
   insertChatMessageDb,
   updateChatMessageDb,
 } from "../server/chat-messages";
-import { insertChatDb, updateChatDb } from "../server/chats";
+import { deleteChatDb, insertChatDb, updateChatDb } from "../server/chats";
 import {
   chatInputSchema,
   ChatInputSchemaType,
@@ -227,6 +228,7 @@ export const updateFriendChatAction = async (
     return {
       error: false,
       message: "Chat updated successfully!",
+      chatId: updatedChat.id,
     };
   } catch (error) {
     console.error(error);
@@ -557,6 +559,7 @@ export const updateFriendChatMessageAction = async (
     return {
       error: false,
       message: "Chat message updated successfully!",
+      chatMessage: updatedMessage,
     };
   } catch (error) {
     console.error(error);
@@ -627,6 +630,67 @@ export const deleteFriendChatMessageAction = async (
     return {
       error: false,
       message: "Chat message deleted successfully!",
+      chatMessage: deletedChatMessage,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const deleteFriendChatAction = async (chatId: string) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingChat] = await db
+    .select()
+    .from(ChatTable)
+    .where(eq(ChatTable.id, chatId));
+  if (!existingChat || !existingChat.friendRequestId) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingFriendRequest] = await db
+    .select()
+    .from(FriendRequestTable)
+    .where(
+      and(
+        eq(FriendRequestTable.id, existingChat.friendRequestId),
+        eq(FriendRequestTable.status, "accepted"),
+        or(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, userId),
+        ),
+      ),
+    );
+  if (!existingFriendRequest) {
+    return {
+      error: true,
+      message: NO_PERMISSION_DATA_MESSAGE,
+    };
+  }
+
+  try {
+    const deletedChat = await deleteChatDb(existingChat.id);
+    if (!deletedChat) {
+      throw new Error("Failed to delete chat.");
+    }
+
+    return {
+      error: false,
+      message: "Chat deleted successfully!",
+      chat: deletedChat,
     };
   } catch (error) {
     console.error(error);

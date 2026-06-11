@@ -1,4 +1,5 @@
 import { ArenaServerMessage } from "@/features/arena/lib/types";
+import { FriendChatServerMessage } from "@/features/chats/lib/types";
 import { NotificationServerMessage } from "@/features/notifications/lib/types";
 import { Server as HttpServer } from "http";
 import { WebSocket, WebSocketServer } from "ws";
@@ -22,7 +23,8 @@ export type RealtimeSocketServer = HttpServer & {
 
 export type RealtimeServerMessage =
   | ArenaServerMessage
-  | NotificationServerMessage;
+  | NotificationServerMessage
+  | FriendChatServerMessage;
 
 export type UpgradeSocket = {
   write: (chunk: string) => unknown;

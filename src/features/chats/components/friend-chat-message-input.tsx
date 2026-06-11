@@ -16,6 +16,7 @@ import { LoadingSwap } from "@/components/ui/loading-swap";
 import { useRouter } from "next/navigation";
 import { ChatMessageTable } from "@/db/schema";
 import { SetterType } from "@/lib/types";
+import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
 
 export const FriendChatMessageInput = ({
   chatId,
@@ -29,6 +30,8 @@ export const FriendChatMessageInput = ({
   setIsUpdating?: SetterType<boolean>;
 }) => {
   const router = useRouter();
+  const { sendChatMessage: sendChatMessageSocket, broadcastMessageUpdates } =
+    useFriendChatSocket();
   const form = useForm<ChatInputSchemaType>({
     resolver: zodResolver(chatInputSchema),
     defaultValues: {
@@ -46,9 +49,14 @@ export const FriendChatMessageInput = ({
         )
       : sendFriendChatMessageAction(friendRequestId, chatId, data);
     const response = await action;
-    if (response.error) {
+    if (response.error || !response.chatMessage) {
       toast.error(response.message);
     } else {
+      const socketAction = existingChatMessage
+        ? broadcastMessageUpdates
+        : sendChatMessageSocket;
+      socketAction(response.chatMessage.id);
+      form.reset();
       router.refresh();
       setIsUpdating?.(false);
     }

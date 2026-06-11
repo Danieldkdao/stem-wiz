@@ -1,9 +1,6 @@
 "use client";
 
-import { Controller, useForm } from "react-hook-form";
-import { friendChatSchema, FriendChatSchemaType } from "../actions/schemas";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ChatTable } from "@/db/schema";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldContent,
@@ -12,23 +9,30 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { getInputErrorStyle } from "@/lib/utils";
-import { FriendsSelect } from "@/features/user/components/friends-select";
-import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
+import { ChatTable } from "@/db/schema";
+import { FriendsSelect } from "@/features/user/components/friends-select";
+import { getInputErrorStyle } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import {
   createFriendChatAction,
   updateFriendChatAction,
 } from "../actions/actions";
-import { toast } from "sonner";
+import { friendChatSchema, FriendChatSchemaType } from "../actions/schemas";
+import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
 
 export const CreateUpdateFriendChatForm = ({
   existingChat,
+  afterAction,
 }: {
   existingChat?: typeof ChatTable.$inferSelect;
+  afterAction?: () => void;
 }) => {
   const router = useRouter();
+  const { broadcastChatUpdated } = useFriendChatSocket();
   const form = useForm<FriendChatSchemaType>({
     resolver: zodResolver(friendChatSchema),
     defaultValues: existingChat
@@ -51,8 +55,12 @@ export const CreateUpdateFriendChatForm = ({
       toast.error(response.message);
     } else {
       toast.success(response.message);
-      if (existingChat) router.refresh();
-      else router.push(`/community/chats/${response.chatId}`);
+      form.reset();
+      if (existingChat) {
+        router.refresh();
+        broadcastChatUpdated(response.chatId);
+      } else router.push(`/community/chats/${response.chatId}`);
+      afterAction?.();
     }
   };
 
@@ -91,6 +99,7 @@ export const CreateUpdateFriendChatForm = ({
                 onValueChange={onChange}
                 {...props}
                 triggerClassName={getInputErrorStyle(fieldState.error)}
+                disabled={!!existingChat}
               />
             </FieldContent>
             <FieldDescription>

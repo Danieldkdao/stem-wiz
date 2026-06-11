@@ -16,6 +16,7 @@ import { deleteFriendChatMessageAction } from "../actions/actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { LoadingSwap } from "@/components/ui/loading-swap";
+import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
 
 export const FriendChatMessage = ({
   chatMessage,
@@ -33,6 +34,7 @@ export const FriendChatMessage = ({
     "Confirm Deletion",
     "Are you sure you want to delete this chat message?",
   );
+  const { broadcastMessageDeleted } = useFriendChatSocket();
   const isCurrentUser = chatMessage.userId === currentUserId;
 
   const handleChatMessageDeletion = async () => {
@@ -45,9 +47,10 @@ export const FriendChatMessage = ({
         friendRequestId,
         chatMessage.id,
       );
-      if (response.error) {
+      if (response.error || !response.chatMessage) {
         toast.error(response.message);
       } else {
+        broadcastMessageDeleted(response.chatMessage.id);
         toast.success(response.message);
         router.refresh();
       }
@@ -59,14 +62,14 @@ export const FriendChatMessage = ({
       {ConfirmationDialog}
       <div
         className={cn(
-          "flex gap-2 items-start rounded-md p-2 w-full",
+          "flex gap-2 items-start rounded-md p-2 w-full min-w-0",
           isCurrentUser && "bg-muted/50",
         )}
       >
         <UserAvatar {...chatMessage.user} />
 
-        <div className="flex items-start gap-2 justify-between flex-wrap flex-1">
-          <div className="flex flex-col gap-0.5">
+        <div className="flex items-start gap-2 w-full min-w-0 flex-1">
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-lg font-semibold">
                 {isCurrentUser ? "You" : chatMessage.user.name}

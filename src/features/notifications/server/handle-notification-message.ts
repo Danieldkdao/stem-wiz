@@ -10,7 +10,6 @@ export const handleNotificationMessage = async (
 
   switch (messageType) {
     case "new_notification":
-      message.event;
       await handleNewNotification(ws, message.event);
       break;
     default:

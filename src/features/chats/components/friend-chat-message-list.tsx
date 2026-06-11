@@ -1,7 +1,7 @@
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { Suspense } from "react";
 import { getFriendChatMessagesAction } from "../actions/actions";
-import { FriendChatMessage } from "./friend-chat-message";
-import { getCurrentUser } from "@/lib/auth/helpers";
+import { FriendChatMessageListClient } from "./friend-chat-message-list-client";
 
 type FriendChatMessageListProps = { chatId: string; friendRequestId: string };
 
@@ -28,18 +28,11 @@ const FriendChatMessageListSuspense = async ({
     friendRequestId,
   );
   if (!chatMessages) return <div>not found</div>;
-  return chatMessages.length ? (
-    <div className="flex flex-col gap-1 w-full">
-      {chatMessages.map((msg) => (
-        <FriendChatMessage
-          key={msg.id}
-          chatMessage={msg}
-          friendRequestId={friendRequestId}
-          currentUserId={userId}
-        />
-      ))}
-    </div>
-  ) : (
-    <div>empty state</div>
+  return (
+    <FriendChatMessageListClient
+      initialMessages={chatMessages}
+      friendRequestId={friendRequestId}
+      userId={userId}
+    />
   );
 };

@@ -24,6 +24,9 @@ export const useMatchChatMessages = ({
         user: event.user,
         chatId: event.chatId,
         text: event.message,
+        respondedAt: new Date(),
+        status: "created",
+        role: "user",
         createdAt: new Date(event.createdAt),
       };
 

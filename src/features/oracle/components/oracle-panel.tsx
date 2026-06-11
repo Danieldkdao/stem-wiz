@@ -67,7 +67,7 @@ export const OraclePanel = ({
                 </p>
               </div>
             ) : problem.feedback ? (
-              <MarkdownRenderer isClient>{problem.feedback}</MarkdownRenderer>
+              <MarkdownRenderer>{problem.feedback}</MarkdownRenderer>
             ) : (
               <div className="w-full h-full flex flex-col gap-2 items-center justify-center">
                 <MessageSquareDotIcon />

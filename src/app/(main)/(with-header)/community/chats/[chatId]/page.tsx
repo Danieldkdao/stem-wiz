@@ -1,16 +1,9 @@
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import { UserAvatar } from "@/components/user-avatar";
+import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { getFriendChatAction } from "@/features/chats/actions/actions";
+import { FriendChatHeader } from "@/features/chats/components/friend-chat-header";
 import { FriendChatMessageInput } from "@/features/chats/components/friend-chat-message-input";
 import { FriendChatMessageList } from "@/features/chats/components/friend-chat-message-list";
 import { ParamsId } from "@/lib/types";
-import { EditIcon, Trash2Icon } from "lucide-react";
 import { Suspense } from "react";
 
 type ChatIdParams = ParamsId<"chatId">;
@@ -37,31 +30,17 @@ const ChatIdSuspense = async ({ params }: ChatIdParams) => {
   const { chat, friendRequest } = response;
 
   return (
-    <div className="w-full h-full">
-      <Card className="w-full h-full flex flex-col">
-        <CardHeader className="flex items-center gap-2 w-full min-w-0 border-b">
-          <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
-            <UserAvatar {...friendRequest.user} />
-            <span className="text-lg font-semibold">
-              {friendRequest.user.name}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon">
-              <EditIcon />
-            </Button>
-            <Button variant="destructive" size="icon">
-              <Trash2Icon />
-            </Button>
-          </div>
+    <div className="h-full min-h-0 w-full overflow-hidden">
+      <Card className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+        <CardHeader className="shrink-0 w-full min-w-0 border-b">
+          <FriendChatHeader chat={chat} friendRequest={friendRequest} />
         </CardHeader>
-        <CardContent className="w-full h-full flex-1 overflow-y-auto">
-          <FriendChatMessageList
-            chatId={chat.id}
-            friendRequestId={friendRequest.id}
-          />
-        </CardContent>
-        <CardFooter className="border-t">
+
+        <FriendChatMessageList
+          chatId={chat.id}
+          friendRequestId={friendRequest.id}
+        />
+        <CardFooter className="border-t shrink-0">
           <FriendChatMessageInput
             chatId={chat.id}
             friendRequestId={friendRequest.id}

@@ -28,6 +28,7 @@ export const handleNewNotification = async (
       type: "error",
       message: "No existing notification.",
     });
+    return;
   }
 
   const payload = existingNotification.payload;

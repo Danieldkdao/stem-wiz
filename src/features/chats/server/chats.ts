@@ -20,3 +20,12 @@ export const updateChatDb = async (
 
   return updatedChat;
 };
+
+export const deleteChatDb = async (chatId: string) => {
+  const [deletedChat] = await db
+    .delete(ChatTable)
+    .where(eq(ChatTable.id, chatId))
+    .returning();
+
+  return deletedChat;
+};

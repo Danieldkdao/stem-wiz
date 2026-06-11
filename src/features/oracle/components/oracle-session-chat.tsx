@@ -140,10 +140,7 @@ export const OracleSessionChat = ({
                       {message.parts.map((part) => part.text).join("")}
                     </p>
                   ) : (
-                    <MarkdownRenderer
-                      isClient
-                      className="min-w-0 max-w-full text-base"
-                    >
+                    <MarkdownRenderer className="min-w-0 max-w-full text-base">
                       {message.parts.map((part) => part.text).join("")}
                     </MarkdownRenderer>
                   )}

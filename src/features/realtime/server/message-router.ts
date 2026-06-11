@@ -5,6 +5,8 @@ import { sendToClient } from "./connection-state";
 import { handleArenaMessage } from "@/features/arena/server/handle-arena-message";
 import { notificationClientMessageSchema } from "@/features/notifications/lib/schemas";
 import { handleNotificationMessage } from "@/features/notifications/server/handle-notification-message";
+import { friendChatClientMessageSchema } from "@/features/chats/lib/schemas";
+import { handleRealtimeFriendChatMessage } from "@/features/chats/server/handle-realtime-friend-chat-message";
 
 export const handleRealtimeMessage = async (
   ws: RealtimeWebSocket,
@@ -31,6 +33,12 @@ export const handleRealtimeMessage = async (
       notificationClientMessageSchema.safeParse(message);
     if (notificationResult.success) {
       await handleNotificationMessage(ws, notificationResult.data);
+      return;
+    }
+
+    const realtimeChatResult = friendChatClientMessageSchema.safeParse(message);
+    if (realtimeChatResult.success) {
+      await handleRealtimeFriendChatMessage(ws, realtimeChatResult.data);
       return;
     }
 

@@ -7,10 +7,8 @@ import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 
 export const ArenaProblemDetails = ({
   arenaProblem,
-  isClient = false,
 }: {
   arenaProblem: typeof ArenaProblemTable.$inferSelect;
-  isClient?: boolean;
 }) => {
   return (
     <div className="w-full h-full overflow-y-auto flex flex-col gap-4">
@@ -22,9 +20,7 @@ export const ArenaProblemDetails = ({
         <Badge>{formatDifficultyLevel(arenaProblem.difficultyLevel)}</Badge>
       </div>
       <Separator />
-      <MarkdownRenderer isClient={isClient}>
-        {arenaProblem.description}
-      </MarkdownRenderer>
+      <MarkdownRenderer>{arenaProblem.description}</MarkdownRenderer>
     </div>
   );
 };

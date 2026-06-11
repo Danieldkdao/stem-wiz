@@ -48,7 +48,7 @@ export const ObserverMatchSliderContent = ({
             value="problem-info"
             className="w-full h-full overflow-auto"
           >
-            <ArenaProblemDetails isClient arenaProblem={match.arenaProblem} />
+            <ArenaProblemDetails arenaProblem={match.arenaProblem} />
           </TabsContent>
           <TabsContent value="chat" className="min-h-0 w-full overflow-hidden">
             <div className="w-full h-full min-h-0 overflow-hidden flex flex-col">

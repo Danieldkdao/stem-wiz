@@ -7,7 +7,7 @@ const CommunityLayout = ({ children }: { children: ReactNode }) => {
       <Suspense>
         <CommunityTabLinks />
       </Suspense>
-      <div className="w-full flex-1">{children}</div>
+      <div className="w-full min-h-0 flex-1 overflow-y-auto">{children}</div>
     </div>
   );
 };
