@@ -1,27 +1,28 @@
 "use client";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
 import { NotificationListItem } from "@/features/notifications/lib/types";
 import { BellIcon, BellOffIcon } from "lucide-react";
 import { useEffect } from "react";
 import { TooltipWrapper } from "../../tooltip-wrapper";
 import { Button } from "../../ui/button";
-import { useNotifications } from "@/features/notifications/hooks/use-notifications";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { getNotificationChildren } from "@/features/notifications/lib/formatters";
-import { formatTime } from "@/lib/utils";
+import { NotificationsList } from "./notifications-list";
 
 export const HeaderClient = ({
   initialNotifications,
+  initialHasNextPage,
+  unreadCount,
 }: {
   initialNotifications: NotificationListItem[];
+  initialHasNextPage: boolean;
+  unreadCount: number;
 }) => {
   const { connect, status } = useNotificationsSocket();
-  const notifications = useNotifications(initialNotifications);
 
   useEffect(() => {
     if (status === "open" || status === "connecting") return;
@@ -35,33 +36,24 @@ export const HeaderClient = ({
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="relative">
             <BellIcon className="size-6!" />
-            {notifications.length > 0 && (
+            {/* todo: maybe make this optimistic in the future? */}
+            {unreadCount > 0 && (
               <span className="absolute size-5 rounded-full bg-destructive text-white font-semibold -top-1 text-sm -right-1 flex items-center justify-center">
-                {notifications.length}
+                {unreadCount}
               </span>
             )}
           </Button>
         </PopoverTrigger>
       </TooltipWrapper>
-      <PopoverContent align="end" className="flex flex-col gap-2 w-80">
-        {notifications.length ? (
-          notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className="w-full rounded-md bg-muted p-4 flex flex-col gap-2 relative"
-            >
-              <div className="size-4 rounded-full bg-primary absolute -right-1 -top-1" />
-
-              <div className="flex flex-col gap-0.5">
-                <h2 className="text-lg font-semibold">{notification.title}</h2>
-                <span className="text-muted-foreground text-sm">
-                  {formatTime(notification.createdAt)}
-                </span>
-                <p className="text-muted-foreground">{notification.message}</p>
-              </div>
-              {getNotificationChildren(notification.payload)}
-            </div>
-          ))
+      <PopoverContent
+        align="end"
+        className="flex flex-col gap-2 w-80 max-h-[calc(100dvh-8rem)] min-h-0"
+      >
+        {initialNotifications.length ? (
+          <NotificationsList
+            initialNotifications={initialNotifications}
+            initialHasNextPage={initialHasNextPage}
+          />
         ) : (
           <div className="w-full flex flex-col items-center gap-2">
             <BellOffIcon />

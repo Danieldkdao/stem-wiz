@@ -5,6 +5,7 @@ import { getUserNotificationsAction } from "@/features/notifications/actions/act
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_PAGE } from "@/lib/constants";
 
 export const Header = () => {
   return (
@@ -32,10 +33,18 @@ const HeaderLoading = () => {
 };
 
 const HeaderSuspense = async () => {
-  const notifications = await getUserNotificationsAction();
-  if (!notifications) {
+  const response = await getUserNotificationsAction(DEFAULT_PAGE);
+  if (!response) {
     return <div>notification error fetching component</div>;
   }
 
-  return <HeaderClient initialNotifications={notifications} />;
+  const { notificationListItems, metadata } = response;
+
+  return (
+    <HeaderClient
+      initialNotifications={notificationListItems}
+      initialHasNextPage={metadata.hasNextPage}
+      unreadCount={metadata.unreadCount}
+    />
+  );
 };

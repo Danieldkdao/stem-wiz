@@ -30,5 +30,5 @@ export const useNotifications = (
     };
   }, [subscribeNotificationEvent]);
 
-  return notifications;
+  return { notifications, setNotifications };
 };
