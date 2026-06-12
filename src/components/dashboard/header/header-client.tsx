@@ -11,7 +11,7 @@ import { BellIcon, BellOffIcon } from "lucide-react";
 import { useEffect } from "react";
 import { TooltipWrapper } from "../../tooltip-wrapper";
 import { Button } from "../../ui/button";
-import { NotificationsList } from "./notifications-list";
+import { NotificationsList } from "../../../features/notifications/components/notifications-list";
 
 export const HeaderClient = ({
   initialNotifications,

@@ -21,6 +21,7 @@
     "@mdxeditor/editor": "^4.0.0",
     "@monaco-editor/react": "^4.7.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@openrouter/ai-sdk-provider": "^2.9.1",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tanstack/react-pacer": "^0.22.1",
     "@tanstack/react-query": "^5.101.0",

@@ -45,13 +45,17 @@ export const ThemeToggle = ({ className }: { className?: string }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className={cn("cursor-pointer", className)} asChild>
-        <Button variant="ghost" size="icon">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="[&_svg:not([class*='size-'])]:size-6"
+        >
           {activeTheme === "light" ? (
-            <SunIcon className="size-5" />
+            <SunIcon />
           ) : activeTheme === "dark" ? (
-            <MoonIcon className="size-5" />
+            <MoonIcon />
           ) : (
-            <LaptopIcon className="size-5" />
+            <LaptopIcon />
           )}
         </Button>
       </DropdownMenuTrigger>
