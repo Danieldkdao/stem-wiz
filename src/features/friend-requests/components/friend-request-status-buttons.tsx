@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { FriendRequestButton } from "./friend-request-button";
 import { RespondFriendRequestButton } from "./respond-friend-request-button";
+import { Badge } from "@/components/ui/badge";
 
 export const FriendRequestStatusButtons = ({
   userId,
@@ -32,10 +33,10 @@ export const FriendRequestStatusButtons = ({
       {existingFriendRequest ? (
         existingFriendRequest.status === "pending" ? (
           existingFriendRequest.toUserId === userId ? (
-            <div className="flex items-center gap-2">
+            <Badge variant="outline">
               <CircleQuestionMarkIcon className="size-4" />
               Pending
-            </div>
+            </Badge>
           ) : (
             <>
               <div className="flex items-center gap-2">
@@ -56,10 +57,10 @@ export const FriendRequestStatusButtons = ({
             </>
           )
         ) : existingFriendRequest.status === "accepted" ? (
-          <div className="flex items-center gap-2">
-            <UserCheckIcon className="text-emerald-500" />
-            <span className="text-base text-emerald-500">Your friend</span>
-          </div>
+          <Badge>
+            <UserCheckIcon />
+            <span>Your friend</span>
+          </Badge>
         ) : (
           <FriendRequestButton userId={userId}>
             <UserPlusIcon className="size-4" />
