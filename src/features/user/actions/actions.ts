@@ -3,22 +3,17 @@
 import { db } from "@/db/db";
 import {
   FriendRequestTable,
-  ProgrammingLanguageType,
   user,
   UserAvailabilityDayType,
   UserAvailabilityTimeOfDayType,
-  UserCollaborationStyleType,
-  UserExperienceLevelType,
-  UserGoalType,
-  UserLookingForType,
   UserMatchTable,
-  UserMeetupPreferenceType,
   UserProfileTable,
 } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   INVALID_DATA_ERROR_MESSAGE,
+  NOT_FOUND_ERROR_MESSAGE,
   PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
@@ -48,12 +43,17 @@ import {
   HasGithubUrlFilterOptionType,
   HasLinkedinUrlFilterOptionType,
   HasPortfolioUrlFilterOptionType,
-  UserAvailabilityFilterSchemaType,
 } from "../lib/params";
 import { getUserProfileTag } from "../server/cache/user-profiles";
 import { getUserGlobalTag, getUserIdTag } from "../server/cache/users";
 import { upsertUserProfile } from "../server/user-profiles";
-import { userProfileSchema, UserProfileSchemaType } from "./schemas";
+import {
+  communityFilterOptionsSchema,
+  CommunityFilterOptionsSchemaType,
+  userProfileSchema,
+  UserProfileSchemaType,
+} from "./schemas";
+import { discoverUsers } from "@/services/ai/discover-users";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -109,28 +109,15 @@ export const getUserProfileAction = async (userId: string) => {
 
 export const getUsersAction = async (
   userId: string,
-  filterOptions: {
-    search: string;
-    sortBy: CommunitySortByOptionType;
-    filterBy: CommunityFilterByOptionType;
-    preferredLanguages: ProgrammingLanguageType[];
-    yearsProgrammingLower: number | null | undefined;
-    yearsProgrammingUpper: number | null | undefined;
-    experienceLevels: UserExperienceLevelType[];
-    meetupPreferences: UserMeetupPreferenceType[];
-    collaborationStyles: UserCollaborationStyleType[];
-    lookingFor: UserLookingForType[];
-    availability: UserAvailabilityFilterSchemaType;
-    goals: UserGoalType[];
-    hasGithubUrl: HasGithubUrlFilterOptionType;
-    hasPortfolioUrl: HasPortfolioUrlFilterOptionType;
-    hasLinkedinUrl: HasLinkedinUrlFilterOptionType;
-    page: number;
-  },
+  filterOptions: CommunityFilterOptionsSchemaType,
   limit = PAGE_SIZE,
 ) => {
   "use cache";
   cacheTag(getUserGlobalTag());
+
+  const { data, success } =
+    communityFilterOptionsSchema.safeParse(filterOptions);
+  if (!success) return null;
 
   const {
     search,
@@ -149,7 +136,8 @@ export const getUsersAction = async (
     hasGithubUrl,
     hasPortfolioUrl,
     hasLinkedinUrl,
-  } = filterOptions;
+    userIds,
+  } = data;
 
   const offset = (page - 1) * limit;
 
@@ -290,11 +278,13 @@ export const getUsersAction = async (
     pending_friend_requests: pendingFriendsFilter,
   };
 
+  const userIdsFilter = userIds?.length ? inArray(user.id, userIds) : undefined;
+
   const whereQuery = and(
     ne(user.id, userId),
     searchFilter,
     preferredLanguageFilter,
-    yearsProgrammingLower != null || yearsProgrammingUpper !== null
+    yearsProgrammingLower != null || yearsProgrammingUpper != null
       ? or(
           and(yearsProgrammingLowerFilter, yearsProgrammingUpperFilter),
           isNull(UserProfileTable.yearsProgramming),
@@ -321,6 +311,7 @@ export const getUsersAction = async (
     hasPortfolioUrlMap[hasPortfolioUrl],
     hasLinkedinUrlMap[hasLinkedinUrl],
     filterByMap[filterBy],
+    userIdsFilter,
   );
 
   const users = await db
@@ -393,4 +384,50 @@ export const getUserAction = async (
     .where(eq(user.id, userId));
 
   return existingUser ?? null;
+};
+
+export const aiDiscoverUsersAction = async (
+  prompt: string,
+): Promise<{
+  error: boolean;
+  message: string;
+  userIds?: string[];
+  explanation?: string;
+}> => {
+  const { userId } = await getCurrentUser();
+  if (!userId)
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+
+  const [userWithProfile] = await db
+    .select({
+      ...getTableColumns(user),
+      profile: getTableColumns(UserProfileTable),
+    })
+    .from(user)
+    .innerJoin(UserProfileTable, eq(UserProfileTable.userId, user.id))
+    .where(eq(user.id, userId));
+
+  if (!userWithProfile) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  const response = await discoverUsers(userWithProfile, prompt);
+  if (!response) {
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+
+  return {
+    error: false,
+    message: "Success!",
+    ...response,
+  };
 };

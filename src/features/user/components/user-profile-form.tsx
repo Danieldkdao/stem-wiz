@@ -79,7 +79,26 @@ export const UserProfileForm = ({
   const router = useRouter();
   const form = useForm<UserProfileSchemaType>({
     resolver: zodResolver(userProfileSchema),
-    defaultValues: userProfile,
+    defaultValues: {
+      availability: userProfile?.availability ?? {
+        days: [],
+        hoursPerWeek: undefined,
+        timeOfDay: [],
+      },
+      bio: userProfile?.bio ?? "",
+      collaborationStyle: userProfile?.collaborationStyle ?? undefined,
+      experienceLevel: userProfile?.experienceLevel ?? undefined,
+      githubUrl: userProfile?.githubUrl ?? "",
+      goals: userProfile?.goals ?? [],
+      linkedinUrl: userProfile?.linkedinUrl ?? "",
+      location: userProfile?.location ?? "",
+      lookingFor: userProfile?.lookingFor ?? undefined,
+      meetupPreference: userProfile?.meetupPreference ?? undefined,
+      portfolioUrl: userProfile?.portfolioUrl ?? "",
+      preferredLanguage: userProfile?.preferredLanguage ?? undefined,
+      timezone: userProfile?.timezone ?? "",
+      yearsProgramming: userProfile?.yearsProgramming ?? undefined,
+    },
   });
 
   const handleUpdateUserProfile = async (data: UserProfileSchemaType) => {
@@ -88,7 +107,26 @@ export const UserProfileForm = ({
       toast.error(response.message);
     } else {
       router.refresh();
-      form.reset();
+      form.reset({
+        availability: userProfile?.availability ?? {
+          days: [],
+          hoursPerWeek: undefined,
+          timeOfDay: [],
+        },
+        bio: userProfile?.bio ?? "",
+        collaborationStyle: userProfile?.collaborationStyle ?? undefined,
+        experienceLevel: userProfile?.experienceLevel ?? undefined,
+        githubUrl: userProfile?.githubUrl ?? "",
+        goals: userProfile?.goals ?? [],
+        linkedinUrl: userProfile?.linkedinUrl ?? "",
+        location: userProfile?.location ?? "",
+        lookingFor: userProfile?.lookingFor ?? undefined,
+        meetupPreference: userProfile?.meetupPreference ?? undefined,
+        portfolioUrl: userProfile?.portfolioUrl ?? "",
+        preferredLanguage: userProfile?.preferredLanguage ?? undefined,
+        timezone: userProfile?.timezone ?? "",
+        yearsProgramming: userProfile?.yearsProgramming ?? undefined,
+      });
       toast.success(response.message);
     }
   };

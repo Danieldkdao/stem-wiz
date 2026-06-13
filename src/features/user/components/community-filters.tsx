@@ -97,6 +97,8 @@ export const CommunityFilters = () => {
       hasGithubUrl: "all",
       hasLinkedinUrl: "all",
       hasPortfolioUrl: "all",
+      userIds: [],
+      explanation: "",
     });
   };
 

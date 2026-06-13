@@ -15,6 +15,7 @@ export const envServer = createEnv({
     SENDER_EMAIL: z.string().min(1),
     CODE_EXECUTION_BASE_URL: z.string().min(1),
     MISTRAL_API_KEY: z.string().min(1),
+    HACKCLUB_AI_API_KEY: z.string().min(1),
   },
   emptyStringAsUndefined: true,
   experimental__runtimeEnv: process.env,

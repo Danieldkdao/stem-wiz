@@ -81,6 +81,12 @@ export const useCommunityParams = () => {
       hasLinkedinUrl: parseAsStringEnum([...HAS_LINKEDIN_URL_FILTER_OPTIONS])
         .withDefault("all")
         .withOptions({ clearOnDefault: true }),
+      userIds: parseAsArrayOf(parseAsString)
+        .withDefault([])
+        .withOptions({ clearOnDefault: true }),
+      explanation: parseAsString
+        .withDefault("")
+        .withOptions({ clearOnDefault: true }),
     },
     { shallow: false },
   );

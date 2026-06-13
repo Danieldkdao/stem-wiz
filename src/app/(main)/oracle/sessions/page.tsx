@@ -92,7 +92,7 @@ const OracleSessionsListSuspense = async () => {
         <h1 className="text-3xl font-semibold text-center">
           No sessions created yet
         </h1>
-        <p className="text-muted-foreground text-center max-w-150">
+        <p className="text-muted-foreground text-lg text-center max-w-150">
           You haven&apos;t created any sessions yet. Click on the button below
           to get started.
         </p>

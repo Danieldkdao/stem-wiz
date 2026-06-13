@@ -1,3 +1,4 @@
+import type { UserProfileTable } from "@/db/schema";
 import {
   ProgrammingLanguageType,
   UserAvailabilityDayType,
@@ -15,6 +16,42 @@ import {
   HasLinkedinUrlFilterOptionType,
   HasPortfolioUrlFilterOptionType,
 } from "./params";
+import type { User } from "@/lib/auth/auth";
+
+export type DiscoverUsersPromptUser = User & {
+  profile: typeof UserProfileTable.$inferSelect;
+};
+
+export const formatPromptValue = (value: unknown) => {
+  if (value == null || value === "") return "Not provided";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "None";
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+};
+
+export const formatProfileForPrompt = (user: DiscoverUsersPromptUser) => {
+  const { profile } = user;
+
+  return [
+    `- User ID: ${user.id}`,
+    `- Name: ${user.name}`,
+    `- Preferred language: ${formatPromptValue(profile.preferredLanguage)}`,
+    `- Years programming: ${formatPromptValue(profile.yearsProgramming)}`,
+    `- Experience level: ${formatPromptValue(profile.experienceLevel)}`,
+    `- Bio: ${formatPromptValue(profile.bio)}`,
+    `- Timezone: ${formatPromptValue(profile.timezone)}`,
+    `- Location: ${formatPromptValue(profile.location)}`,
+    `- Meetup preference: ${formatPromptValue(profile.meetupPreference)}`,
+    `- Collaboration style: ${formatPromptValue(profile.collaborationStyle)}`,
+    `- Looking for: ${formatPromptValue(profile.lookingFor)}`,
+    `- Availability: ${formatPromptValue(profile.availability)}`,
+    `- Goals: ${formatPromptValue(profile.goals)}`,
+    `- GitHub URL: ${formatPromptValue(profile.githubUrl)}`,
+    `- Portfolio URL: ${formatPromptValue(profile.portfolioUrl)}`,
+    `- LinkedIn URL: ${formatPromptValue(profile.linkedinUrl)}`,
+  ].join("\n");
+};
 
 export const formatProgrammingLanguage = (lang: ProgrammingLanguageType) => {
   switch (lang) {

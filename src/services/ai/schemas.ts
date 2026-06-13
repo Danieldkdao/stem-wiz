@@ -57,3 +57,17 @@ export const oracleProblemFeedbackSchema = z.object({
       "An integer score from 0 to 10 for the user's solution, where 0 is no meaningful attempt and 10 is fully correct, complete, idiomatic, and edge-case aware.",
     ),
 });
+
+export const discoverUsersSchema = z.object({
+  userIds: z
+    .array(z.string().describe("The user id of the user."))
+    .describe(
+      "The array of recommended user ids. If no quality recommendations can be found, return an empty array.",
+    ),
+  explanation: z
+    .string()
+    .min(1)
+    .describe(
+      "A clear 2-3 sentence explanation of what was found, why these users fit, and how the recommendation was made. If no quality recommendations can be made, explain why in a helpful user-facing way.",
+    ),
+});

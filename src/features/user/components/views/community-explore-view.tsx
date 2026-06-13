@@ -77,13 +77,26 @@ const CommunityExploreViewSuspense = async ({
 
   const filters = await loadCommunitySearchParams(searchParams);
 
-  const { users, metadata } = await getUsersAction(userId, {
+  const response = await getUsersAction(userId, {
     ...filters,
     page: DEFAULT_PAGE,
   });
+  if (!response) {
+    return <div>Failed to fetch users</div>;
+  }
+
+  const { users, metadata } = response;
 
   return (
     <div className="flex flex-col gap-6 w-full">
+      {filters.explanation.trim() && (
+        <div className="w-full p-4 bg-card rounded-xl border shadow-sm flex flex-col gap-2">
+          <span className="tracking-widest font-medium text-sm text-muted-foreground">
+            AI REASONING
+          </span>
+          <p className="text-muted-foreground text-lg">{filters.explanation}</p>
+        </div>
+      )}
       <CommunityFilters />
       <CommunityUserInfiniteCardList
         userId={userId}
