@@ -70,7 +70,14 @@ export const MatchCodeOutput = ({
         toast.error(response.message);
       } else {
         toast.success(response.message);
-        broadcastCodeSubmission(matchId);
+        if (
+          !response.matchFinished &&
+          !broadcastCodeSubmission(matchId)
+        ) {
+          toast.warning(
+            "Submission saved, but live match notification could not be sent.",
+          );
+        }
         router.refresh();
       }
     });

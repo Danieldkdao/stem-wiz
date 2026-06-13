@@ -1,6 +1,6 @@
 "use client";
 
-import { MatchResultReasonType } from "@/db/shared";
+import { ArenaClientMessage } from "@/features/arena/lib/schemas";
 import { ArenaServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
@@ -13,7 +13,6 @@ import {
   useState,
 } from "react";
 import { MatchServerMessage, MatchServerMessageType } from "../lib/types";
-import { ArenaClientMessage } from "@/features/arena/lib/schemas";
 
 type OpponentStatus = "active" | "disconnected";
 
@@ -41,10 +40,6 @@ type MatchSocketContextType = {
     error?: string | null;
   }) => boolean;
   broadcastRunningCode: (matchId: string) => boolean;
-  broadcastMatchFinished: (
-    matchId: string,
-    reason: MatchResultReasonType,
-  ) => boolean;
 };
 
 export type MatchEventListener<T extends MatchServerMessageType> = (
@@ -214,13 +209,6 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     [send],
   );
 
-  const broadcastMatchFinished = useCallback(
-    (matchId: string, reason: MatchResultReasonType) => {
-      return send({ type: "match_finished", matchId, reason });
-    },
-    [send],
-  );
-
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -239,7 +227,6 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     broadcastCodeSnapshot,
     broadcastCodeOutput,
     broadcastRunningCode,
-    broadcastMatchFinished,
   };
 
   return (

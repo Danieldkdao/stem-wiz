@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   checkExistingMatchAction,
-  isUserMatchActive,
+  isUserMatchActiveAction,
 } from "@/features/matches/actions/actions";
 import { ObservableMatchHeader } from "@/features/matches/components/observable-match-header";
 import { ObserverMatchView } from "@/features/matches/components/observer-match-view";
@@ -110,7 +110,7 @@ const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
   const { matchId } = await params;
   const match = await checkExistingMatchAction({ id: matchId });
 
-  const userMatch = await isUserMatchActive(matchId);
+  const userMatch = await isUserMatchActiveAction(matchId);
   if (userMatch) {
     return (
       <div>

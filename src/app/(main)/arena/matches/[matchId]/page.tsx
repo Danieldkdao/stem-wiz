@@ -12,6 +12,7 @@ import { MatchHeader } from "@/features/matches/components/match-header";
 import { auth } from "@/lib/auth/auth";
 import { ParamsId } from "@/lib/types";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 type MatchCompeteParams = ParamsId<"matchId">;
@@ -118,6 +119,18 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
   const match = await checkExistingMatchAction({ id: matchId });
 
   if (!match) {
+    const completedMatch = await checkExistingMatchAction({
+      id: matchId,
+      forResults: true,
+    });
+    if (
+      completedMatch &&
+      (completedMatch.status === "finished" ||
+        completedMatch.expiresAt <= new Date())
+    ) {
+      return redirect(`/arena/matches/${matchId}/results`);
+    }
+
     return (
       <div>
         match not found reusable component in matches feature folder components

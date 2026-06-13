@@ -8,7 +8,7 @@ import {
   UserMatchTable,
   UserProfileTable,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import {
   sendToUser,
   sendToClient,
@@ -24,18 +24,34 @@ export const joinWaitingRoom = async (ws: ArenaWebSocket) => {
     .from(UserProfileTable)
     .where(eq(UserProfileTable.userId, userId));
   if (!userSettings) {
-    sendToClient(
-      ws,
-      {
-        type: "no_user_settings",
-      },
-    );
+    sendToClient(ws, {
+      type: "no_user_settings",
+    });
     return;
   }
 
-  if (activeMatchesByUser.has(userId) || usersInWaitingRoom.has(userId)) {
-    return;
+  const activeUser = activeMatchesByUser.get(userId);
+  if (activeUser) {
+    const activeMatch = await db.query.MatchTable.findFirst({
+      where: and(
+        eq(MatchTable.id, activeUser.matchId),
+        eq(MatchTable.status, "in-progress"),
+        gt(MatchTable.expiresAt, new Date()),
+      ),
+    });
+
+    if (!activeMatch) {
+      activeMatchesByUser.delete(userId);
+    } else {
+      sendToClient(ws, {
+        type: "active_match_exists",
+        matchId: activeMatch.id,
+      });
+      return;
+    }
   }
+
+  if (usersInWaitingRoom.has(userId)) return;
 
   usersInWaitingRoom.set(userId, {
     ...ws.user,
@@ -92,7 +108,7 @@ const tryPairUsers = async (
         user.id !== currentUser?.id &&
         user.userSettings.preferredLanguage ===
           currentUser?.userSettings.preferredLanguage,
-  );
+    );
 
   if (!opponent) {
     sendToConnection(currentUser.connectionId, {

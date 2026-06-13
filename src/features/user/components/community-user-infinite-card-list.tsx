@@ -44,10 +44,12 @@ export const CommunityUserInfiniteCardList = ({
         startTransition(async () => {
           const nextPage = page + 1;
 
-          const { users, metadata } = await getUsersAction(userId, {
+          const response = await getUsersAction(userId, {
             ...filters,
             page: nextPage,
           });
+          if (!response) return;
+          const { users, metadata } = response;
 
           setUsers((prev) => [...prev, ...users]);
           setPage(nextPage);

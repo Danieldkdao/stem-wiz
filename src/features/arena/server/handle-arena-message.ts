@@ -1,18 +1,21 @@
 import { RealtimeWebSocket } from "@/features/realtime/lib/types";
 import { ArenaClientMessage } from "../lib/schemas";
-import { joinWaitingRoom, leaveWaitingRoom } from "./matchmaking";
-import { broadcastCodeSubmission, connectToMatch } from "./match-realtime";
 import { broadcastChatMessageSent } from "./chats";
 import {
-  connectToObservers,
-  subscribeObserverMatch,
-  broadcastCodeSnapshot,
   broadcastCodeOutput,
+  broadcastCodeSnapshot,
   broadcastRunningCode,
   broadcastUserSubmittedCode,
-  broadcastMatchFinished,
+  connectToObservers,
   leaveObserverMatch,
+  subscribeObserverMatch,
 } from "./match-observers";
+import {
+  broadcastCodeSubmission,
+  connectToMatch,
+  finishMatchFromSocket,
+} from "./match-realtime";
+import { joinWaitingRoom, leaveWaitingRoom } from "./matchmaking";
 
 export const handleArenaMessage = async (
   ws: RealtimeWebSocket,
@@ -57,7 +60,7 @@ export const handleArenaMessage = async (
       await broadcastUserSubmittedCode(ws, message.matchId);
       break;
     case "match_finished":
-      await broadcastMatchFinished(ws, message.matchId, message.reason);
+      await finishMatchFromSocket(ws, message.matchId, message.reason);
       break;
     case "chat_message_sent":
       await broadcastChatMessageSent(ws, message.matchId, message);

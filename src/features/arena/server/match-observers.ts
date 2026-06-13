@@ -1,13 +1,12 @@
 import { db } from "@/db/db";
-import { ArenaWebSocket, ArenaServerMessage } from "../lib/types";
-import { cleanupUserConnection, getArenaWsState } from "./connection-state";
-import { and, eq } from "drizzle-orm";
 import { MatchTable, UserMatchTable } from "@/db/schema";
-import { MatchResultReasonType } from "@/db/schema";
 import {
   sendToConnection,
   sendToUser,
 } from "@/features/realtime/server/connection-state";
+import { and, eq } from "drizzle-orm";
+import { ArenaServerMessage, ArenaWebSocket } from "../lib/types";
+import { cleanupUserConnection, getArenaWsState } from "./connection-state";
 
 export const connectToObservers = (ws: ArenaWebSocket) => {
   const { usersInWaitingRoom, usersInObservingRoom } = getArenaWsState();
@@ -64,6 +63,7 @@ export const broadcastUpdatedMatchObserverCount = async (
   matchId?: string,
 ) => {
   const { activeObserversByUser } = getArenaWsState();
+
   let currentMatchId = matchId;
 
   if (!currentMatchId) {
@@ -140,21 +140,6 @@ export const broadcastUserSubmittedCode = async (
   await broadcastToMatchObservers(matchId, {
     type: "user_submitted_code",
     userId,
-  });
-};
-
-export const broadcastMatchFinished = async (
-  ws: ArenaWebSocket,
-  matchId: string,
-  reason: MatchResultReasonType,
-) => {
-  const userId = ws.user.id;
-
-  await confirmMatchParticipant(userId, matchId);
-
-  await broadcastToMatchObservers(matchId, {
-    type: "match_finished",
-    reason,
   });
 };
 

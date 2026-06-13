@@ -8,75 +8,109 @@ import { useAuthSession } from "@/hooks/use-auth-session";
 import { SwordsIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { JSX, useEffect } from "react";
+import { useEffect } from "react";
 import { statusMap } from ".";
 import { FindingMatchLoader } from "./finding-match-loader";
-import { ArenaWaitingServerMessageType } from "../lib/types";
+import { ArenaWaitingServerMessage } from "../lib/types";
 
-const responseMap: Record<
-  ArenaWaitingServerMessageType,
-  (...args: any) => JSX.Element
-> = {
-  no_matches_found: () => (
-    <div className="flex flex-col gap-2 items-center">
-      <h1 className="text-xl font-medium text-center">No Matches Found</h1>
-      <p className="text-muted-foreground text-center">
-        Just wanted to let you know that there are no users that are online at
-        this moment. If someone joins, then we will connect you with that
-        person.
-      </p>
-    </div>
-  ),
-  match_found: ({ name, matchId }: { name: string; matchId: string }) => (
-    <div className="flex flex-col gap-2 items-center">
-      <h1 className="text-xl font-medium text-center">Match Found!</h1>
-      <p className="text-muted-foreground text-center">
-        You have been matched up with {name}! You are being redirected to the
-        battle now! If that didn't work, you can click on the link below.
-      </p>
-      <Button variant="outline" className="w-full">
-        <Link href={`/arena/matches/${matchId}`}>Battle!</Link>
-      </Button>
-    </div>
-  ),
-  no_problems_found: () => (
-    <div className="flex flex-col gap-2 items-center">
-      <h1 className="text-xl font-medium text-center">No Problems Found</h1>
-      <p className="text-muted-foreground text-center">
-        Unfortunately, we currently are unable to find any interesting problems
-        for your battle. Try refreshing the page or coming back at another time.
-      </p>
-    </div>
-  ),
-  no_user_settings: () => (
-    <div className="flex flex-col gap-2 items-center">
-      <h1 className="text-xl font-medium text-center">No User Settings</h1>
-      <p className="text-muted-foreground text-center">
-        Please update your preferences and settings so we know what you like and
-        who we should pair you up with!
-      </p>
-      <Button variant="outline" className="w-full">
-        <Link href={`/settings`}>Head to settings</Link>
-      </Button>
-    </div>
-  ),
-  error: () => (
-    <div className="flex flex-col gap-2 items-center">
-      <h1 className="text-xl font-medium text-center text-destructive">
-        Error
-      </h1>
-      <p className="text-muted-foreground text-center">
-        Looks like something went wrong. Try reloading the page or come back
-        another time.
-      </p>
-    </div>
-  ),
+const renderWaitingResponse = (message: ArenaWaitingServerMessage) => {
+  switch (message.type) {
+    case "no_matches_found":
+      return (
+        <div className="flex flex-col gap-2 items-center">
+          <h1 className="text-xl font-medium text-center">No Matches Found</h1>
+          <p className="text-muted-foreground text-center">
+            Just wanted to let you know that there are no users that are online
+            at this moment. If someone joins, then we will connect you with that
+            person.
+          </p>
+        </div>
+      );
+    case "match_found":
+      return (
+        <div className="flex flex-col gap-2 items-center">
+          <h1 className="text-xl font-medium text-center">Match Found!</h1>
+          <p className="text-muted-foreground text-center">
+            You have been matched up with {message.opponent.name}! You are
+            being redirected to the battle now. If that did not work, you can
+            click on the link below.
+          </p>
+          <Button variant="outline" className="w-full">
+            <Link href={`/arena/matches/${message.matchId}`}>Battle!</Link>
+          </Button>
+        </div>
+      );
+    case "active_match_exists":
+      return (
+        <div className="flex flex-col gap-2 items-center">
+          <h1 className="text-xl font-medium text-center">
+            Match Still Active
+          </h1>
+          <p className="text-muted-foreground text-center">
+            You already have an active match. Head back to it before joining a
+            new waiting room.
+          </p>
+          <Button variant="outline" className="w-full" asChild>
+            <Link href={`/arena/matches/${message.matchId}`}>
+              Return to Match
+            </Link>
+          </Button>
+        </div>
+      );
+    case "no_problems_found":
+      return (
+        <div className="flex flex-col gap-2 items-center">
+          <h1 className="text-xl font-medium text-center">
+            No Problems Found
+          </h1>
+          <p className="text-muted-foreground text-center">
+            Unfortunately, we currently are unable to find any interesting
+            problems for your battle. Try refreshing the page or coming back at
+            another time.
+          </p>
+        </div>
+      );
+    case "no_user_settings":
+      return (
+        <div className="flex flex-col gap-2 items-center">
+          <h1 className="text-xl font-medium text-center">No User Settings</h1>
+          <p className="text-muted-foreground text-center">
+            Please update your preferences and settings so we know what you like
+            and who we should pair you up with.
+          </p>
+          <Button variant="outline" className="w-full">
+            <Link href={`/settings`}>Head to settings</Link>
+          </Button>
+        </div>
+      );
+    case "error":
+      return (
+        <div className="flex flex-col gap-2 items-center">
+          <h1 className="text-xl font-medium text-center text-destructive">
+            Error
+          </h1>
+          <p className="text-muted-foreground text-center">
+            Looks like something went wrong. Try reloading the page or come back
+            another time.
+          </p>
+        </div>
+      );
+    default:
+      message satisfies never;
+      return null;
+  }
 };
 
 export const ArenaWaitingArea = () => {
   const router = useRouter();
-  const { status, match, lastEvent, connect, joinWaitingRoom } =
-    useWaitingArenaSocket();
+  const {
+    status,
+    match,
+    lastEvent,
+    connect,
+    joinWaitingRoom,
+    clearWaitingState,
+  } = useWaitingArenaSocket();
   const { data: session, isPending } = useAuthSession();
 
   useEffect(() => {
@@ -84,7 +118,7 @@ export const ArenaWaitingArea = () => {
     if (status === "connecting" || status === "open") return;
 
     void connect();
-  }, [isPending, session, status]);
+  }, [connect, isPending, session, status]);
 
   useEffect(() => {
     if (!session) return;
@@ -95,12 +129,14 @@ export const ArenaWaitingArea = () => {
 
   useEffect(() => {
     if (status !== "open") return;
-    if (match) router.push(`/arena/matches/${match.matchId}`);
-  }, [status, match]);
+    if (!match) return;
+
+    const matchId = match.matchId;
+    clearWaitingState();
+    router.push(`/arena/matches/${matchId}`);
+  }, [clearWaitingState, match, router, status]);
 
   if (!session) return;
-
-  const MessageComponent = lastEvent ? responseMap[lastEvent.type] : () => null;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -149,22 +185,9 @@ export const ArenaWaitingArea = () => {
           </Card>
         )}
 
-        {lastEvent && MessageComponent && (
+        {lastEvent && (
           <Card className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <CardContent>
-              <MessageComponent
-                name={
-                  lastEvent.type === "match_found"
-                    ? lastEvent.opponent.name
-                    : undefined
-                }
-                matchId={
-                  lastEvent.type === "match_found"
-                    ? lastEvent.matchId
-                    : undefined
-                }
-              />
-            </CardContent>
+            <CardContent>{renderWaitingResponse(lastEvent)}</CardContent>
           </Card>
         )}
       </div>

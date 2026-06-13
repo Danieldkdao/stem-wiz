@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { getObservableMatches } from "@/features/matches/actions/actions";
+import { getObservableMatchesAction } from "@/features/matches/actions/actions";
 import { MatchObserverListStatus } from "@/features/matches/components/match-observer-list-status";
 import { ObservableMatchCard } from "@/features/matches/components/observable-match-card";
 import { connection } from "next/server";
@@ -60,7 +60,7 @@ const ParticipantSkeleton = () => {
 
 const ObserverMatchesListSuspense = async () => {
   await connection();
-  const matches = await getObservableMatches();
+  const matches = await getObservableMatchesAction();
 
   return (
     <div className="flex flex-col gap-4 py-10 px-6 w-full h-full overflow-auto">

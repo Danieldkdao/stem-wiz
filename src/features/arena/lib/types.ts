@@ -24,6 +24,10 @@ export type ArenaWaitingServerMessage =
       matchId: string;
       opponent: RealtimeUser;
     }
+  | {
+      type: "active_match_exists";
+      matchId: string;
+    }
   | { type: "no_matches_found" }
   | { type: "no_problems_found" }
   | { type: "no_user_settings" }

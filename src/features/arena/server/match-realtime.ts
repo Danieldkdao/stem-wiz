@@ -1,6 +1,6 @@
 import { db } from "@/db/db";
-import { MatchTable } from "@/db/schema";
-import { upsertMatchResult } from "@/features/matches/server/match-results";
+import { MatchResultReasonType, MatchTable } from "@/db/schema";
+import { RealtimeWebSocket } from "@/features/realtime/lib/types";
 import {
   sendToConnection,
   sendToUser,
@@ -13,6 +13,7 @@ import {
   getArenaWsState,
   getOpponentConnectionId,
 } from "./connection-state";
+import { finalizeMatch } from "./finalize-match";
 import { broadcastToMatchObservers } from "./match-observers";
 
 export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
@@ -93,7 +94,7 @@ export const broadcastCodeSubmission = async (
   ws: ArenaWebSocket,
   matchId: string,
 ) => {
-  const { activeMatchesByUser, usersInObservingRoom } = getArenaWsState();
+  const { activeMatchesByUser } = getArenaWsState();
 
   const userId = ws.user.id;
 
@@ -182,31 +183,149 @@ export const broadcastCodeSubmission = async (
     return;
   }
 
-  const upsertedResult = await upsertMatchResult({
+  const finalizedMatch = await finalizeMatch({
     matchId: existingMatch.id,
-    result: "completed",
-    winnerId: winnerId === "none" ? null : winnerId,
     reason: "traditional",
+    winnerId: winnerId === "none" ? null : winnerId,
   });
 
-  if (!upsertedResult) {
+  if (!finalizedMatch) {
+    const [recheckMatch] = await db
+      .select()
+      .from(MatchTable)
+      .where(eq(MatchTable.id, existingMatch.id));
+
+    if (recheckMatch?.status === "finished") return;
+
     latestMatch.users.forEach((user) => {
       sendToUser(user.userId, {
         type: "error",
         message: "Failed to generate match results.",
       });
     });
+  }
+};
+
+export const finishMatchFromSocket = async (
+  ws: RealtimeWebSocket,
+  matchId: string,
+  reason: MatchResultReasonType,
+) => {
+  const userId = ws.user.id;
+  const connectionId = ws.id;
+
+  const existingMatch = await db.query.MatchTable.findFirst({
+    where: eq(MatchTable.id, matchId),
+    with: {
+      users: true,
+      submissions: true,
+    },
+  });
+
+  if (!existingMatch) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "Match not found.",
+    });
     return;
   }
 
-  latestMatch.users.forEach((user) => {
-    sendToUser(user.userId, { type: "match_finished", reason: "traditional" });
+  if (existingMatch.status === "finished") return;
+
+  const existingParticipant = existingMatch.users.find(
+    (user) => user.userId === userId,
+  );
+  if (!existingParticipant) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "You are not a participant in this match.",
+    });
+    return;
+  }
+
+  const opponent = existingMatch.users.find((user) => user.userId !== userId);
+  if (!opponent) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "We couldn't find an opponent for this match.",
+    });
+    return;
+  }
+
+  const isExpired = existingMatch.expiresAt <= new Date();
+  if (reason === "timeout" && !isExpired) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "This match is still in progress.",
+    });
+    return;
+  }
+
+  if (reason !== "timeout" && isExpired) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "This match has already ended.",
+    });
+    return;
+  }
+
+  let winnerId: string | null = null;
+
+  switch (reason) {
+    case "user_quit":
+      winnerId = opponent.userId;
+      break;
+    case "user_lost_connection":
+      winnerId = userId;
+      break;
+    case "timeout":
+      const hasSubmission = existingMatch.submissions.length > 0;
+
+      if (hasSubmission) {
+        const generatedWinnerId = await generateMatchResults(existingMatch.id);
+        winnerId = generatedWinnerId === "none" ? null : generatedWinnerId;
+      }
+      break;
+    case "traditional":
+      const submittedUserIds = new Set(
+        existingMatch.submissions.map((submission) => submission.userId),
+      );
+      const allUsersSubmitted = existingMatch.users.every((user) =>
+        submittedUserIds.has(user.userId),
+      );
+      if (!allUsersSubmitted) {
+        sendToConnection(connectionId, {
+          type: "error",
+          message:
+            "Both users must submit a solution before the match can finish.",
+        });
+        return;
+      }
+
+      const generatedWinnerId = await generateMatchResults(existingMatch.id);
+      winnerId = generatedWinnerId === "none" ? null : generatedWinnerId;
+      break;
+    default:
+      reason satisfies never;
+  }
+
+  const finalizedMatch = await finalizeMatch({
+    matchId: existingMatch.id,
+    reason,
+    winnerId,
   });
-  await broadcastToMatchObservers(latestMatch.id, {
-    type: "match_finished",
-    reason: "traditional",
-  });
-  usersInObservingRoom.forEach((userId) => {
-    sendToUser(userId, { type: "observable_match_count_updated" });
-  });
+  if (!finalizedMatch) {
+    const [recheckMatch] = await db
+      .select({ status: MatchTable.status })
+      .from(MatchTable)
+      .where(eq(MatchTable.id, existingMatch.id))
+      .limit(1);
+
+    if (recheckMatch?.status === "finished") return;
+
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "Failed to finish match.",
+    });
+  }
 };

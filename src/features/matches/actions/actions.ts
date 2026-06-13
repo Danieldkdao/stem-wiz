@@ -3,25 +3,110 @@
 import { db } from "@/db/db";
 import {
   ArenaProblemTable,
+  MatchResultReasonType,
+  MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
   user,
   UserMatchTable,
 } from "@/db/schema";
+import { finalizeMatch } from "@/features/arena/server/finalize-match";
+import { auth, User } from "@/lib/auth/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   NO_PERMISSION_DATA_MESSAGE,
+  NOT_FOUND_ERROR_MESSAGE,
+  PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { and, eq, exists, getTableColumns, gt, not, sql } from "drizzle-orm";
-import {
-  upsertMatchResult,
-  upsertMatchSubmission,
-} from "../server/match-results";
-import { auth, User } from "@/lib/auth/auth";
-import { headers } from "next/headers";
 import { generateMatchResults } from "@/services/ai/matches";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  getTableColumns,
+  gt,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  not,
+  or,
+  SQL,
+  sql,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { headers } from "next/headers";
+import {
+  UserMatchesFilterByOptions,
+  UserMatchesResultOptionType,
+  UserMatchesSortByOptionType,
+} from "../lib/params";
+import { upsertMatchSubmission } from "../server/match-results";
+
+const hasMatchFinished = async (matchId: string) => {
+  const [match] = await db
+    .select({ status: MatchTable.status })
+    .from(MatchTable)
+    .where(eq(MatchTable.id, matchId))
+    .limit(1);
+
+  return match?.status === "finished";
+};
+
+const finalizeMatchIfAllUsersSubmitted = async (matchId: string) => {
+  const latestMatch = await db.query.MatchTable.findFirst({
+    where: and(
+      eq(MatchTable.id, matchId),
+      eq(MatchTable.status, "in-progress"),
+      gt(MatchTable.expiresAt, new Date()),
+    ),
+    with: {
+      users: true,
+      submissions: true,
+    },
+  });
+
+  if (!latestMatch) {
+    return { finished: await hasMatchFinished(matchId), error: false };
+  }
+
+  const submittedUserIds = new Set(
+    latestMatch.submissions.map((submission) => submission.userId),
+  );
+  const allUsersSubmitted = latestMatch.users.every((user) =>
+    submittedUserIds.has(user.userId),
+  );
+
+  if (!allUsersSubmitted) {
+    return { finished: false, error: false };
+  }
+
+  const winnerId = await generateMatchResults(latestMatch.id);
+
+  if (!winnerId) {
+    return { finished: false, error: true };
+  }
+
+  const finalizedMatch = await finalizeMatch({
+    matchId: latestMatch.id,
+    reason: "traditional",
+    winnerId: winnerId === "none" ? null : winnerId,
+  });
+
+  if (!finalizedMatch) {
+    return {
+      finished: await hasMatchFinished(latestMatch.id),
+      error: false,
+    };
+  }
+
+  return { finished: true, error: false };
+};
 
 export const confirmExistingMatch = async (matchId: string) => {
   const [existingMatch] = await db
@@ -89,22 +174,36 @@ export const quitMatchAction = async (matchId: string) => {
   }
 
   const existingMatch = await db.query.MatchTable.findFirst({
-    where: and(
-      eq(MatchTable.id, matchId),
-      eq(MatchTable.status, "in-progress"),
-    ),
+    where: eq(MatchTable.id, matchId),
     with: {
       users: true,
     },
   });
 
-  if (
-    !existingMatch ||
-    !existingMatch.users.find((user) => user.userId === userId)
-  ) {
+  if (!existingMatch) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  const isMatchUser = existingMatch.users.some(
+    (user) => user.userId === userId,
+  );
+  if (!isMatchUser) {
     return {
       error: true,
       message: NO_PERMISSION_DATA_MESSAGE,
+    };
+  }
+
+  if (
+    existingMatch.status === "finished" ||
+    existingMatch.expiresAt <= new Date()
+  ) {
+    return {
+      error: false,
+      message: "This match has already ended.",
     };
   }
 
@@ -117,14 +216,22 @@ export const quitMatchAction = async (matchId: string) => {
   }
 
   try {
-    const upsertedResult = await upsertMatchResult({
+    const finalizedMatch = await finalizeMatch({
       matchId: existingMatch.id,
-      result: "completed",
       reason: "user_quit",
       winnerId: opponent.userId,
     });
 
-    if (!upsertedResult) throw new Error("Failed to quit match.");
+    if (!finalizedMatch) {
+      if (await hasMatchFinished(existingMatch.id)) {
+        return {
+          error: false,
+          message: "This match has already ended.",
+        };
+      }
+
+      throw new Error("Failed to quit match.");
+    }
 
     return {
       error: false,
@@ -149,7 +256,7 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
   }
 
   const existingMatch = await db.query.MatchTable.findFirst({
-    where: and(eq(MatchTable.id, matchId)),
+    where: eq(MatchTable.id, matchId),
     with: {
       users: true,
     },
@@ -168,7 +275,14 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
   if (existingMatch.status === "finished") {
     return {
       error: false,
-      message: "This match has ended.",
+      message: "This match has already ended.",
+    };
+  }
+
+  if (existingMatch.expiresAt > new Date()) {
+    return {
+      error: true,
+      message: "This match is still in progress.",
     };
   }
 
@@ -180,18 +294,26 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
   let winnerId = null;
   if (existingSubmission) {
     const winnerIdResponse = await generateMatchResults(existingMatch.id);
-    winnerId = winnerIdResponse ? winnerIdResponse : null;
+    winnerId = winnerIdResponse === "none" ? null : winnerIdResponse;
   }
 
   try {
-    const upsertedResult = await upsertMatchResult({
+    const finalizedMatch = await finalizeMatch({
       matchId: existingMatch.id,
-      result: "completed",
       reason: "timeout",
       winnerId,
     });
 
-    if (!upsertedResult) throw new Error("Failed to timeout match.");
+    if (!finalizedMatch) {
+      if (await hasMatchFinished(existingMatch.id)) {
+        return {
+          error: false,
+          message: "This match has already ended.",
+        };
+      }
+
+      throw new Error("Failed to timeout match.");
+    }
 
     return {
       error: false,
@@ -222,26 +344,50 @@ export const handleUserMatchWinAction = async (matchId: string) => {
     },
   });
 
-  const isMatchUser = existingMatch?.users.find(
-    (user) => user.userId === userId,
-  );
-
-  if (!existingMatch || !isMatchUser) {
+  if (!existingMatch) {
     return {
       error: true,
-      message: GENERAL_ERROR_MESSAGE,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  const isMatchUser = existingMatch.users.some(
+    (user) => user.userId === userId,
+  );
+  if (!isMatchUser) {
+    return {
+      error: true,
+      message: NO_PERMISSION_DATA_MESSAGE,
+    };
+  }
+
+  if (
+    existingMatch.status === "finished" ||
+    existingMatch.expiresAt <= new Date()
+  ) {
+    return {
+      error: false,
+      message: "This match has already ended.",
     };
   }
 
   try {
-    const upsertedResult = await upsertMatchResult({
+    const finalizedMatch = await finalizeMatch({
       matchId: existingMatch.id,
-      result: "completed",
       reason: "user_lost_connection",
       winnerId: userId,
     });
 
-    if (!upsertedResult) throw new Error("Something went wrong.");
+    if (!finalizedMatch) {
+      if (await hasMatchFinished(existingMatch.id)) {
+        return {
+          error: false,
+          message: "This match has already ended.",
+        };
+      }
+
+      throw new Error("Something went wrong.");
+    }
 
     return {
       error: false,
@@ -296,9 +442,21 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
       throw new Error("Failed to upsert match submission.");
     }
 
+    const finalizedMatch = await finalizeMatchIfAllUsersSubmitted(matchId);
+
+    if (finalizedMatch.error) {
+      return {
+        error: true,
+        message: "Code submitted, but failed to finish the match.",
+      };
+    }
+
     return {
       error: false,
-      message: "Code submitted successfully!",
+      message: finalizedMatch.finished
+        ? "Code submitted and match finished successfully!"
+        : "Code submitted successfully!",
+      matchFinished: finalizedMatch.finished,
     };
   } catch (error) {
     console.error(error);
@@ -309,7 +467,7 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
   }
 };
 
-export const isUserMatchActive = async (matchId: string) => {
+export const isUserMatchActiveAction = async (matchId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
 
@@ -326,7 +484,7 @@ export const isUserMatchActive = async (matchId: string) => {
   return userMatch ?? null;
 };
 
-export const getObservableMatches = async () => {
+export const getObservableMatchesAction = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return [];
 
@@ -378,4 +536,134 @@ export const getObservableMatches = async () => {
     );
 
   return matches;
+};
+
+export const getUserMatchesAction = async (filterOptions: {
+  search: string;
+  sortBy: UserMatchesSortByOptionType;
+  filterBy: UserMatchesFilterByOptions;
+  results: UserMatchesResultOptionType[];
+  completionReasons: MatchResultReasonType[];
+  page: number;
+}) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+
+  const { search, sortBy, filterBy, results, completionReasons, page } =
+    filterOptions;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const currentUserMatch = alias(UserMatchTable, "current_user_match");
+  const opponentUserMatch = alias(UserMatchTable, "opponent_user_match");
+
+  const sortByMap: Record<UserMatchesSortByOptionType, SQL<unknown>> = {
+    most_recent: desc(MatchTable.createdAt),
+    oldest: asc(MatchTable.createdAt),
+    expires_soon: asc(MatchTable.expiresAt),
+  };
+
+  const filterByMap: Record<
+    UserMatchesFilterByOptions,
+    SQL<unknown> | undefined
+  > = {
+    all: undefined,
+    completed: isNotNull(MatchResultTable.matchId),
+    in_progress: isNull(MatchResultTable.matchId),
+  };
+
+  const resultsMap: Record<
+    UserMatchesResultOptionType,
+    SQL<unknown> | undefined
+  > = {
+    won: eq(MatchResultTable.winnerId, userId),
+    lost: and(
+      isNotNull(MatchResultTable.winnerId),
+      not(eq(MatchResultTable.winnerId, userId)),
+    ),
+    no_winner: eq(MatchResultTable.result, "tie"),
+  };
+
+  const resultsFilter = results.length
+    ? or(...results.map((result) => resultsMap[result]))
+    : undefined;
+  const completionReasonsFilter = completionReasons.length
+    ? inArray(MatchResultTable.reason, completionReasons)
+    : undefined;
+
+  const matches = await db
+    .select({
+      ...getTableColumns(MatchTable),
+      result: getTableColumns(MatchResultTable),
+      opponent: getTableColumns(user),
+    })
+    .from(MatchTable)
+    .leftJoin(MatchResultTable, eq(MatchResultTable.matchId, MatchTable.id))
+    .innerJoin(
+      currentUserMatch,
+      and(
+        eq(currentUserMatch.matchId, MatchTable.id),
+        eq(currentUserMatch.userId, userId),
+      ),
+    )
+    .innerJoin(
+      opponentUserMatch,
+      and(
+        not(eq(opponentUserMatch.userId, userId)),
+        eq(opponentUserMatch.matchId, MatchTable.id),
+      ),
+    )
+    .innerJoin(user, eq(opponentUserMatch.userId, user.id))
+    .where(
+      and(
+        filterByMap[filterBy],
+        resultsFilter,
+        completionReasonsFilter,
+        search.trim() ? ilike(user.name, `%${search.trim()}%`) : undefined,
+      ),
+    )
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalMatches] = await db
+    .select({
+      count: count(),
+    })
+    .from(MatchTable)
+    .leftJoin(MatchResultTable, eq(MatchResultTable.matchId, MatchTable.id))
+    .innerJoin(
+      currentUserMatch,
+      and(
+        eq(currentUserMatch.matchId, MatchTable.id),
+        eq(currentUserMatch.userId, userId),
+      ),
+    )
+    .innerJoin(
+      opponentUserMatch,
+      and(
+        not(eq(opponentUserMatch.userId, userId)),
+        eq(opponentUserMatch.matchId, MatchTable.id),
+      ),
+    )
+    .innerJoin(user, eq(opponentUserMatch.userId, user.id))
+    .where(
+      and(
+        filterByMap[filterBy],
+        resultsFilter,
+        completionReasonsFilter,
+        search.trim() ? ilike(user.name, `%${search.trim()}%`) : undefined,
+      ),
+    );
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalMatches.count;
+
+  return {
+    matches,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };

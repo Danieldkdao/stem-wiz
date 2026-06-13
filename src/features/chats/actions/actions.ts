@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import {
   confirmExistingMatch,
-  isUserMatchActive,
+  isUserMatchActiveAction,
 } from "@/features/matches/actions/actions";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
@@ -65,7 +65,7 @@ export const createMatchChatMessageAction = async (
     };
   }
 
-  const userMatch = await isUserMatchActive(existingMatch.id);
+  const userMatch = await isUserMatchActiveAction(existingMatch.id);
   if (userMatch) {
     return {
       error: true,

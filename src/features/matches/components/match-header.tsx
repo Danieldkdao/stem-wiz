@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
+import { Separator } from "@/components/ui/separator";
 import {
   MatchResultTable,
   MatchSubmissionTable,
@@ -22,7 +23,6 @@ import {
   quitMatchAction,
 } from "../actions/actions";
 import { useMatchSocket } from "../hooks/use-match-socket";
-import { Separator } from "@/components/ui/separator";
 import { MatchFinishedDialog } from "./match-finished-dialog";
 
 export const MatchHeader = ({
@@ -49,7 +49,6 @@ export const MatchHeader = ({
     opponentStatus,
     lastEvent,
     subscribeMatchEvent,
-    broadcastMatchFinished,
   } = useMatchSocket();
   const [confirmationDialog, confirm] = useConfirm(
     "Confirm Leave",
@@ -148,7 +147,6 @@ export const MatchHeader = ({
 
     setIsEnding(true);
 
-    broadcastMatchFinished(match.id, "user_quit");
     const response = await quitMatchAction(match.id);
     if (response.error) {
       toast.error(response.message);
@@ -161,10 +159,11 @@ export const MatchHeader = ({
 
   const handleMatchTimeout = async () => {
     setIsEnding(true);
-    broadcastMatchFinished(match.id, "timeout");
+
     const response = await handleMatchTimeoutAction(match.id);
     if (response.error) {
       toast.error(response.message);
+      setIsEnding(false);
     } else {
       toast.success(response.message);
       router.push("/dashboard");
@@ -173,10 +172,11 @@ export const MatchHeader = ({
 
   const handleUserMatchWin = async () => {
     setIsEnding(true);
-    broadcastMatchFinished(match.id, "user_lost_connection");
+
     const response = await handleUserMatchWinAction(match.id);
     if (response.error) {
       toast.error(response.message);
+      setIsEnding(false);
     } else {
       toast.success(response.message);
       router.push("/dashboard");

@@ -24,6 +24,19 @@ export const useWaitingArenaSocket = () => {
     opponent: RealtimeUser;
   } | null>(null);
 
+  const clearMatch = useCallback(() => {
+    setMatch(null);
+  }, []);
+
+  const clearLastEvent = useCallback(() => {
+    setLastEvent(null);
+  }, []);
+
+  const clearWaitingState = useCallback(() => {
+    setMatch(null);
+    setLastEvent(null);
+  }, []);
+
   const connect = useCallback(async () => {
     if (
       socketRef.current?.readyState === WebSocket.OPEN ||
@@ -62,16 +75,18 @@ export const useWaitingArenaSocket = () => {
 
     socket.onerror = () => {
       setStatus("error");
+      clearWaitingState();
     };
 
     socket.onclose = () => {
       setStatus("closed");
+      clearWaitingState();
 
       if (socketRef.current === socket) {
         socketRef.current = null;
       }
     };
-  }, []);
+  }, [clearWaitingState]);
 
   const send = useCallback((message: ArenaClientMessage) => {
     if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
@@ -81,19 +96,22 @@ export const useWaitingArenaSocket = () => {
   }, []);
 
   const joinWaitingRoom = useCallback(() => {
+    clearWaitingState();
     return send({ type: "join_waiting_room" });
-  }, [send]);
+  }, [clearWaitingState, send]);
 
   const leaveWaitingRoom = useCallback(() => {
+    clearWaitingState();
     return send({ type: "leave_waiting_room" });
-  }, [send]);
+  }, [clearWaitingState, send]);
 
   useEffect(() => {
     return () => {
+      clearWaitingState();
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, []);
+  }, [clearWaitingState]);
 
   return {
     status,
@@ -102,5 +120,8 @@ export const useWaitingArenaSocket = () => {
     connect,
     joinWaitingRoom,
     leaveWaitingRoom,
+    clearMatch,
+    clearLastEvent,
+    clearWaitingState,
   };
 };

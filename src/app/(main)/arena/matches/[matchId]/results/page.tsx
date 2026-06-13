@@ -86,7 +86,8 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
 
   if (
     match.users.length !== match.submissions.length &&
-    match.expiresAt > new Date()
+    match.expiresAt > new Date() &&
+    match.status !== "finished"
   ) {
     return <div>still going on</div>;
   }
