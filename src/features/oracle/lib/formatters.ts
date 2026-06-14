@@ -1,6 +1,7 @@
 import { OracleSessionModeType, OracleSessionStatusType } from "@/db/shared";
 import { OracleSession } from "./types";
 import { getDuration } from "@/lib/utils";
+import { OracleSessionsSortByOptionsType } from "./params";
 
 export const formatOracleSessionMode = (mode: OracleSessionModeType) => {
   switch (mode) {
@@ -57,4 +58,25 @@ export const formatSessionDuration = (session: OracleSession) => {
   if (!session.startedAt) return "Not started";
 
   return getDuration(session.startedAt, session.completedAt ?? new Date());
+};
+
+export const formatOracleSessionSortByOptions = (
+  option: OracleSessionsSortByOptionsType,
+) => {
+  switch (option) {
+    case "longest_duration":
+      return "Longest duration";
+    case "most_problems":
+      return "Most problems";
+    case "most_recent":
+      return "Most recent";
+    case "oldest":
+      return "oldest";
+    case "recently_completed":
+      return "Recently completed";
+    default:
+      throw new Error(
+        `Unknown oracle session sort by option: ${option satisfies never}`,
+      );
+  }
 };

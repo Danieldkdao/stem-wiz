@@ -4,21 +4,37 @@ import { db, DbTransaction } from "@/db/db";
 import {
   ChatMessageTable,
   OracleProblemTable,
+  OracleSessionModeType,
+  OracleSessionStatusType,
   OracleSessionTable,
+  ProgrammingLanguageType,
 } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   INVALID_DATA_ERROR_MESSAGE,
   NOT_FOUND_ERROR_MESSAGE,
+  PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
 import {
   generateOracleSessionProblems,
   generateUserProblemSubmissionFeedback,
 } from "@/services/ai/oracle";
-import { and, asc, desc, eq } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+  SQL,
+} from "drizzle-orm";
 import { cacheTag } from "next/cache";
+import { OracleSessionsSortByOptionsType } from "../lib/params";
 import {
   getOracleSessionIdTag,
   getOracleSessionUserTag,
@@ -136,17 +152,80 @@ export const updateSessionAction = async (
   }
 };
 
-export const getUserSessionsAction = async (userId: string) => {
+export const getUserSessionsAction = async (
+  userId: string,
+  filterOptions: {
+    search: string;
+    sortBy: OracleSessionsSortByOptionsType;
+    languages: ProgrammingLanguageType[];
+    statuses: OracleSessionStatusType[];
+    modes: OracleSessionModeType[];
+    page: number;
+  },
+) => {
   "use cache";
   cacheTag(getOracleSessionUserTag(userId));
+
+  const { search, sortBy, languages, statuses, modes, page } = filterOptions;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const sessionDuration = sql<number>`EXTRACT(
+    EXPOCH FROM COALESCE(${OracleSessionTable.completedAt}, NOW()) - ${OracleSessionTable.startedAt}
+  )`;
+
+  const sortByMap: Record<OracleSessionsSortByOptionsType, SQL<unknown>> = {
+    most_recent: desc(OracleSessionTable.createdAt),
+    oldest: asc(OracleSessionTable.createdAt),
+    most_problems: desc(OracleSessionTable.numberOfProblems),
+    recently_completed: desc(OracleSessionTable.completedAt),
+    longest_duration: desc(sessionDuration),
+  };
+
+  const whereQuery = and(
+    eq(OracleSessionTable.userId, userId),
+    search.trim()
+      ? or(
+          ilike(OracleSessionTable.title, `%${search.trim()}%`),
+          ilike(OracleSessionTable.description, `%${search.trim()}%`),
+          ilike(
+            OracleSessionTable.additionalInstructions,
+            `%${search.trim()}%`,
+          ),
+        )
+      : undefined,
+    languages.length
+      ? inArray(OracleSessionTable.programmingLanguage, languages)
+      : undefined,
+    statuses.length ? inArray(OracleSessionTable.status, statuses) : undefined,
+    modes.length ? inArray(OracleSessionTable.mode, modes) : undefined,
+  );
 
   const userSessions = await db
     .select()
     .from(OracleSessionTable)
-    .where(eq(OracleSessionTable.userId, userId))
-    .orderBy(desc(OracleSessionTable.createdAt));
+    .where(whereQuery)
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(PAGE_SIZE);
 
-  return userSessions;
+  const [totalUserSessions] = await db
+    .select({
+      count: count(),
+    })
+    .from(OracleSessionTable)
+    .where(whereQuery);
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalUserSessions.count;
+
+  return {
+    userSessions,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };
 
 export const getOneSessionAction = async (
