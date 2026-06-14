@@ -19,7 +19,7 @@ export const USER_MATCHES_FILTER_BY_OPTIONS = [
   "completed",
   "in_progress",
 ] as const;
-export type UserMatchesFilterByOptions =
+export type UserMatchesFilterByOptionType =
   (typeof USER_MATCHES_FILTER_BY_OPTIONS)[number];
 
 export const USER_MATCHES_RESULT_OPTIONS = [
@@ -30,7 +30,7 @@ export const USER_MATCHES_RESULT_OPTIONS = [
 export type UserMatchesResultOptionType =
   (typeof USER_MATCHES_RESULT_OPTIONS)[number];
 
-export const filterSearchParams = {
+const filterSearchParams = {
   search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
   sortBy: parseAsStringEnum([...USER_MATCHES_SORT_BY_OPTIONS])
     .withDefault("most_recent")

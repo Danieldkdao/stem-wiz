@@ -42,7 +42,7 @@ import {
 import { alias } from "drizzle-orm/pg-core";
 import { headers } from "next/headers";
 import {
-  UserMatchesFilterByOptions,
+  UserMatchesFilterByOptionType,
   UserMatchesResultOptionType,
   UserMatchesSortByOptionType,
 } from "../lib/params";
@@ -133,7 +133,6 @@ export const checkExistingMatchAction = async ({
   const { userId } = await getCurrentUser();
   if (!userId) return;
 
-  // todo: maybe add a separate check for expiration to send down a specific error and display a better match timed out error on page
   const existingMatch = await db.query.MatchTable.findFirst({
     where: and(
       eq(MatchTable.id, id),
@@ -162,6 +161,57 @@ export const checkExistingMatchAction = async ({
 
   if (!existingMatch) return null;
   return existingMatch ?? null;
+};
+
+export const timeoutExpiredMatch = async (matchId: string) => {
+  const existingMatch = await db.query.MatchTable.findFirst({
+    where: eq(MatchTable.id, matchId),
+    with: {
+      users: {
+        with: {
+          user: true,
+        },
+      },
+      arenaProblem: true,
+      submissions: true,
+      result: true,
+    },
+  });
+
+  if (!existingMatch) return null;
+  if (
+    existingMatch.status === "finished" ||
+    (existingMatch.users.length !== existingMatch.submissions.length &&
+      existingMatch.expiresAt > new Date() &&
+      existingMatch.status === "in-progress")
+  )
+    return existingMatch;
+
+  let winnerId: string | null = null;
+  if (existingMatch.submissions.length > 0) {
+    const generatedWinnerId = await generateMatchResults(matchId);
+    winnerId = generatedWinnerId === "none" ? null : generatedWinnerId;
+  }
+
+  await finalizeMatch({
+    matchId: existingMatch.id,
+    reason: "timeout",
+    winnerId,
+  });
+
+  return db.query.MatchTable.findFirst({
+    where: eq(MatchTable.id, matchId),
+    with: {
+      users: {
+        with: {
+          user: true,
+        },
+      },
+      arenaProblem: true,
+      submissions: true,
+      result: true,
+    },
+  });
 };
 
 export const quitMatchAction = async (matchId: string) => {
@@ -541,7 +591,7 @@ export const getObservableMatchesAction = async () => {
 export const getUserMatchesAction = async (filterOptions: {
   search: string;
   sortBy: UserMatchesSortByOptionType;
-  filterBy: UserMatchesFilterByOptions;
+  filterBy: UserMatchesFilterByOptionType;
   results: UserMatchesResultOptionType[];
   completionReasons: MatchResultReasonType[];
   page: number;
@@ -564,7 +614,7 @@ export const getUserMatchesAction = async (filterOptions: {
   };
 
   const filterByMap: Record<
-    UserMatchesFilterByOptions,
+    UserMatchesFilterByOptionType,
     SQL<unknown> | undefined
   > = {
     all: undefined,

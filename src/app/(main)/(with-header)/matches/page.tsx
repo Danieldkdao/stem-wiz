@@ -1,4 +1,5 @@
 import { getUserMatchesAction } from "@/features/matches/actions/actions";
+import { UserMatchFilters } from "@/features/matches/components/user-match-filters";
 import { UserMatchInfiniteCardList } from "@/features/matches/components/user-match-infinite-card-list";
 import { loadUserMatchSearchParams } from "@/features/matches/lib/params";
 import { DEFAULT_PAGE } from "@/lib/constants";
@@ -41,6 +42,7 @@ const UserMatchesSuspense = async ({
 
   return (
     <div className="flex flex-col gap-6 w-full">
+      <UserMatchFilters />
       <UserMatchInfiniteCardList
         initialMatches={matches}
         initialHasNextPage={metadata.hasNextPage}

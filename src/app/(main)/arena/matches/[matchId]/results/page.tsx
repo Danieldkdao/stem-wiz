@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { checkExistingMatchAction } from "@/features/matches/actions/actions";
+import { timeoutExpiredMatch } from "@/features/matches/actions/actions";
 import { auth } from "@/lib/auth/auth";
 import { ParamsId } from "@/lib/types";
 import { headers } from "next/headers";
@@ -75,10 +75,7 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
   const { matchId } = await params;
-  const match = await checkExistingMatchAction({
-    id: matchId,
-    forResults: true,
-  });
+  const match = await timeoutExpiredMatch(matchId);
 
   if (!match) {
     return <div>reusable match not found component</div>;

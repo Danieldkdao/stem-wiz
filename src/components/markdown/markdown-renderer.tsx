@@ -5,7 +5,13 @@ import "@uiw/react-md-editor/markdown-editor.css";
 import "katex/dist/katex.min.css";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
-import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { rehypeKatexOptions } from "./katex-config";
@@ -15,6 +21,7 @@ import {
   rehypeSanitize,
 } from "./callouts";
 import { MarkdownImage } from "./markdown-image";
+import { Skeleton } from "../ui/skeleton";
 
 const markdownThemeVars = {
   "--color-canvas-default": "transparent",
@@ -98,10 +105,7 @@ const markdownComponents = {
     </ol>
   ),
   li: ({ children, ...props }: ComponentPropsWithoutRef<"li">) => (
-    <li
-      {...props}
-      className="wrap-anywhere pl-1 leading-7"
-    >
+    <li {...props} className="wrap-anywhere pl-1 leading-7">
       {children}
     </li>
   ),
@@ -204,18 +208,18 @@ type MarkdownRendererVariant =
   | "default"
   | keyof typeof markdownTextVariantClassNames;
 
-const createMarkdownTextVariantBlock =
-  (className: string, displayName: string) => {
-    const MarkdownTextVariantBlock = ({
-      children,
-    }: {
-      children?: ReactNode;
-    }) => <p className={className}>{children}</p>;
+const createMarkdownTextVariantBlock = (
+  className: string,
+  displayName: string,
+) => {
+  const MarkdownTextVariantBlock = ({ children }: { children?: ReactNode }) => (
+    <p className={className}>{children}</p>
+  );
 
-    MarkdownTextVariantBlock.displayName = displayName;
+  MarkdownTextVariantBlock.displayName = displayName;
 
-    return MarkdownTextVariantBlock;
-  };
+  return MarkdownTextVariantBlock;
+};
 
 const createMarkdownTextVariantComponents = (
   className: string,
@@ -273,6 +277,13 @@ export const MarkdownRenderer = ({
   const textVariantComponents =
     variant !== "default" ? markdownTextVariantComponents[variant] : undefined;
   const isCompactVariant = variant !== "default";
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) return <Skeleton className="w-full h-100 rounded-lg" />;
 
   return (
     <div

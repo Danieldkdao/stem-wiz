@@ -24,6 +24,8 @@ import {
 } from "../actions/actions";
 import { useMatchSocket } from "../hooks/use-match-socket";
 import { MatchFinishedDialog } from "./match-finished-dialog";
+import { TooltipWrapper } from "@/components/tooltip-wrapper";
+import Link from "next/link";
 
 export const MatchHeader = ({
   match,
@@ -253,7 +255,10 @@ export const MatchHeader = ({
             </div>
           </div>
 
-          <div className="flex justify-end items-center">
+          <div className="flex justify-end items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/matches">Back to matches</Link>
+            </Button>
             <Button
               variant="destructive"
               disabled={isEnding || opponentStatus === "disconnected"}

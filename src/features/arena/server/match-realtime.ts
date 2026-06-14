@@ -68,7 +68,7 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
     (matchUser) => matchUser.userId !== userId,
   );
 
-  if (!opponent) {
+  if (!opponent || !activeMatchesByUser.get(opponent.userId)?.isConnected) {
     sendToConnection(ws.id, { type: "opponent_left_match" });
   }
 
