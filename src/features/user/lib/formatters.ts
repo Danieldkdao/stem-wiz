@@ -17,12 +17,16 @@ import {
   HasPortfolioUrlFilterOptionType,
 } from "./params";
 import type { User } from "@/lib/auth/auth";
+import {
+  FriendChatsFilterByOptionType,
+  FriendChatsSortByOptionType,
+} from "@/features/chats/lib/friend-chat-params";
 
 export type DiscoverUsersPromptUser = User & {
   profile: typeof UserProfileTable.$inferSelect;
 };
 
-export const formatPromptValue = (value: unknown) => {
+const formatPromptValue = (value: unknown) => {
   if (value == null || value === "") return "Not provided";
   if (Array.isArray(value)) return value.length ? value.join(", ") : "None";
   if (value instanceof Date) return value.toISOString();
@@ -292,6 +296,46 @@ export const formatCommunityGithubFilterOptions = (
     default:
       throw new Error(
         `Unknown community Github filter option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const formatFriendChatSortByOptions = (
+  option: FriendChatsSortByOptionType,
+) => {
+  switch (option) {
+    case "friend_name":
+      return "Friend name";
+    case "most_messages":
+      return "Most messages";
+    case "most_recent":
+      return "Most recent";
+    case "most_recent_activity":
+      return "Most recent activity";
+    case "oldest":
+      return "Oldest";
+    case "oldest_activity":
+      return "Oldest activity";
+    default:
+      throw new Error(
+        `Unknown friend chat sort by option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const formatFriendChatFilterByOptions = (
+  option: FriendChatsFilterByOptionType,
+) => {
+  switch (option) {
+    case "all":
+      return "All";
+    case "empty":
+      return "Empty";
+    case "has_messages":
+      return "Has messages";
+    default:
+      throw new Error(
+        `Unknown friend chat filter by option: ${option satisfies never}`,
       );
   }
 };

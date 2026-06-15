@@ -19,7 +19,7 @@ import { programmingLanguages, ProgrammingLanguageType } from "@/db/shared";
 import { useObservableMatchParams } from "@/features/matches/hooks/use-observable-match-params";
 import { formatUserMatchSortByOptions } from "@/features/matches/lib/formatters";
 import { USER_MATCHES_SORT_BY_OPTIONS } from "@/features/matches/lib/params";
-import { formatProgrammingLanguage } from "../lib/formatters";
+import { formatProgrammingLanguage } from "../../user/lib/formatters";
 
 export const ObservableMatchFilters = () => {
   const [filters, setFilters] = useObservableMatchParams();
@@ -30,6 +30,7 @@ export const ObservableMatchFilters = () => {
         <SearchInput
           initialSearch={filters.search}
           onValueChange={(search) => setFilters({ ...filters, search })}
+          placeholder="Search by participant name..."
         />
       </div>
       <div className="flex items-center gap-2 flex-wrap">

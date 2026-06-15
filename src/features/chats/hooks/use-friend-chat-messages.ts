@@ -6,13 +6,13 @@ import { useFriendChatSocket } from "./use-friend-chat-socket";
 import { User } from "@/lib/auth/auth";
 
 export const useFriendChatMessages = (
-  initialMessages?: (typeof ChatMessageTable.$inferSelect & { user: User })[],
+  initialMessages: (typeof ChatMessageTable.$inferSelect & { user: User })[],
 ) => {
-  const [chatMessages, setChatMessages] = useState(initialMessages ?? []);
+  const [chatMessages, setChatMessages] = useState(initialMessages);
   const { subscribeChatEvent } = useFriendChatSocket();
 
   useEffect(() => {
-    setChatMessages(initialMessages ?? []);
+    setChatMessages(initialMessages);
   }, [initialMessages]);
 
   useEffect(() => {

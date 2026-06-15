@@ -3,8 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getObservableMatchesAction } from "@/features/matches/actions/actions";
 import { MatchObserverListStatus } from "@/features/matches/components/match-observer-list-status";
 import { loadObservableMatchSearchParams } from "@/features/matches/lib/observable-params";
-import { ObservableMatchFilters } from "@/features/user/components/observable-match-filters";
-import { ObservableMatchInfiniteCardGrid } from "@/features/user/components/observable-match-infinite-card-grid";
+import { ObservableMatchFilters } from "@/features/matches/components/observable-match-filters";
+import { ObservableMatchInfiniteCardGrid } from "@/features/matches/components/observable-match-infinite-card-grid";
 import { DEFAULT_PAGE } from "@/lib/constants";
 import { connection } from "next/server";
 import { SearchParams } from "nuqs";
@@ -33,11 +33,14 @@ const ObserveMatchesListPage = (props: ObserveMatchesListParams) => {
 
 const ObserveMatchesListLoading = () => {
   return (
-    <div className="flex flex-col gap-4 py-10 px-6 w-full h-full overflow-auto">
-      <div className="flex flex-col gap-2 items-center">
-        <Skeleton className="h-7 w-32" />
-        <Skeleton className="h-8 w-28" />
-        <Skeleton className="h-4 w-full max-w-96" />
+    <div className="flex flex-col gap-6 mx-auto w-full max-w-300">
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-12 w-full rounded-md" />
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Skeleton className="h-9 w-32 rounded-md" />
+          <Skeleton className="h-9 w-72 rounded-md" />
+        </div>
       </div>
 
       <div className="w-full mx-auto max-w-300 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

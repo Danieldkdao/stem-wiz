@@ -4,7 +4,6 @@ import { DEFAULT_PAGE } from "@/lib/constants";
 import { changeObjectValues } from "@/lib/utils";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { getObservableMatchesAction } from "../actions/actions";
-import { ObservableMatchCard } from "../components/observable-match-card";
 import { useMatchObserverSocket } from "./use-match-observer-socket";
 import { useObservableMatchParams } from "./use-observable-match-params";
 
@@ -92,5 +91,5 @@ export const useObservableMatches = (
     };
   }, [subscribeObserverEvent]);
 
-  return observableMatches;
+  return { observableMatches, sentinelRef, isPending };
 };

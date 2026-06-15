@@ -1,13 +1,13 @@
 "use client";
 
+import { NotFound } from "@/components/not-found";
 import { OracleSessionTable } from "@/db/schema";
-import { useOracleSessionParams } from "../hooks/use-oracle-session-params";
-import { useEffect, useRef, useState, useTransition } from "react";
 import { DEFAULT_PAGE } from "@/lib/constants";
+import { Loader2Icon } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { getUserSessionsAction } from "../actions/actions";
+import { useOracleSessionParams } from "../hooks/use-oracle-session-params";
 import { OracleSessionCard } from "./oracle-session-card";
-import { Card, CardContent } from "@/components/ui/card";
-import { SearchXIcon } from "lucide-react";
 
 export const OracleSessionInfiniteCardGrid = ({
   initialOracleSessions,
@@ -62,24 +62,27 @@ export const OracleSessionInfiniteCardGrid = ({
     return () => observer.disconnect();
   }, [filters, page, hasNextPage, isPending]);
 
-  return oracleSessions.length ? (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {oracleSessions.map((session) => (
-        <OracleSessionCard key={session.id} session={session} />
-      ))}
+  return (
+    <div className="w-full">
+      {oracleSessions.length ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {oracleSessions.map((session) => (
+            <OracleSessionCard key={session.id} session={session} />
+          ))}
+        </div>
+      ) : (
+        <NotFound
+          title="No sessions found"
+          description="We couldn't find any sessions that match the current filters. Try
+          changing the filters or starting a new session."
+        />
+      )}
+      <div ref={sentinelRef} className="h-1 w-full bg-transparent" />
+      {isPending && (
+        <div className="flex items-center justify-center">
+          <Loader2Icon className="text-primary animate-spin" />
+        </div>
+      )}
     </div>
-  ) : (
-    <Card className="ring-0 border-4 border-dashed bg-card/75">
-      <CardContent className="flex flex-col items-center gap-2 py-4 w-full">
-        <SearchXIcon className="size-10" />
-        <h1 className="text-3xl font-semibold text-center">
-          No sessions found
-        </h1>
-        <p className="text-muted-foreground text-lg text-center max-w-150">
-          We couldn't find any sessions that match the current filters. Try
-          changing the filters or starting a new session.
-        </p>
-      </CardContent>
-    </Card>
   );
 };

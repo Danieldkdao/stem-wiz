@@ -11,25 +11,35 @@ import {
   confirmExistingMatch,
   isUserMatchActiveAction,
 } from "@/features/matches/actions/actions";
+import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   INVALID_DATA_ERROR_MESSAGE,
   NO_PERMISSION_DATA_MESSAGE,
   NOT_FOUND_ERROR_MESSAGE,
+  PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
+  exists,
   getTableColumns,
+  ilike,
   inArray,
   isNotNull,
   or,
+  SQL,
   sql,
 } from "drizzle-orm";
+import {
+  FriendChatsFilterByOptionType,
+  FriendChatsSortByOptionType,
+} from "../lib/friend-chat-params";
 import {
   deleteChatMessageDb,
   insertChatMessageDb,
@@ -42,8 +52,6 @@ import {
   friendChatSchema,
   FriendChatSchemaType,
 } from "./schemas";
-import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
-import { formatDate } from "@/features/oracle/lib/formatters";
 
 export const createMatchChatMessageAction = async (
   matchId: string,
@@ -287,9 +295,14 @@ export const updateFriendChatAction = async (
   }
 };
 
-export const getFriendChats = async () => {
+export const getFriendChatsAction = async (filterOptions: {
+  search: string;
+  sortBy: FriendChatsSortByOptionType;
+  filterBy: FriendChatsFilterByOptionType;
+  page: number;
+}) => {
   const { userId } = await getCurrentUser();
-  if (!userId) return [];
+  if (!userId) return null;
 
   const friendRequests = await db.query.FriendRequestTable.findMany({
     where: and(
@@ -301,17 +314,75 @@ export const getFriendChats = async () => {
     ),
   });
 
-  if (!friendRequests.length) return [];
+  if (!friendRequests.length) return null;
+
+  const { search, sortBy, filterBy, page } = filterOptions;
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const messageCount = sql<number>`(
+        SELECT COUNT(*)
+        FROM ${ChatMessageTable} cmt
+        WHERE cmt.chat_id = ${ChatTable.id}
+      )`;
+
+  const latestActivityAt = sql`
+    COALESCE(
+      SELECT MAX(${ChatMessageTable.createdAt})
+      FROM ${ChatMessageTable}
+      WHERE ${ChatMessageTable.chatId} = ${ChatTable.id}
+    )
+  `;
+
+  const sortByMap: Record<FriendChatsSortByOptionType, SQL<unknown>> = {
+    most_recent: desc(ChatTable.createdAt),
+    oldest: asc(ChatTable.createdAt),
+    most_recent_activity: desc(latestActivityAt),
+    oldest_activity: asc(latestActivityAt),
+    friend_name: asc(user.name),
+    most_messages: desc(messageCount),
+  };
+
+  const filterByMap: Record<
+    FriendChatsFilterByOptionType,
+    SQL<unknown> | undefined
+  > = {
+    all: undefined,
+    empty: sql`${messageCount} = 0`,
+    has_messages: sql`${messageCount} > 0`,
+  };
+
+  const searchQuery = search.trim()
+    ? or(
+        ilike(user.name, `%${search.trim()}%`),
+        ilike(ChatTable.title, `%${search.trim()}%`),
+        exists(
+          db
+            .select()
+            .from(ChatMessageTable)
+            .where(
+              and(
+                eq(ChatMessageTable.chatId, ChatTable.id),
+                ilike(ChatMessageTable.text, `%${search.trim()}%`),
+              ),
+            ),
+        ),
+      )
+    : undefined;
+
+  const whereQuery = and(
+    inArray(
+      ChatTable.friendRequestId,
+      friendRequests.map((fr) => fr.id),
+    ),
+    filterByMap[filterBy],
+    searchQuery,
+  );
 
   const chats = await db
     .select({
       ...getTableColumns(ChatTable),
       user: getTableColumns(user),
-      messageCount: sql<number>`(
-        SELECT COUNT(*)
-        FROM ${ChatMessageTable} cmt
-        WHERE cmt.chat_id = ${ChatTable.id}
-      )`,
+      messageCount,
     })
     .from(ChatTable)
     .innerJoin(
@@ -331,15 +402,45 @@ export const getFriendChats = async () => {
         ),
       ),
     )
-    .where(
-      inArray(
-        ChatTable.friendRequestId,
-        friendRequests.map((fr) => fr.id),
+    .where(whereQuery)
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalFriendChats] = await db
+    .select({
+      count: count(),
+    })
+    .from(ChatTable)
+    .innerJoin(
+      FriendRequestTable,
+      eq(ChatTable.friendRequestId, FriendRequestTable.id),
+    )
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendRequestTable.fromUserId, userId),
+          eq(FriendRequestTable.toUserId, user.id),
+        ),
+        and(
+          eq(FriendRequestTable.toUserId, userId),
+          eq(FriendRequestTable.fromUserId, user.id),
+        ),
       ),
     )
-    .orderBy(desc(ChatTable.createdAt));
+    .where(whereQuery);
 
-  return chats;
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalFriendChats.count;
+
+  return {
+    chats,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };
 
 export const getFriendChatAction = async (chatId: string) => {
