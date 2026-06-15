@@ -1,9 +1,11 @@
+import { ErrorState } from "@/components/error-state";
+import { CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth/helpers";
+import { DEFAULT_PAGE } from "@/lib/constants";
 import { Suspense } from "react";
 import { getFriendChatMessagesAction } from "../actions/actions";
 import { FriendChatMessageListClient } from "./friend-chat-message-list-client";
-import { CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type FriendChatMessageListProps = { chatId: string; friendRequestId: string };
 
@@ -47,14 +49,26 @@ const FriendChatMessageListSuspense = async ({
 }: FriendChatMessageListProps) => {
   const { userId } = await getCurrentUser();
   if (!userId) return null;
-  const chatMessages = await getFriendChatMessagesAction(
+  const response = await getFriendChatMessagesAction(
     chatId,
     friendRequestId,
+    DEFAULT_PAGE,
   );
-  if (!chatMessages) return <div>not found</div>;
+  if (!response)
+    return (
+      <ErrorState
+        title="Failed to fetch messages"
+        description="We were unable to get the messages from this chat. Try refreshing the page or come back later."
+      />
+    );
+
+  const { chatMessages, metadata } = response;
+
   return (
     <FriendChatMessageListClient
       initialMessages={chatMessages}
+      initialHasNextPage={metadata.hasNextPage}
+      chatId={chatId}
       friendRequestId={friendRequestId}
       userId={userId}
     />

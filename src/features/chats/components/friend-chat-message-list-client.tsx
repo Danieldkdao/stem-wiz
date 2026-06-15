@@ -6,19 +6,28 @@ import { User } from "@/lib/auth/auth";
 import { useFriendChatMessages } from "../hooks/use-friend-chat-messages";
 import { useEffect, useRef } from "react";
 import { CardContent } from "@/components/ui/card";
-import { MessageSquareXIcon } from "lucide-react";
+import { Loader2Icon, MessageSquareXIcon } from "lucide-react";
 
 export const FriendChatMessageListClient = ({
   initialMessages,
+  initialHasNextPage,
+  chatId,
   friendRequestId,
   userId,
 }: {
   initialMessages: (typeof ChatMessageTable.$inferSelect & { user: User })[];
+  initialHasNextPage: boolean;
+  chatId: string;
   friendRequestId: string;
   userId: string;
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const chatMessages = useFriendChatMessages(initialMessages);
+  const { chatMessages, sentinelRef, isPending } = useFriendChatMessages(
+    initialMessages,
+    initialHasNextPage,
+    chatId,
+    friendRequestId,
+  );
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -58,6 +67,12 @@ export const FriendChatMessageListClient = ({
           </div>
         )}
       </div>
+      <div ref={sentinelRef} className="h-1 w-full bg-transparent" />
+      {isPending && (
+        <div className="flex items-center justify-center">
+          <Loader2Icon className="text-primary animate-spin" />
+        </div>
+      )}
     </CardContent>
   );
 };

@@ -1,19 +1,63 @@
 "use client";
 
 import { ChatMessageTable } from "@/db/schema";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useFriendChatSocket } from "./use-friend-chat-socket";
 import { User } from "@/lib/auth/auth";
+import { DEFAULT_PAGE } from "@/lib/constants";
+import { getFriendChatMessagesAction } from "../actions/actions";
 
 export const useFriendChatMessages = (
   initialMessages: (typeof ChatMessageTable.$inferSelect & { user: User })[],
+  initialHasNextPage: boolean,
+  chatId: string,
+  friendRequestId: string,
 ) => {
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [chatMessages, setChatMessages] = useState(initialMessages);
+  const [page, setPage] = useState(DEFAULT_PAGE);
+  const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
+  const [isPending, startTransition] = useTransition();
   const { subscribeChatEvent } = useFriendChatSocket();
 
   useEffect(() => {
     setChatMessages(initialMessages);
-  }, [initialMessages]);
+    setPage(DEFAULT_PAGE);
+    setHasNextPage(initialHasNextPage);
+  }, [initialMessages, initialHasNextPage]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || isPending || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+
+        startTransition(async () => {
+          const nextPage = page + 1;
+
+          const response = await getFriendChatMessagesAction(
+            chatId,
+            friendRequestId,
+            nextPage,
+          );
+          if (!response) return;
+
+          const { chatMessages, metadata } = response;
+
+          setChatMessages((prev) => [...prev, ...chatMessages]);
+          setPage(nextPage);
+          setHasNextPage(metadata.hasNextPage);
+        });
+      },
+      { rootMargin: "400px" },
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [page, hasNextPage, isPending, chatId, friendRequestId]);
 
   useEffect(() => {
     const unsubscribers = [
@@ -66,5 +110,5 @@ export const useFriendChatMessages = (
     };
   }, [subscribeChatEvent]);
 
-  return chatMessages;
+  return { chatMessages, sentinelRef, isPending };
 };

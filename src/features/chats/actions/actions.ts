@@ -494,6 +494,7 @@ export const getFriendChatAction = async (chatId: string) => {
 export const getFriendChatMessagesAction = async (
   chatId: string,
   friendRequestId: string,
+  page: number,
 ) => {
   const { userId } = await getCurrentUser();
   if (!userId) return null;
@@ -537,6 +538,8 @@ export const getFriendChatMessagesAction = async (
 
   if (!existingFriendRequest) return null;
 
+  const offset = (page - 1) * PAGE_SIZE;
+
   const chatMessages = await db
     .select({
       ...getTableColumns(ChatMessageTable),
@@ -551,9 +554,34 @@ export const getFriendChatMessagesAction = async (
         isNotNull(ChatMessageTable.userId),
       ),
     )
-    .orderBy(asc(ChatMessageTable.createdAt));
+    .orderBy(asc(ChatMessageTable.createdAt))
+    .offset(offset)
+    .limit(PAGE_SIZE);
 
-  return chatMessages;
+  const [totalMessages] = await db
+    .select({
+      count: count(),
+    })
+    .from(ChatMessageTable)
+    .innerJoin(user, eq(user.id, ChatMessageTable.userId))
+    .where(
+      and(
+        eq(ChatMessageTable.chatId, existingChat.id),
+        eq(ChatMessageTable.role, "user"),
+        isNotNull(ChatMessageTable.userId),
+      ),
+    );
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalMessages.count;
+
+  return {
+    chatMessages,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };
 
 export const sendFriendChatMessageAction = async (
