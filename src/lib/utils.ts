@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { FieldError } from "react-hook-form";
 import { twMerge } from "tailwind-merge";
+import { DeepKeys } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -60,4 +61,31 @@ export const getDuration = (
   if (seconds) parts.push(`${seconds} sec`);
 
   return parts.join(" ");
+};
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value != null && !Array.isArray(value);
+};
+
+export const changeObjectValues = <T>(
+  value: T,
+  fieldNames: DeepKeys<T>[],
+  changeFunction: (arg: unknown) => unknown,
+): T => {
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      changeObjectValues(item, fieldNames, changeFunction),
+    ) as T;
+  }
+  if (!isPlainObject(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, value]) => {
+      if (fieldNames.includes(key as DeepKeys<T>)) {
+        return [key, changeFunction(value)];
+      }
+      return [
+        key,
+        changeObjectValues<T>(value as T, fieldNames, changeFunction),
+      ];
+    }),
+  ) as T;
 };

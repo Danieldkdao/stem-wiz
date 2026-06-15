@@ -7,6 +7,7 @@ import {
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
+  ProgrammingLanguageType,
   user,
   UserMatchTable,
 } from "@/db/schema";
@@ -534,9 +535,61 @@ export const isUserMatchActiveAction = async (matchId: string) => {
   return userMatch ?? null;
 };
 
-export const getObservableMatchesAction = async () => {
+export const getObservableMatchesAction = async (filterOptions: {
+  search: string;
+  sortBy: UserMatchesSortByOptionType;
+  languages: ProgrammingLanguageType[];
+  page: number;
+}) => {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return [];
+  if (!session) return null;
+
+  const { search, sortBy, languages, page } = filterOptions;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const sortByMap: Record<UserMatchesSortByOptionType, SQL<unknown>> = {
+    most_recent: desc(MatchTable.createdAt),
+    oldest: asc(MatchTable.createdAt),
+    expires_soon: asc(MatchTable.expiresAt),
+  };
+
+  const searchQuery = search.trim()
+    ? exists(
+        db
+          .select()
+          .from(UserMatchTable)
+          .innerJoin(user, eq(user.id, UserMatchTable.userId))
+          .where(
+            and(
+              eq(UserMatchTable.matchId, MatchTable.id),
+              ilike(user.name, `%${search.trim()}%`),
+            ),
+          ),
+      )
+    : undefined;
+
+  const whereQuery = and(
+    eq(MatchTable.status, "in-progress"),
+    not(
+      exists(
+        db
+          .select()
+          .from(UserMatchTable)
+          .where(
+            and(
+              eq(UserMatchTable.matchId, MatchTable.id),
+              eq(UserMatchTable.userId, session.user.id),
+            ),
+          ),
+      ),
+    ),
+    gt(MatchTable.expiresAt, new Date()),
+    languages.length
+      ? inArray(ArenaProblemTable.programmingLanguage, languages)
+      : undefined,
+    searchQuery,
+  );
 
   const matches = await db
     .select({
@@ -565,27 +618,32 @@ export const getObservableMatchesAction = async () => {
       ArenaProblemTable,
       eq(ArenaProblemTable.id, MatchTable.problemId),
     )
-    .where(
-      and(
-        eq(MatchTable.status, "in-progress"),
-        not(
-          exists(
-            db
-              .select()
-              .from(UserMatchTable)
-              .where(
-                and(
-                  eq(UserMatchTable.matchId, MatchTable.id),
-                  eq(UserMatchTable.userId, session.user.id),
-                ),
-              ),
-          ),
-        ),
-        gt(MatchTable.expiresAt, new Date()),
-      ),
-    );
+    .where(whereQuery)
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(PAGE_SIZE);
 
-  return matches;
+  const [totalMatches] = await db
+    .select({
+      count: count(),
+    })
+    .from(MatchTable)
+    .innerJoin(
+      ArenaProblemTable,
+      eq(ArenaProblemTable.id, MatchTable.problemId),
+    )
+    .where(whereQuery);
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalMatches.count;
+
+  return {
+    matches,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };
 
 export const getUserMatchesAction = async (filterOptions: {

@@ -14,3 +14,9 @@ export type SearchOption = {
 };
 
 export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
+
+export type DeepKeys<T> = T extends object
+  ? {
+      [K in keyof T]: K | DeepKeys<T[K]>;
+    }[keyof T]
+  : never;

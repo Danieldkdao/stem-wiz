@@ -1,15 +1,33 @@
+import { ErrorState } from "@/components/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getObservableMatchesAction } from "@/features/matches/actions/actions";
 import { MatchObserverListStatus } from "@/features/matches/components/match-observer-list-status";
-import { ObservableMatchCard } from "@/features/matches/components/observable-match-card";
+import { loadObservableMatchSearchParams } from "@/features/matches/lib/observable-params";
+import { ObservableMatchFilters } from "@/features/user/components/observable-match-filters";
+import { ObservableMatchInfiniteCardGrid } from "@/features/user/components/observable-match-infinite-card-grid";
+import { DEFAULT_PAGE } from "@/lib/constants";
 import { connection } from "next/server";
+import { SearchParams } from "nuqs";
 import { Suspense } from "react";
 
-const ObserveMatchesListPage = () => {
+type ObserveMatchesListParams = {
+  searchParams: Promise<SearchParams>;
+};
+
+const ObserveMatchesListPage = (props: ObserveMatchesListParams) => {
   return (
-    <Suspense fallback={<ObserveMatchesListLoading />}>
-      <ObserverMatchesListSuspense />
-    </Suspense>
+    <div className="flex flex-col gap-4 py-10 px-6 w-full h-full overflow-auto">
+      <div className="flex flex-col gap-2 items-center">
+        <MatchObserverListStatus />
+        <h1 className="text-2xl font-semibold text-center">Observe</h1>
+        <p className="text-muted-foreground text-center">
+          Find some ongoing matches to jump into and observe.
+        </p>
+      </div>
+      <Suspense fallback={<ObserveMatchesListLoading />}>
+        <ObserverMatchesListSuspense {...props} />
+      </Suspense>
+    </div>
   );
 };
 
@@ -58,36 +76,33 @@ const ParticipantSkeleton = () => {
   );
 };
 
-const ObserverMatchesListSuspense = async () => {
+const ObserverMatchesListSuspense = async ({
+  searchParams,
+}: ObserveMatchesListParams) => {
   await connection();
-  const matches = await getObservableMatchesAction();
+
+  const filters = await loadObservableMatchSearchParams(searchParams);
+  const response = await getObservableMatchesAction({
+    ...filters,
+    page: DEFAULT_PAGE,
+  });
+  if (!response)
+    return (
+      <ErrorState
+        title="Fetch error"
+        description="Failed to fetch current observable matches. Try refreshing the page or come back another time."
+      />
+    );
+
+  const { matches, metadata } = response;
 
   return (
-    <div className="flex flex-col gap-4 py-10 px-6 w-full h-full overflow-auto">
-      <div className="flex flex-col gap-2 items-center">
-        <MatchObserverListStatus />
-        <h1 className="text-2xl font-semibold text-center">Observe</h1>
-        <p className="text-muted-foreground text-center">
-          Find some ongoing matches to jump into and observe.
-        </p>
-      </div>
-
-      {matches.length ? (
-        <div className="w-full mx-auto max-w-300 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-          {matches.map((match) => (
-            <ObservableMatchCard key={match.id} match={match} />
-          ))}
-        </div>
-      ) : (
-        <div className="w-full mx-auto max-w-300 rounded-md border-2 border-dashed bg-card/75 p-10 flex flex-col gap-2">
-          <h1 className="text-xl font-medium text-center">No Matches Found</h1>
-          <p className="text-muted-foreground text-center">
-            Looks like there are no matches going on right now. Try waiting
-            around a bit more or coming back later to see if any new matches
-            have started.
-          </p>
-        </div>
-      )}
+    <div className="flex flex-col gap-6 mx-auto w-full max-w-300">
+      <ObservableMatchFilters />
+      <ObservableMatchInfiniteCardGrid
+        initialMatches={matches}
+        hasNextPage={metadata.hasNextPage}
+      />
     </div>
   );
 };

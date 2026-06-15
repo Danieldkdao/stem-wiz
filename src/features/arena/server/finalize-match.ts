@@ -56,6 +56,10 @@ export const finalizeMatch = async ({
   usersInObservingRoom.forEach((userId) => {
     sendToUser(userId, {
       type: "observable_match_count_updated",
+      payload: {
+        type: "removed",
+        matchId: existingMatch.id,
+      },
     });
   });
 

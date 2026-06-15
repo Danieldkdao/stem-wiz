@@ -194,8 +194,25 @@ const tryPairUsers = async (
         },
       });
     });
-    usersInObservingRoom.forEach((userId) => {
-      sendToUser(userId, { type: "observable_match_count_updated" });
+    const matchToSend = {
+      ...match,
+      arenaProblem,
+      users: await db.query.UserMatchTable.findMany({
+        where: eq(UserMatchTable.matchId, match.id),
+        with: {
+          user: true,
+        },
+      }),
+    };
+
+    usersInObservingRoom.forEach(async (userId) => {
+      sendToUser(userId, {
+        type: "observable_match_count_updated",
+        payload: {
+          type: "added",
+          match: matchToSend,
+        },
+      });
     });
   } catch (error) {
     console.error("[arena:matchmaking] failed to pair users", {

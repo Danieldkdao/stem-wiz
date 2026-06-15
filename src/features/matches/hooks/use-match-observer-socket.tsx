@@ -70,6 +70,7 @@ export const MatchObserverSocketProvider = ({
   );
   const [matchCompletionReason, setMatchCompletionReason] =
     useState<MatchResultReasonType | null>(null);
+  // todo: move to a map of set by match id to support multi match connections
   const [matchObserverCount, setMatchObserverCount] = useState(0);
 
   const subscribeObserverEvent = useCallback(

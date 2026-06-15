@@ -1,4 +1,6 @@
+import { ArenaProblemTable, MatchTable, UserMatchTable } from "@/db/schema";
 import { MatchResultReasonType } from "@/db/shared";
+import { User } from "@/lib/auth/auth";
 
 export type MatchServerMessage =
   | {
@@ -26,6 +28,15 @@ export type MatchObserverServerMessage =
     }
   | {
       type: "observable_match_count_updated";
+      payload:
+        | {
+            type: "added";
+            match: typeof MatchTable.$inferSelect & {
+              arenaProblem: typeof ArenaProblemTable.$inferSelect;
+              users: (typeof UserMatchTable.$inferSelect & { user: User })[];
+            };
+          }
+        | { type: "removed"; matchId: string };
     }
   | {
       type: "match_observer_count_updated";
