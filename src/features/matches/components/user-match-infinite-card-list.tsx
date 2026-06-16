@@ -1,6 +1,6 @@
 "use client";
 
-import { MatchResultTable, MatchTable } from "@/db/schema";
+import { ArenaProblemTable, MatchResultTable, MatchTable } from "@/db/schema";
 import { User } from "@/lib/auth/auth";
 import { DEFAULT_PAGE } from "@/lib/constants";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -16,6 +16,7 @@ export const UserMatchInfiniteCardList = ({
   initialMatches: (typeof MatchTable.$inferSelect & {
     result: typeof MatchResultTable.$inferSelect | null;
     opponent: User;
+    arenaProblem: typeof ArenaProblemTable.$inferSelect;
   })[];
   initialHasNextPage: boolean;
 }) => {

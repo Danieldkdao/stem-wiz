@@ -1,4 +1,9 @@
-import { ArenaProblemTable, MatchTable, UserMatchTable } from "@/db/schema";
+import {
+  ArenaProblemTable,
+  ChatMessageTable,
+  MatchTable,
+  UserMatchTable,
+} from "@/db/schema";
 import { MatchResultReasonType } from "@/db/shared";
 import { User } from "@/lib/auth/auth";
 
@@ -40,6 +45,7 @@ export type MatchObserverServerMessage =
     }
   | {
       type: "match_observer_count_updated";
+      matchId: string;
       newCount: number;
     }
   | {
@@ -55,17 +61,9 @@ export type MatchObserverServerMessage =
     }
   | {
       type: "new_chat_message";
-      messageId: string;
-      chatId: string;
-      user: {
-        id: string;
-        name: string;
-        image?: string | undefined | null;
-      };
-      message: string;
-      createdAt: Date;
+      message: typeof ChatMessageTable.$inferSelect & { user: User };
     }
   | { type: "observer_running_code"; userId: string }
   | { type: "user_submitted_code"; userId: string }
-  | { type: "match_finished"; reason: MatchResultReasonType };
+  | { type: "match_finished"; matchId: string; reason: MatchResultReasonType };
 export type MatchObserverServerMessageType = MatchObserverServerMessage["type"];

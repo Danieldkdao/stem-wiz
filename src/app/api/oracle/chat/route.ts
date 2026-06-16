@@ -121,6 +121,24 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
+  const modelMessages: UIMessage[] = [
+    ...(existingProblem.chat?.messages ?? [])
+      .slice()
+      .reverse()
+      .map((message) => ({
+        id: message.id,
+        role: message.role,
+        parts: [{ type: "text" as const, text: message.text }],
+        createdAt: message.createdAt,
+      })),
+    {
+      id: insertedUserChatMessage.id,
+      role: insertedUserChatMessage.role,
+      parts: [{ type: "text", text: latestUserMessage }],
+      createdAt: insertedUserChatMessage.createdAt,
+    },
+  ];
+
   revalidateOracleSessionCache(userId, existingSession.id);
 
   const result = streamText({
@@ -129,7 +147,7 @@ export const POST = async (req: NextRequest) => {
       session: existingSession,
       problem: existingProblem,
     }),
-    messages: await convertToModelMessages(messages),
+    messages: await convertToModelMessages(modelMessages),
   });
 
   return result.toUIMessageStreamResponse({

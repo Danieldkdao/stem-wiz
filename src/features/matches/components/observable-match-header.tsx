@@ -6,15 +6,12 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import {
   ArenaProblemTable,
-  ChatMessageTable,
-  ChatTable,
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
   UserMatchTable,
 } from "@/db/schema";
 import { statusMap } from "@/features/arena/components";
-import { useMatchChatMessages } from "@/features/chats/hooks/use-match-chat-messages";
 import { User } from "@/lib/auth/auth";
 import { cn, getTimeValues } from "@/lib/utils";
 import {
@@ -36,9 +33,6 @@ type ObservableMatchHeaderProps = {
     users: (typeof UserMatchTable.$inferSelect & { user: User })[];
     result?: typeof MatchResultTable.$inferSelect | null;
     arenaProblem: typeof ArenaProblemTable.$inferSelect;
-    chats: (typeof ChatTable.$inferSelect & {
-      messages: (typeof ChatMessageTable.$inferSelect & { user: User })[];
-    })[];
   };
 };
 
@@ -51,17 +45,13 @@ export const ObservableMatchHeader = ({
     subscribeObserverMatch,
     status,
     subscribeObserverEvent,
-    matchObserverCount,
-    matchCompletionReason,
+    matchesObserverCount,
+    matchesCompletionReason,
     leaveObserverMatch,
     lastEvent,
   } = useMatchObserverSocket();
   const expiresAtMs = match.expiresAt.getTime();
   const [now, setNow] = useState(() => Date.now());
-  const initialChatMessages = match.chats?.[0]?.messages ?? [];
-  const chatMessages = useMatchChatMessages({
-    initialMessages: initialChatMessages,
-  });
   const [isPending, startTransition] = useTransition();
 
   const secondsRemaining = Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
@@ -126,6 +116,8 @@ export const ObservableMatchHeader = ({
   };
 
   const timeValues = getTimeValues(secondsRemaining);
+  const matchObserverCount = matchesObserverCount.get(match.id) ?? 0;
+  const matchCompletionReason = matchesCompletionReason.get(match.id) ?? null;
 
   return (
     <>
@@ -146,10 +138,7 @@ export const ObservableMatchHeader = ({
                 <PanelRightOpenIcon />
               </Button>
             </SheetTrigger>
-            <ObserverMatchSliderContent
-              match={match}
-              chatMessages={chatMessages}
-            />
+            <ObserverMatchSliderContent match={match} />
           </Sheet>
           <Separator orientation="vertical" />
           <div className="flex items-center gap-2">

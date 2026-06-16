@@ -1,11 +1,14 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { getMatchChatMessagesAction } from "@/features/chats/actions/actions";
 import {
   checkExistingMatchAction,
   isUserMatchActiveAction,
 } from "@/features/matches/actions/actions";
-import { ObservableMatchHeader } from "@/features/matches/components/observable-match-header";
-import { ObserverMatchView } from "@/features/matches/components/observer-match-view";
-import { NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS } from "@/lib/constants";
+import { ObservableMatchView } from "@/features/matches/components/observable-match-view";
+import {
+  DEFAULT_PAGE,
+  NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS,
+} from "@/lib/constants";
 import { ParamsId } from "@/lib/types";
 import { Suspense } from "react";
 
@@ -133,11 +136,17 @@ const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
     );
   }
 
+  const { chatMessages, metadata } = await getMatchChatMessagesAction(
+    match.id,
+    DEFAULT_PAGE,
+  );
+
   return (
-    <div className="w-full h-full flex flex-col items-center">
-      <ObservableMatchHeader match={match} />
-      <ObserverMatchView match={match} />
-    </div>
+    <ObservableMatchView
+      match={match}
+      initialMessages={chatMessages}
+      initialHasNextPage={metadata.hasNextPage}
+    />
   );
 };
 

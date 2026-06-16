@@ -43,6 +43,7 @@ export const finalizeMatch = async ({
     sendToUser(user.userId, {
       type: "match_finished",
       reason,
+      matchId: existingMatch.id,
     });
 
     activeMatchesByUser.delete(user.userId);
@@ -51,6 +52,7 @@ export const finalizeMatch = async ({
   await broadcastToMatchObservers(existingMatch.id, {
     type: "match_finished",
     reason,
+    matchId: existingMatch.id,
   });
 
   usersInObservingRoom.forEach((userId) => {

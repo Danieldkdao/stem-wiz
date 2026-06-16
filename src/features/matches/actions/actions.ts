@@ -148,15 +148,6 @@ export const checkExistingMatchAction = async ({
         },
       },
       result: true,
-      chats: {
-        with: {
-          messages: {
-            with: {
-              user: true,
-            },
-          },
-        },
-      },
     },
   });
 
@@ -704,9 +695,14 @@ export const getUserMatchesAction = async (filterOptions: {
       ...getTableColumns(MatchTable),
       result: getTableColumns(MatchResultTable),
       opponent: getTableColumns(user),
+      arenaProblem: getTableColumns(ArenaProblemTable),
     })
     .from(MatchTable)
     .leftJoin(MatchResultTable, eq(MatchResultTable.matchId, MatchTable.id))
+    .innerJoin(
+      ArenaProblemTable,
+      eq(ArenaProblemTable.id, MatchTable.problemId),
+    )
     .innerJoin(
       currentUserMatch,
       and(

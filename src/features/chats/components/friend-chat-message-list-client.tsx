@@ -22,28 +22,57 @@ export const FriendChatMessageListClient = ({
   userId: string;
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const { chatMessages, sentinelRef, isPending } = useFriendChatMessages(
-    initialMessages,
-    initialHasNextPage,
-    chatId,
-    friendRequestId,
-  );
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { chatMessages, hasNextPage, isPending, loadOlderMessages } =
+    useFriendChatMessages(
+      initialMessages,
+      initialHasNextPage,
+      chatId,
+      friendRequestId,
+      scrollContainerRef,
+    );
 
   useEffect(() => {
+    if (isPending) return;
     const container = scrollContainerRef.current;
     if (!container) return;
 
     container.scrollTo({
-      behavior: "smooth",
       top: container.scrollHeight,
+      behavior: "smooth",
     });
-  }, [chatMessages]);
+  }, [chatMessages.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const scrollContainer = scrollContainerRef.current;
+    if (!sentinel || !scrollContainer || !hasNextPage || isPending) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+
+        loadOlderMessages();
+      },
+      { root: scrollContainer, rootMargin: "400px" },
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isPending, loadOlderMessages]);
 
   return (
     <CardContent
       ref={scrollContainerRef}
       className="w-full h-full flex-1 overflow-y-auto min-h-0"
     >
+      <div ref={sentinelRef} className="h-1 w-full bg-transparent" />
+      {isPending && (
+        <div className="flex items-center justify-center">
+          <Loader2Icon className="text-primary animate-spin" />
+        </div>
+      )}
       <div className="flex flex-col gap-1 w-full h-full">
         {chatMessages.length ? (
           chatMessages.map((msg) => (
@@ -67,12 +96,6 @@ export const FriendChatMessageListClient = ({
           </div>
         )}
       </div>
-      <div ref={sentinelRef} className="h-1 w-full bg-transparent" />
-      {isPending && (
-        <div className="flex items-center justify-center">
-          <Loader2Icon className="text-primary animate-spin" />
-        </div>
-      )}
     </CardContent>
   );
 };

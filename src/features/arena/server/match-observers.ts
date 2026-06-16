@@ -78,6 +78,7 @@ export const broadcastUpdatedMatchObserverCount = async (
   await broadcastToMatchObservers(currentMatchId, {
     type: "match_observer_count_updated",
     newCount: activeObserversInMatch.length,
+    matchId: currentMatchId,
   });
 };
 

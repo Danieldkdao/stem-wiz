@@ -10,16 +10,28 @@ import {
   chatInputSchema,
   ChatInputSchemaType,
 } from "@/features/chats/actions/schemas";
+import { getOracleChatMessagesAction } from "@/features/oracle/actions/actions";
 import { useAuthSession } from "@/hooks/use-auth-session";
+import { DEFAULT_PAGE } from "@/lib/constants";
 import { cn, getInputErrorStyle } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BotIcon, MessageSquareIcon, SendIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { BotIcon, Loader2Icon, MessageSquareIcon, SendIcon } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { useRouter } from "next/navigation";
+
+type OracleChatMessage = typeof ChatMessageTable.$inferSelect;
+
+const toOracleUiMessages = (messages: OracleChatMessage[]) =>
+  messages.map((msg) => ({
+    id: msg.id,
+    role: msg.role,
+    parts: [{ type: "text" as const, text: msg.text }],
+    createdAt: msg.createdAt,
+  }));
 
 export const OracleSessionChat = ({
   sessionId,
@@ -30,6 +42,7 @@ export const OracleSessionChat = ({
   problemId: string;
   chat:
     | (typeof ChatTable.$inferSelect & {
+        hasNextMessagesPage?: boolean;
         messages: (typeof ChatMessageTable.$inferSelect)[];
       })
     | null
@@ -38,6 +51,25 @@ export const OracleSessionChat = ({
   const chatMessages = chat?.messages;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const didInitialScrollRef = useRef(false);
+  const latestMessageIdRef = useRef<string | null>(null);
+  const isLoadingOlderMessagesRef = useRef(false);
+  const pendingScrollRestoreRef = useRef<{
+    scrollHeight: number;
+    scrollTop: number;
+  } | null>(null);
+  const initialMessagesKey = (chatMessages ?? [])
+    .map((message) => message.id)
+    .join(":");
+  const resetKey = `${chat?.id ?? "no-chat"}:${initialMessagesKey}`;
+  const [paginationState, setPaginationState] = useState({
+    page: DEFAULT_PAGE,
+    hasNextPage: chat?.hasNextMessagesPage ?? false,
+    resetKey,
+  });
+  const [isPaginationPending, startPaginationTransition] = useTransition();
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const router = useRouter();
   const { data: userSession } = useAuthSession();
   const form = useForm<ChatInputSchemaType>({
@@ -54,12 +86,7 @@ export const OracleSessionChat = ({
         problemId,
       },
     }),
-    messages: (chatMessages ?? []).map((msg) => ({
-      id: msg.id,
-      role: msg.role,
-      parts: [{ type: "text", text: msg.text }],
-      createdAt: msg.createdAt,
-    })),
+    messages: toOracleUiMessages(chatMessages ?? []),
     onFinish: () => {
       router.refresh();
     },
@@ -73,28 +100,118 @@ export const OracleSessionChat = ({
   const submittedStatus = status === "submitted";
   const streamingStatus = status === "streaming";
   const errorStatus = status === "error";
+  const olderMessagesLoading = isPaginationPending || isLoadingOlderMessages;
+  const { hasNextPage, page } = paginationState;
+
+  if (paginationState.resetKey !== resetKey) {
+    setPaginationState({
+      page: DEFAULT_PAGE,
+      hasNextPage: chat?.hasNextMessagesPage ?? false,
+      resetKey,
+    });
+  }
+
+  const loadOlderMessages = useCallback(() => {
+    if (!chat?.id || !hasNextPage || isLoadingOlderMessagesRef.current) return;
+
+    isLoadingOlderMessagesRef.current = true;
+    setIsLoadingOlderMessages(true);
+
+    startPaginationTransition(async () => {
+      try {
+        const nextPage = page + 1;
+        const scrollContainer = scrollContainerRef.current;
+
+        if (scrollContainer) {
+          pendingScrollRestoreRef.current = {
+            scrollHeight: scrollContainer.scrollHeight,
+            scrollTop: scrollContainer.scrollTop,
+          };
+        }
+
+        const response = await getOracleChatMessagesAction(chat.id, nextPage);
+        if (!response) return;
+
+        const { chatMessages, metadata } = response;
+
+        setMessages((prev) => {
+          const existingMessageIds = new Set(prev.map((message) => message.id));
+          const olderMessages = toOracleUiMessages(chatMessages).filter(
+            (message) => !existingMessageIds.has(message.id),
+          );
+
+          return [...olderMessages, ...prev];
+        });
+        setPaginationState((prev) => ({
+          ...prev,
+          page: nextPage,
+          hasNextPage: metadata.hasNextPage,
+        }));
+
+        requestAnimationFrame(() => {
+          const scrollContainer = scrollContainerRef.current;
+          const pendingScrollRestore = pendingScrollRestoreRef.current;
+          if (!scrollContainer || !pendingScrollRestore) return;
+
+          scrollContainer.scrollTop =
+            scrollContainer.scrollHeight -
+            pendingScrollRestore.scrollHeight +
+            pendingScrollRestore.scrollTop;
+          pendingScrollRestoreRef.current = null;
+        });
+      } finally {
+        isLoadingOlderMessagesRef.current = false;
+        setIsLoadingOlderMessages(false);
+      }
+    });
+  }, [chat?.id, hasNextPage, page, setMessages]);
 
   useEffect(() => {
     if (streamingStatus) return;
     const container = scrollContainerRef.current;
     if (!container) return;
+    const latestMessageId = messages.at(-1)?.id ?? null;
+    const shouldScrollToBottom =
+      !didInitialScrollRef.current ||
+      (latestMessageId !== latestMessageIdRef.current &&
+        !pendingScrollRestoreRef.current);
+
+    latestMessageIdRef.current = latestMessageId;
+    if (!shouldScrollToBottom) return;
 
     container.scrollTo({
       behavior: "smooth",
       top: container.scrollHeight,
     });
+    didInitialScrollRef.current = true;
   }, [messages, streamingStatus]);
 
   useEffect(() => {
-    setMessages(
-      (chatMessages ?? []).map((msg) => ({
-        id: msg.id,
-        role: msg.role,
-        parts: [{ type: "text", text: msg.text }],
-        createdAt: msg.createdAt,
-      })),
+    setMessages(toOracleUiMessages(chatMessages ?? []));
+    didInitialScrollRef.current = false;
+    latestMessageIdRef.current = null;
+  }, [chat?.id, chatMessages, setMessages]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const scrollContainer = scrollContainerRef.current;
+    if (!sentinel || !scrollContainer || !hasNextPage || olderMessagesLoading) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+
+        loadOlderMessages();
+      },
+      { root: scrollContainer, rootMargin: "400px" },
     );
-  }, [chatMessages]);
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [hasNextPage, loadOlderMessages, olderMessagesLoading]);
 
   return (
     <div className="w-full h-full min-h-0 overflow-hidden flex flex-col">
@@ -105,6 +222,12 @@ export const OracleSessionChat = ({
           (submittedStatus || streamingStatus) && "pb-32",
         )}
       >
+        <div ref={sentinelRef} className="h-1 w-full shrink-0 bg-transparent" />
+        {olderMessagesLoading && (
+          <div className="flex shrink-0 items-center justify-center">
+            <Loader2Icon className="text-primary animate-spin" />
+          </div>
+        )}
         {messages?.length && userSession?.user ? (
           messages.map((message) => (
             <div

@@ -52,8 +52,6 @@ export const broadcastChatMessageSent = async (
 
   broadcastToMatchObservers(matchId, {
     type: "new_chat_message",
-    ...existingMessage,
-    message: existingMessage.text,
-    messageId: existingMessage.id,
+    message: existingMessage,
   });
 };

@@ -1,37 +1,66 @@
 "use client";
 
-import { MatchChatMessage } from "../hooks/use-match-chat-messages";
 import { UserAvatar } from "@/components/user-avatar";
-import { MessageSquareIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAuthSession } from "@/hooks/use-auth-session";
+import { cn } from "@/lib/utils";
+import { Loader2Icon, MessageSquareIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useMatchChatMessages } from "../hooks/use-match-chat-messages";
 
-export const MatchChatMessageList = ({
-  messages,
-}: {
-  messages: MatchChatMessage[];
-}) => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+export const MatchChatMessageList = () => {
+  const {
+    chatMessages,
+    scrollContainerRef,
+    hasNextPage,
+    isPending,
+    loadOlderMessages,
+  } = useMatchChatMessages();
   const { data: session } = useAuthSession();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const container = scrollContainerRef.current;
+    if (isPending) return;
+    const container = scrollContainerRef?.current;
     if (!container) return;
 
     container.scrollTo({
-      behavior: "smooth",
       top: container.scrollHeight,
+      behavior: "smooth",
     });
-  }, [messages]);
+  }, [chatMessages.length, scrollContainerRef]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const scrollContainer = scrollContainerRef.current;
+    if (!sentinel || !scrollContainer || !hasNextPage || isPending) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+
+        loadOlderMessages();
+      },
+      { root: scrollContainer, rootMargin: "400px" },
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isPending, loadOlderMessages, scrollContainerRef]);
 
   return (
     <div
       ref={scrollContainerRef}
-      className="p-4 flex-1 overflow-y-auto min-h-0 flex flex-col gap-4"
+      className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-4"
     >
-      {messages.length ? (
-        messages.map((message) => (
+      <div ref={sentinelRef} className="h-1 w-full shrink-0 bg-transparent" />
+      {isPending && (
+        <div className="flex shrink-0 items-center justify-center">
+          <Loader2Icon className="text-primary animate-spin" />
+        </div>
+      )}
+      {chatMessages.length ? (
+        chatMessages.map((message) => (
           <div
             className={cn(
               "rounded-md p-4 flex flex-col gap-2",

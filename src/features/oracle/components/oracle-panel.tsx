@@ -14,6 +14,7 @@ export const OraclePanel = ({
   problem: typeof OracleProblemTable.$inferSelect & {
     chat:
       | (typeof ChatTable.$inferSelect & {
+          hasNextMessagesPage?: boolean;
           messages: (typeof ChatMessageTable.$inferSelect)[];
         })
       | null;

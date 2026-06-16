@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
-import { MatchResultTable, MatchTable } from "@/db/schema";
+import { ArenaProblemTable, MatchResultTable, MatchTable } from "@/db/schema";
 import { formatDate } from "@/features/oracle/lib/formatters";
 import { User } from "@/lib/auth/auth";
 import { formatDistance, formatDistanceToNow } from "date-fns";
@@ -24,6 +24,7 @@ export const UserMatchCard = ({
   match: typeof MatchTable.$inferSelect & {
     result: typeof MatchResultTable.$inferSelect | null;
     opponent: User;
+    arenaProblem: typeof ArenaProblemTable.$inferSelect;
   };
 }) => {
   const isFinished =
@@ -45,7 +46,16 @@ export const UserMatchCard = ({
     {
       label: isFinished ? "Duration" : "Started",
       data: isFinished
-        ? getDuration(match.createdAt, match.result?.createdAt)
+        ? (match.result?.createdAt.getTime() ?? 0) -
+            match.createdAt.getTime() <=
+          match.arenaProblem.timeLimit
+          ? getDuration(match.createdAt, match.result?.createdAt)
+          : getDuration(
+              match.createdAt,
+              new Date(
+                match.createdAt.getTime() + match.arenaProblem.timeLimit,
+              ),
+            )
         : formatDistanceToNow(match.createdAt)
             .split(" ")
             .filter((word) => word !== "ago")

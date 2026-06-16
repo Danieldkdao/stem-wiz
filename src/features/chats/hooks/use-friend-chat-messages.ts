@@ -1,7 +1,14 @@
 "use client";
 
 import { ChatMessageTable } from "@/db/schema";
-import { useEffect, useRef, useState, useTransition } from "react";
+import {
+  RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useFriendChatSocket } from "./use-friend-chat-socket";
 import { User } from "@/lib/auth/auth";
 import { DEFAULT_PAGE } from "@/lib/constants";
@@ -12,52 +19,87 @@ export const useFriendChatMessages = (
   initialHasNextPage: boolean,
   chatId: string,
   friendRequestId: string,
+  scrollContainerRef: RefObject<HTMLDivElement | null>,
 ) => {
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const [chatMessages, setChatMessages] = useState(initialMessages);
   const [page, setPage] = useState(DEFAULT_PAGE);
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage);
+  const initialMessagesKey = initialMessages
+    .map((message) => message.id)
+    .join(":");
+  const resetKey = `${chatId}:${friendRequestId}:${initialMessagesKey}:${initialHasNextPage}`;
+  const [currentResetKey, setCurrentResetKey] = useState(resetKey);
   const [isPending, startTransition] = useTransition();
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
+  const isLoadingOlderMessagesRef = useRef(false);
+  const pendingScrollRestoreRef = useRef<{
+    scrollHeight: number;
+    scrollTop: number;
+  } | null>(null);
   const { subscribeChatEvent } = useFriendChatSocket();
 
-  useEffect(() => {
+  if (currentResetKey !== resetKey) {
+    setCurrentResetKey(resetKey);
     setChatMessages(initialMessages);
     setPage(DEFAULT_PAGE);
     setHasNextPage(initialHasNextPage);
-  }, [initialMessages, initialHasNextPage]);
+  }
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || isPending || !hasNextPage) return;
+  const loadOlderMessages = useCallback(() => {
+    if (!hasNextPage || isLoadingOlderMessagesRef.current) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
+    isLoadingOlderMessagesRef.current = true;
+    setIsLoadingOlderMessages(true);
 
-        startTransition(async () => {
-          const nextPage = page + 1;
+    startTransition(async () => {
+      try {
+        const nextPage = page + 1;
+        const scrollContainer = scrollContainerRef.current;
 
-          const response = await getFriendChatMessagesAction(
-            chatId,
-            friendRequestId,
-            nextPage,
+        if (scrollContainer) {
+          pendingScrollRestoreRef.current = {
+            scrollHeight: scrollContainer.scrollHeight,
+            scrollTop: scrollContainer.scrollTop,
+          };
+        }
+
+        const response = await getFriendChatMessagesAction(
+          chatId,
+          friendRequestId,
+          nextPage,
+        );
+        if (!response) return;
+
+        const { chatMessages, metadata } = response;
+
+        setChatMessages((prev) => {
+          const existingMessageIds = new Set(prev.map((message) => message.id));
+          const olderMessages = chatMessages.filter(
+            (message) => !existingMessageIds.has(message.id),
           );
-          if (!response) return;
 
-          const { chatMessages, metadata } = response;
-
-          setChatMessages((prev) => [...prev, ...chatMessages]);
-          setPage(nextPage);
-          setHasNextPage(metadata.hasNextPage);
+          return [...olderMessages, ...prev];
         });
-      },
-      { rootMargin: "400px" },
-    );
+        setPage(nextPage);
+        setHasNextPage(metadata.hasNextPage);
 
-    observer.observe(sentinel);
+        requestAnimationFrame(() => {
+          const scrollContainer = scrollContainerRef.current;
+          const pendingScrollRestore = pendingScrollRestoreRef.current;
+          if (!scrollContainer || !pendingScrollRestore) return;
 
-    return () => observer.disconnect();
-  }, [page, hasNextPage, isPending, chatId, friendRequestId]);
+          scrollContainer.scrollTop =
+            scrollContainer.scrollHeight -
+            pendingScrollRestore.scrollHeight +
+            pendingScrollRestore.scrollTop;
+          pendingScrollRestoreRef.current = null;
+        });
+      } finally {
+        isLoadingOlderMessagesRef.current = false;
+        setIsLoadingOlderMessages(false);
+      }
+    });
+  }, [chatId, friendRequestId, hasNextPage, page, scrollContainerRef]);
 
   useEffect(() => {
     const unsubscribers = [
@@ -68,7 +110,13 @@ export const useFriendChatMessages = (
           createdAt: new Date(createdAt),
           respondedAt: respondedAt ? new Date(respondedAt) : null,
         };
-        setChatMessages((prev) => [...prev, newMessage]);
+        setChatMessages((prev) => {
+          if (prev.some((message) => message.id === newMessage.id)) {
+            return prev;
+          }
+
+          return [...prev, newMessage];
+        });
       }),
       subscribeChatEvent("friend_message_updated", (event) => {
         setChatMessages((prev) =>
@@ -110,5 +158,10 @@ export const useFriendChatMessages = (
     };
   }, [subscribeChatEvent]);
 
-  return { chatMessages, sentinelRef, isPending };
+  return {
+    chatMessages,
+    hasNextPage,
+    isPending: isPending || isLoadingOlderMessages,
+    loadOlderMessages,
+  };
 };

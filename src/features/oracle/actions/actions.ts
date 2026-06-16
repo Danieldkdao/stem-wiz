@@ -3,6 +3,7 @@
 import { db, DbTransaction } from "@/db/db";
 import {
   ChatMessageTable,
+  ChatTable,
   OracleProblemTable,
   OracleSessionModeType,
   OracleSessionStatusType,
@@ -27,6 +28,7 @@ import {
   count,
   desc,
   eq,
+  getTableColumns,
   ilike,
   inArray,
   or,
@@ -248,9 +250,10 @@ export const getOneSessionAction = async (
             with: {
               messages: {
                 orderBy: [
-                  asc(ChatMessageTable.createdAt),
-                  asc(ChatMessageTable.id),
+                  desc(ChatMessageTable.createdAt),
+                  desc(ChatMessageTable.id),
                 ],
+                limit: PAGE_SIZE + 1,
               },
             },
           },
@@ -260,7 +263,91 @@ export const getOneSessionAction = async (
     },
   });
 
-  return existingSession ?? null;
+  if (!existingSession) return null;
+
+  return {
+    ...existingSession,
+    problems: existingSession.problems.map((problem) => ({
+      ...problem,
+      chat: problem.chat
+        ? (() => {
+            const messages = problem.chat.messages.reverse();
+
+            return {
+              ...problem.chat,
+              hasNextMessagesPage: messages.length > PAGE_SIZE,
+              messages: messages.slice(-PAGE_SIZE),
+            };
+          })()
+        : problem.chat,
+    })),
+  };
+};
+
+export const getOracleChatMessagesAction = async (
+  chatId: string,
+  page: number,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const chatMessages = await db
+    .select({
+      ...getTableColumns(ChatMessageTable),
+    })
+    .from(ChatMessageTable)
+    .innerJoin(ChatTable, eq(ChatTable.id, ChatMessageTable.chatId))
+    .innerJoin(
+      OracleProblemTable,
+      eq(OracleProblemTable.id, ChatTable.oracleProblemId),
+    )
+    .innerJoin(
+      OracleSessionTable,
+      eq(OracleSessionTable.id, OracleProblemTable.sessionId),
+    )
+    .where(
+      and(
+        eq(ChatMessageTable.chatId, chatId),
+        eq(OracleSessionTable.userId, userId),
+      ),
+    )
+    .orderBy(desc(ChatMessageTable.createdAt), desc(ChatMessageTable.id))
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalChatMessages] = await db
+    .select({
+      count: count(),
+    })
+    .from(ChatMessageTable)
+    .innerJoin(ChatTable, eq(ChatTable.id, ChatMessageTable.chatId))
+    .innerJoin(
+      OracleProblemTable,
+      eq(OracleProblemTable.id, ChatTable.oracleProblemId),
+    )
+    .innerJoin(
+      OracleSessionTable,
+      eq(OracleSessionTable.id, OracleProblemTable.sessionId),
+    )
+    .where(
+      and(
+        eq(ChatMessageTable.chatId, chatId),
+        eq(OracleSessionTable.userId, userId),
+      ),
+    );
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalChatMessages.count;
+
+  return {
+    chatMessages: chatMessages.reverse(),
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };
 
 export const startSessionAction = async (sessionId: string) => {

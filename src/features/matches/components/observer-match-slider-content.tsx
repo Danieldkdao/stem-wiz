@@ -9,17 +9,14 @@ import { ArenaProblemTable, MatchTable } from "@/db/schema";
 import { ArenaProblemDetails } from "@/features/arena-problems/components/arena-problem-details";
 import { MatchChatInput } from "@/features/chats/components/match-chat-input";
 import { MatchChatMessageList } from "@/features/chats/components/match-chat-message-list";
-import { MatchChatMessage } from "@/features/chats/hooks/use-match-chat-messages";
 import { InfoIcon, MessageSquareIcon } from "lucide-react";
 
 export const ObserverMatchSliderContent = ({
   match,
-  chatMessages,
 }: {
   match: typeof MatchTable.$inferSelect & {
     arenaProblem: typeof ArenaProblemTable.$inferSelect;
   };
-  chatMessages: MatchChatMessage[];
 }) => {
   return (
     <SheetContent side="left" showCloseButton={false}>
@@ -51,8 +48,8 @@ export const ObserverMatchSliderContent = ({
             <ArenaProblemDetails arenaProblem={match.arenaProblem} />
           </TabsContent>
           <TabsContent value="chat" className="min-h-0 w-full overflow-hidden">
-            <div className="w-full h-full min-h-0 overflow-hidden flex flex-col">
-              <MatchChatMessageList messages={chatMessages} />
+            <div className="w-full h-full min-h-0 overflow-hidden flex flex-col gap-2">
+              <MatchChatMessageList />
               <MatchChatInput matchId={match.id} />
             </div>
           </TabsContent>

@@ -554,7 +554,7 @@ export const getFriendChatMessagesAction = async (
         isNotNull(ChatMessageTable.userId),
       ),
     )
-    .orderBy(asc(ChatMessageTable.createdAt))
+    .orderBy(desc(ChatMessageTable.createdAt))
     .offset(offset)
     .limit(PAGE_SIZE);
 
@@ -576,7 +576,7 @@ export const getFriendChatMessagesAction = async (
   const hasNextPage = page * PAGE_SIZE < totalMessages.count;
 
   return {
-    chatMessages,
+    chatMessages: chatMessages.reverse(),
     metadata: {
       hasPrevPage,
       hasNextPage,
@@ -931,4 +931,44 @@ export const deleteFriendChatAction = async (chatId: string) => {
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const getMatchChatMessagesAction = async (
+  matchId: string,
+  page: number,
+) => {
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const chatMessages = await db
+    .select({
+      ...getTableColumns(ChatMessageTable),
+      user: getTableColumns(user),
+    })
+    .from(ChatMessageTable)
+    .innerJoin(ChatTable, eq(ChatTable.id, ChatMessageTable.chatId))
+    .innerJoin(user, eq(user.id, ChatMessageTable.userId))
+    .where(eq(ChatTable.matchId, matchId))
+    .orderBy(desc(ChatMessageTable.createdAt))
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalChatMessages] = await db
+    .select({
+      count: count(),
+    })
+    .from(ChatMessageTable)
+    .innerJoin(ChatTable, eq(ChatTable.id, ChatMessageTable.chatId))
+    .innerJoin(user, eq(user.id, ChatMessageTable.userId))
+    .where(eq(ChatTable.matchId, matchId));
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalChatMessages.count;
+
+  return {
+    chatMessages: chatMessages.reverse(),
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };

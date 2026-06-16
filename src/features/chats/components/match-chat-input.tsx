@@ -28,7 +28,9 @@ export const MatchChatInput = ({ matchId }: { matchId: string }) => {
       toast.error(response.message);
     } else {
       const message = response.chatMessage;
-      form.reset();
+      form.reset({
+        text: "",
+      });
       broadcastChatMessageSent({
         chatId: message.chatId,
         matchId,
@@ -38,7 +40,7 @@ export const MatchChatInput = ({ matchId }: { matchId: string }) => {
   };
 
   return (
-    <div className="w-full p-4 bg-card">
+    <div className="w-full bg-card">
       <form
         onSubmit={form.handleSubmit(sendChatMessage)}
         className="flex flex-col gap-2 items-end bg-transparent border dark:border-none dark:bg-input/30 p-4 rounded-md"

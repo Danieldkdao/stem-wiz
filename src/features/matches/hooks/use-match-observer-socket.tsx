@@ -27,8 +27,8 @@ const getSocketUrl = () => {
 type MatchObserverSocketContextType = {
   status: SocketStatus;
   lastEvent: ArenaServerMessage | null;
-  matchObserverCount: number;
-  matchCompletionReason: MatchResultReasonType | null;
+  matchesObserverCount: Map<string, number>;
+  matchesCompletionReason: Map<string, MatchResultReasonType | null>;
   subscribeObserverEvent: <T extends MatchObserverServerMessageType>(
     type: T,
     listener: ObserverEventListener<T>,
@@ -68,10 +68,12 @@ export const MatchObserverSocketProvider = ({
   const [lastEvent, setLastEvent] = useState<MatchObserverServerMessage | null>(
     null,
   );
-  const [matchCompletionReason, setMatchCompletionReason] =
-    useState<MatchResultReasonType | null>(null);
-  // todo: move to a map of set by match id to support multi match connections
-  const [matchObserverCount, setMatchObserverCount] = useState(0);
+  const [matchesCompletionReason, setMatchesCompletionReason] = useState<
+    Map<string, MatchResultReasonType | null>
+  >(new Map());
+  const [matchesObserverCount, setMatchesObserverCount] = useState<
+    Map<string, number>
+  >(new Map());
 
   const subscribeObserverEvent = useCallback(
     <T extends MatchObserverServerMessageType>(
@@ -131,13 +133,23 @@ export const MatchObserverSocketProvider = ({
         switch (messageType) {
           case "match_observer_count_updated":
             const newCount = message.newCount;
-            setMatchObserverCount(newCount);
+            setMatchesObserverCount((prev) => {
+              const next = new Map(prev);
+              next.set(message.matchId, newCount);
+
+              return next;
+            });
             break;
           case "connection_error":
             setStatus("error");
             break;
           case "match_finished":
-            setMatchCompletionReason(message.reason);
+            setMatchesCompletionReason((prev) => {
+              const next = new Map(prev);
+              next.set(message.matchId, message.reason);
+
+              return next;
+            });
             break;
           case "users_connection_statuses":
           case "observable_match_count_updated":
@@ -209,12 +221,12 @@ export const MatchObserverSocketProvider = ({
   const values: MatchObserverSocketContextType = {
     status,
     lastEvent,
-    matchObserverCount,
+    matchesObserverCount,
     connect,
     subscribeObserverEvent,
     connectToMatchObservers,
     subscribeObserverMatch,
-    matchCompletionReason,
+    matchesCompletionReason,
     broadcastChatMessageSent,
     leaveObserverMatch,
   };
