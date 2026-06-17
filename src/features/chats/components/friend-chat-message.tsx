@@ -2,29 +2,27 @@
 
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { Button } from "@/components/ui/button";
+import { LoadingSwap } from "@/components/ui/loading-swap";
 import { UserAvatar } from "@/components/user-avatar";
 import { ChatMessageTable } from "@/db/schema";
 import { formatDate } from "@/features/oracle/lib/formatters";
+import { useConfirm } from "@/hooks/use-confirm";
 import { User } from "@/lib/auth/auth";
 import { cn } from "@/lib/utils";
 import { EditIcon, Trash2Icon } from "lucide-react";
-import { useState, useTransition } from "react";
-import { FriendChatMessageInput } from "./friend-chat-message-input";
-import { formatChatMessageStatus } from "../lib/formatters";
-import { useConfirm } from "@/hooks/use-confirm";
-import { deleteFriendChatMessageAction } from "../actions/actions";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { LoadingSwap } from "@/components/ui/loading-swap";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { deleteFriendChatMessageAction } from "../actions/actions";
 import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
+import { formatChatMessageStatus } from "../lib/formatters";
+import { FriendChatMessageInput } from "./friend-chat-message-input";
 
 export const FriendChatMessage = ({
   chatMessage,
-  friendRequestId,
   currentUserId,
 }: {
   chatMessage: typeof ChatMessageTable.$inferSelect & { user: User };
-  friendRequestId: string;
   currentUserId: string;
 }) => {
   const router = useRouter();
@@ -44,7 +42,6 @@ export const FriendChatMessage = ({
     startTransition(async () => {
       const response = await deleteFriendChatMessageAction(
         chatMessage.chatId,
-        friendRequestId,
         chatMessage.id,
       );
       if (response.error || !response.chatMessage) {
@@ -87,7 +84,6 @@ export const FriendChatMessage = ({
             {isUpdating ? (
               <FriendChatMessageInput
                 chatId={chatMessage.chatId}
-                friendRequestId={friendRequestId}
                 setIsUpdating={setIsUpdating}
                 existingChatMessage={chatMessage}
               />

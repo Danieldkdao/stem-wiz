@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserAvatar } from "@/components/user-avatar";
-import { getUserFriendsAction } from "@/features/friend-requests/actions/actions";
+import { getUserFriendsAction } from "@/features/friends/actions/actions";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { ComponentProps } from "react";
@@ -23,13 +23,14 @@ export const FriendsSelect = ({
     isPending,
     error,
   } = useQuery({
-    queryKey: ["friend_requests"],
+    queryKey: ["friendships"],
     queryFn: getUserFriendsAction,
   });
 
   if (isPending) {
     return <Skeleton className={cn("h-9 w-full", triggerClassName)} />;
   }
+  // todo: make these states better
   if (error) return <div>error</div>;
   if (!friends || !friends.length) return <div>no data</div>;
 

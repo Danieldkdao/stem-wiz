@@ -1,7 +1,8 @@
 import { db } from "@/db/db";
-import { ChatTable, FriendRequestTable, user } from "@/db/schema";
+import { ChatTable, FriendRequestTable } from "@/db/schema";
 import { NotificationPayloadEvent } from "@/db/shared";
-import { and, eq, getTableColumns, isNotNull, isNull, or } from "drizzle-orm";
+import { findActiveFriendshipById } from "@/features/friends/server/friendships";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
 export const handleRespondFriendRequestEvent = async (
   event: NotificationPayloadEvent<
@@ -76,42 +77,15 @@ export const handleFriendChatEvent = async (
     }
   }
 
-  if (!existingChat || !existingChat.friendRequestId) {
+  if (!existingChat || !existingChat.friendshipId) {
     throw new Error("Chat not found.");
   }
 
-  const [existingFriendRequest] = await db
-    .select({
-      ...getTableColumns(FriendRequestTable),
-      otherUserId: user.id,
-    })
-    .from(FriendRequestTable)
-    .innerJoin(
-      user,
-      or(
-        and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
-        ),
-        and(
-          eq(FriendRequestTable.fromUserId, user.id),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(FriendRequestTable.id, existingChat.friendRequestId),
-        eq(FriendRequestTable.status, "accepted"),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
-    throw new Error("Friend request not found.");
-  }
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) return null;
 
-  return existingFriendRequest.otherUserId;
+  return existingFriendship.friend.id;
 };

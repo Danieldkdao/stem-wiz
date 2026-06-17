@@ -12,3 +12,4 @@ export * from "./schemas/friend-request";
 export * from "./schemas/notification";
 export * from "./schemas/oracle-problem";
 export * from "./schemas/oracle-session";
+export * from "./schemas/friendship";

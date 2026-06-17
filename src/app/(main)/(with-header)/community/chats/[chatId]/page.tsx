@@ -1,11 +1,12 @@
+import { NotFound } from "@/components/not-found";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getFriendChatAction } from "@/features/chats/actions/actions";
 import { FriendChatHeader } from "@/features/chats/components/friend-chat-header";
 import { FriendChatMessageInput } from "@/features/chats/components/friend-chat-message-input";
 import { FriendChatMessageList } from "@/features/chats/components/friend-chat-message-list";
 import { ParamsId } from "@/lib/types";
 import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type ChatIdParams = ParamsId<"chatId">;
 
@@ -81,27 +82,28 @@ const ChatIdSuspense = async ({ params }: ChatIdParams) => {
   const { chatId } = await params;
   const response = await getFriendChatAction(chatId);
   if (!response) {
-    return <div>not found</div>;
+    return (
+      <div className="w-full h-full py-10 px-6">
+        <NotFound
+          title="Chat not found"
+          description="We were unable to find that chat. Try checking the url or refreshing the page."
+        />
+      </div>
+    );
   }
 
-  const { chat, friendRequest } = response;
+  const { chat, friendship } = response;
 
   return (
     <div className="h-full min-h-0 w-full overflow-hidden">
       <Card className="flex h-full min-h-0 w-full flex-col overflow-hidden">
         <CardHeader className="shrink-0 w-full min-w-0 border-b">
-          <FriendChatHeader chat={chat} friendRequest={friendRequest} />
+          <FriendChatHeader chat={chat} friendship={friendship} />
         </CardHeader>
 
-        <FriendChatMessageList
-          chatId={chat.id}
-          friendRequestId={friendRequest.id}
-        />
+        <FriendChatMessageList chatId={chat.id} />
         <CardFooter className="border-t shrink-0">
-          <FriendChatMessageInput
-            chatId={chat.id}
-            friendRequestId={friendRequest.id}
-          />
+          <FriendChatMessageInput chatId={chat.id} />
         </CardFooter>
       </Card>
     </div>

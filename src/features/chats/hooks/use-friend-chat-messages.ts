@@ -18,7 +18,6 @@ export const useFriendChatMessages = (
   initialMessages: (typeof ChatMessageTable.$inferSelect & { user: User })[],
   initialHasNextPage: boolean,
   chatId: string,
-  friendRequestId: string,
   scrollContainerRef: RefObject<HTMLDivElement | null>,
 ) => {
   const [chatMessages, setChatMessages] = useState(initialMessages);
@@ -27,7 +26,7 @@ export const useFriendChatMessages = (
   const initialMessagesKey = initialMessages
     .map((message) => message.id)
     .join(":");
-  const resetKey = `${chatId}:${friendRequestId}:${initialMessagesKey}:${initialHasNextPage}`;
+  const resetKey = `${chatId}:${initialMessagesKey}:${initialHasNextPage}`;
   const [currentResetKey, setCurrentResetKey] = useState(resetKey);
   const [isPending, startTransition] = useTransition();
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
@@ -63,11 +62,7 @@ export const useFriendChatMessages = (
           };
         }
 
-        const response = await getFriendChatMessagesAction(
-          chatId,
-          friendRequestId,
-          nextPage,
-        );
+        const response = await getFriendChatMessagesAction(chatId, nextPage);
         if (!response) return;
 
         const { chatMessages, metadata } = response;
@@ -99,7 +94,7 @@ export const useFriendChatMessages = (
         setIsLoadingOlderMessages(false);
       }
     });
-  }, [chatId, friendRequestId, hasNextPage, page, scrollContainerRef]);
+  }, [chatId, hasNextPage, page, scrollContainerRef]);
 
   useEffect(() => {
     const unsubscribers = [

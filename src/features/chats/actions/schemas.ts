@@ -9,7 +9,7 @@ export const chatInputSchema = z.object({
 export type ChatInputSchemaType = z.infer<typeof chatInputSchema>;
 
 export const friendChatSchema = z.object({
-  title: z.string().trim().min(1, { error: "Please enter a title" }).nullish(),
-  friendRequestId: z.uuid({ error: "Please select a friend to chat with" }),
+  title: z.string().trim().min(1, { error: "Please enter a title." }).nullish(),
+  friendshipId: z.uuid({ error: "Please select a friend to chat with." }),
 });
 export type FriendChatSchemaType = z.infer<typeof friendChatSchema>;

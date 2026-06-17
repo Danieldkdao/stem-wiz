@@ -40,7 +40,7 @@ export const CreateUpdateFriendChatForm = ({
     defaultValues: existingChat
       ? {
           title: existingChat.title ?? "",
-          friendRequestId: existingChat.friendRequestId ?? undefined,
+          friendshipId: existingChat.friendshipId ?? undefined,
         }
       : {
           title: "",
@@ -103,7 +103,7 @@ export const CreateUpdateFriendChatForm = ({
       />
       <Controller
         control={form.control}
-        name="friendRequestId"
+        name="friendshipId"
         render={({ field: { value, onChange, ...props }, fieldState }) => (
           <Field>
             <FieldLabel>Friend</FieldLabel>

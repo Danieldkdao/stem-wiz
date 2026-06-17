@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import { getFriendChatMessagesAction } from "../actions/actions";
 import { FriendChatMessageListClient } from "./friend-chat-message-list-client";
 
-type FriendChatMessageListProps = { chatId: string; friendRequestId: string };
+type FriendChatMessageListProps = { chatId: string };
 
 export const FriendChatMessageList = (props: FriendChatMessageListProps) => {
   return (
@@ -45,15 +45,10 @@ const FriendChatMessageListLoading = () => {
 
 const FriendChatMessageListSuspense = async ({
   chatId,
-  friendRequestId,
 }: FriendChatMessageListProps) => {
   const { userId } = await getCurrentUser();
   if (!userId) return null;
-  const response = await getFriendChatMessagesAction(
-    chatId,
-    friendRequestId,
-    DEFAULT_PAGE,
-  );
+  const response = await getFriendChatMessagesAction(chatId, DEFAULT_PAGE);
   if (!response)
     return (
       <ErrorState
@@ -69,7 +64,6 @@ const FriendChatMessageListSuspense = async ({
       initialMessages={chatMessages}
       initialHasNextPage={metadata.hasNextPage}
       chatId={chatId}
-      friendRequestId={friendRequestId}
       userId={userId}
     />
   );

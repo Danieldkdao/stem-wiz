@@ -4,6 +4,7 @@ import { db } from "@/db/db";
 import {
   FriendRequestStatusType,
   FriendRequestTable,
+  FriendshipTable,
   NotificationEventTypeType,
   NotificationTable,
   user,
@@ -18,12 +19,16 @@ import {
   NOT_FOUND_ERROR_MESSAGE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
-import { and, eq, getTableColumns, or, sql } from "drizzle-orm";
+import { areValidIds } from "@/lib/utils";
+import { and, eq, getTableColumns, isNull, or, sql } from "drizzle-orm";
 import {
   insertFriendRequestDb,
   updateFriendRequestDb,
 } from "../server/friend-requests";
-import { areValidIds } from "@/lib/utils";
+import {
+  findActiveFriendshipByUsers,
+  insertFriendshipDb,
+} from "../server/friendships";
 
 export const createFriendRequestAction = async (friendUserId: string) => {
   const { userId, user: currentUser } = await getCurrentUser({ allData: true });
@@ -37,6 +42,14 @@ export const createFriendRequestAction = async (friendUserId: string) => {
     return {
       error: true,
       message: "You cannot send a friend request to yourself.",
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipByUsers(friendUserId);
+  if (existingFriendship) {
+    return {
+      error: true,
+      message: "You are already friends with this user.",
     };
   }
 
@@ -57,8 +70,16 @@ export const createFriendRequestAction = async (friendUserId: string) => {
     .from(FriendRequestTable)
     .where(
       and(
-        eq(FriendRequestTable.fromUserId, userId),
-        eq(FriendRequestTable.toUserId, friendUserId),
+        or(
+          and(
+            eq(FriendRequestTable.fromUserId, userId),
+            eq(FriendRequestTable.toUserId, friendUserId),
+          ),
+          and(
+            eq(FriendRequestTable.fromUserId, friendUserId),
+            eq(FriendRequestTable.toUserId, userId),
+          ),
+        ),
         eq(FriendRequestTable.status, "pending"),
       ),
     );
@@ -121,6 +142,7 @@ export const respondFriendRequestAction = async (
     .innerJoin(user, eq(user.id, FriendRequestTable.fromUserId))
     .where(
       and(
+        eq(FriendRequestTable.status, "pending"),
         eq(FriendRequestTable.id, friendRequestId),
         eq(FriendRequestTable.toUserId, userId),
       ),
@@ -129,6 +151,31 @@ export const respondFriendRequestAction = async (
     return {
       error: true,
       message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingFriendship] = await db
+    .select()
+    .from(FriendshipTable)
+    .where(
+      and(
+        or(
+          and(
+            eq(FriendshipTable.userOneId, userId),
+            eq(FriendshipTable.userTwoId, existingFriendRequest.fromUserId),
+          ),
+          and(
+            eq(FriendshipTable.userOneId, existingFriendRequest.fromUserId),
+            eq(FriendshipTable.userTwoId, userId),
+          ),
+        ),
+        isNull(FriendshipTable.deletedAt),
+      ),
+    );
+  if (existingFriendship) {
+    return {
+      error: true,
+      message: "You are already friends with this user.",
     };
   }
 
@@ -168,6 +215,17 @@ export const respondFriendRequestAction = async (
           throw new Error(`Failed to respond to friend request.`);
 
         const isAcceptedAction = action === "accepted";
+
+        if (isAcceptedAction) {
+          const createdFriendship = await insertFriendshipDb(
+            existingFriendRequest.fromUserId,
+            existingFriendRequest.toUserId,
+            existingFriendRequest.id,
+            tx,
+          );
+          if (!createdFriendship)
+            throw new Error("Failed to establish friendship.");
+        }
 
         const [updatedNotification, insertedNotification] = await Promise.all([
           updateNotificationDb(
@@ -244,29 +302,29 @@ export const getUserFriendsAction = async () => {
 
   const friends = await db
     .select({
-      ...getTableColumns(FriendRequestTable),
+      ...getTableColumns(FriendshipTable),
       user: getTableColumns(user),
     })
-    .from(FriendRequestTable)
+    .from(FriendshipTable)
     .innerJoin(
       user,
       or(
         and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(user.id, FriendRequestTable.toUserId),
+          eq(FriendshipTable.userOneId, userId),
+          eq(user.id, FriendshipTable.userTwoId),
         ),
         and(
-          eq(FriendRequestTable.toUserId, userId),
-          eq(user.id, FriendRequestTable.fromUserId),
+          eq(FriendshipTable.userTwoId, userId),
+          eq(user.id, FriendshipTable.userOneId),
         ),
       ),
     )
     .where(
       and(
-        eq(FriendRequestTable.status, "accepted"),
+        isNull(FriendshipTable.deletedAt),
         or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, userId),
         ),
       ),
     );

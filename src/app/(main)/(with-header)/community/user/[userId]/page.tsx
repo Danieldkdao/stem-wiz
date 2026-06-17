@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user-avatar";
-import { FriendRequestStatusButtons } from "@/features/friend-requests/components/friend-request-status-buttons";
+import { FriendRequestStatusButtons } from "@/features/friends/components/friend-request-status-buttons";
 import { getUserAction } from "@/features/user/actions/actions";
 import {
   formatProgrammingLanguage,

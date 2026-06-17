@@ -4,12 +4,13 @@ import { db } from "@/db/db";
 import {
   ChatMessageTable,
   ChatTable,
-  FriendRequestTable,
+  FriendshipTable,
   user,
 } from "@/db/schema";
+import { findActiveFriendshipById } from "@/features/friends/server/friendships";
 import {
-  confirmExistingMatch,
   checkExistingParticipant,
+  confirmExistingMatch,
 } from "@/features/matches/actions/actions";
 import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
 import { getCurrentUser } from "@/lib/auth/helpers";
@@ -21,6 +22,7 @@ import {
   PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
+import { areValidIds } from "@/lib/utils";
 import {
   and,
   asc,
@@ -32,6 +34,7 @@ import {
   ilike,
   inArray,
   isNotNull,
+  isNull,
   or,
   SQL,
   sql,
@@ -52,7 +55,6 @@ import {
   friendChatSchema,
   FriendChatSchemaType,
 } from "./schemas";
-import { areValidIds } from "@/lib/utils";
 
 export const createMatchChatMessageAction = async (
   matchId: string,
@@ -154,36 +156,11 @@ export const createFriendChatAction = async (
     };
   }
 
-  const [existingFriendRequest] = await db
-    .select({
-      id: FriendRequestTable.id,
-      otherUserId: user.id,
-    })
-    .from(FriendRequestTable)
-    .innerJoin(
-      user,
-      or(
-        and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
-        ),
-        and(
-          eq(FriendRequestTable.fromUserId, user.id),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(FriendRequestTable.id, data.friendRequestId),
-        eq(FriendRequestTable.status, "accepted"),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
+  const existingFriendship = await findActiveFriendshipById(
+    data.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
     return {
       error: true,
       message: "Invalid friend selection",
@@ -196,7 +173,7 @@ export const createFriendChatAction = async (
         const insertedChat = await insertChatDb(
           {
             ...data,
-            friendRequestId: existingFriendRequest.id,
+            friendshipId: existingFriendship.id,
           },
           tx,
         );
@@ -206,7 +183,7 @@ export const createFriendChatAction = async (
 
         const insertedNotification = await insertNotificationDb(
           {
-            userId: existingFriendRequest.otherUserId,
+            userId: existingFriendship.friend.id,
             payload: {
               type: "new_chat",
               chatId: insertedChat.id,
@@ -269,19 +246,22 @@ export const updateFriendChatAction = async (
     };
   }
 
-  const [existingFriendRequest] = await db
+  const [existingChat] = await db
     .select()
-    .from(FriendRequestTable)
-    .where(
-      and(
-        eq(FriendRequestTable.id, data.friendRequestId),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
+    .from(ChatTable)
+    .where(eq(ChatTable.id, chatId));
+  if (!existingChat || existingChat.friendshipId !== data.friendshipId) {
+    return {
+      error: true,
+      message: "Chat not found.",
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
     return {
       error: true,
       message: "You are not friends with this user.",
@@ -317,17 +297,15 @@ export const getFriendChatsAction = async (filterOptions: {
   const { userId } = await getCurrentUser();
   if (!userId) return null;
 
-  const friendRequests = await db.query.FriendRequestTable.findMany({
+  const friendships = await db.query.FriendshipTable.findMany({
     where: and(
-      eq(FriendRequestTable.status, "accepted"),
+      isNull(FriendshipTable.deletedAt),
       or(
-        eq(FriendRequestTable.fromUserId, userId),
-        eq(FriendRequestTable.toUserId, userId),
+        eq(FriendshipTable.userOneId, userId),
+        eq(FriendshipTable.userTwoId, userId),
       ),
     ),
   });
-
-  if (!friendRequests.length) return null;
 
   const { search, sortBy, filterBy, page } = filterOptions;
   const offset = (page - 1) * PAGE_SIZE;
@@ -384,8 +362,8 @@ export const getFriendChatsAction = async (filterOptions: {
 
   const whereQuery = and(
     inArray(
-      ChatTable.friendRequestId,
-      friendRequests.map((fr) => fr.id),
+      ChatTable.friendshipId,
+      friendships.map((f) => f.id),
     ),
     filterByMap[filterBy],
     searchQuery,
@@ -398,20 +376,17 @@ export const getFriendChatsAction = async (filterOptions: {
       messageCount,
     })
     .from(ChatTable)
-    .innerJoin(
-      FriendRequestTable,
-      eq(ChatTable.friendRequestId, FriendRequestTable.id),
-    )
+    .innerJoin(FriendshipTable, eq(ChatTable.friendshipId, FriendshipTable.id))
     .innerJoin(
       user,
       or(
         and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
         ),
         and(
-          eq(FriendRequestTable.toUserId, userId),
-          eq(FriendRequestTable.fromUserId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+          eq(FriendshipTable.userOneId, user.id),
         ),
       ),
     )
@@ -425,20 +400,17 @@ export const getFriendChatsAction = async (filterOptions: {
       count: count(),
     })
     .from(ChatTable)
-    .innerJoin(
-      FriendRequestTable,
-      eq(ChatTable.friendRequestId, FriendRequestTable.id),
-    )
+    .innerJoin(FriendshipTable, eq(ChatTable.friendshipId, FriendshipTable.id))
     .innerJoin(
       user,
       or(
         and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
         ),
         and(
-          eq(FriendRequestTable.toUserId, userId),
-          eq(FriendRequestTable.fromUserId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+          eq(FriendshipTable.userOneId, user.id),
         ),
       ),
     )
@@ -466,92 +438,40 @@ export const getFriendChatAction = async (chatId: string) => {
     .from(ChatTable)
     .where(eq(ChatTable.id, chatId));
 
-  if (!existingChat || !existingChat.friendRequestId) return null;
+  if (!existingChat || !existingChat.friendshipId) return null;
 
-  const [existingFriendRequest] = await db
-    .select({
-      ...getTableColumns(FriendRequestTable),
-      user: getTableColumns(user),
-    })
-    .from(FriendRequestTable)
-    .innerJoin(
-      user,
-      or(
-        and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
-        ),
-        and(
-          eq(FriendRequestTable.fromUserId, user.id),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(FriendRequestTable.id, existingChat.friendRequestId),
-        eq(FriendRequestTable.status, "accepted"),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) return null;
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) return null;
 
   return {
     chat: existingChat,
-    friendRequest: existingFriendRequest,
+    friendship: existingFriendship,
   };
 };
 
 export const getFriendChatMessagesAction = async (
   chatId: string,
-  friendRequestId: string,
   page: number,
 ) => {
-  if (!areValidIds([chatId, friendRequestId])) return null;
+  if (!areValidIds([chatId])) return null;
   const { userId } = await getCurrentUser();
   if (!userId) return null;
-
-  const [existingFriendRequest] = await db
-    .select({
-      ...getTableColumns(FriendRequestTable),
-      user: getTableColumns(user),
-    })
-    .from(FriendRequestTable)
-    .innerJoin(
-      user,
-      or(
-        and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
-        ),
-        and(
-          eq(FriendRequestTable.fromUserId, user.id),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(FriendRequestTable.id, friendRequestId),
-        eq(FriendRequestTable.status, "accepted"),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
 
   const [existingChat] = await db
     .select()
     .from(ChatTable)
     .where(eq(ChatTable.id, chatId));
 
-  if (!existingChat || !existingChat.friendRequestId) return null;
+  if (!existingChat || !existingChat.friendshipId) return null;
 
-  if (!existingFriendRequest) return null;
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) return;
 
   const offset = (page - 1) * PAGE_SIZE;
 
@@ -600,11 +520,10 @@ export const getFriendChatMessagesAction = async (
 };
 
 export const sendFriendChatMessageAction = async (
-  friendRequestId: string,
   chatId: string,
   unsafeData: ChatInputSchemaType,
 ) => {
-  if (!areValidIds([friendRequestId, chatId])) {
+  if (!areValidIds([chatId])) {
     return {
       error: true,
       message: NOT_FOUND_ERROR_MESSAGE,
@@ -618,38 +537,25 @@ export const sendFriendChatMessageAction = async (
     };
   }
 
-  const [existingFriendRequest] = await db
-    .select()
-    .from(FriendRequestTable)
-    .where(
-      and(
-        eq(FriendRequestTable.id, friendRequestId),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
-    return {
-      error: true,
-      message: "You are not friends with this user.",
-    };
-  }
-
   const [existingChat] = await db
     .select()
     .from(ChatTable)
-    .where(
-      and(
-        eq(ChatTable.id, chatId),
-        eq(ChatTable.friendRequestId, existingFriendRequest.id),
-      ),
-    );
-  if (!existingChat) {
+    .where(eq(ChatTable.id, chatId));
+  if (!existingChat || !existingChat.friendshipId) {
     return {
       error: true,
       message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
+    return {
+      error: true,
+      message: "You are not friends with this user.",
     };
   }
 
@@ -687,12 +593,11 @@ export const sendFriendChatMessageAction = async (
 };
 
 export const updateFriendChatMessageAction = async (
-  friendRequestId: string,
   chatId: string,
   messageId: string,
   unsafeData: ChatInputSchemaType,
 ) => {
-  if (!areValidIds([friendRequestId, chatId, messageId])) {
+  if (!areValidIds([chatId, messageId])) {
     return {
       error: true,
       message: NOT_FOUND_ERROR_MESSAGE,
@@ -706,22 +611,25 @@ export const updateFriendChatMessageAction = async (
     };
   }
 
-  const [existingFriendRequest] = await db
+  const [existingChat] = await db
     .select()
-    .from(FriendRequestTable)
-    .where(
-      and(
-        eq(FriendRequestTable.id, friendRequestId),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
+    .from(ChatTable)
+    .where(eq(ChatTable.id, chatId));
+  if (!existingChat || !existingChat.friendshipId) {
     return {
       error: true,
-      message: "You are not friends with this user.",
+      message: "Chat not found.",
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
+    return {
+      error: true,
+      message: NO_PERMISSION_DATA_MESSAGE,
     };
   }
 
@@ -732,7 +640,7 @@ export const updateFriendChatMessageAction = async (
       and(
         eq(ChatMessageTable.userId, userId),
         eq(ChatMessageTable.id, messageId),
-        eq(ChatMessageTable.chatId, chatId),
+        eq(ChatMessageTable.chatId, existingChat.id),
       ),
     );
   if (!existingChatMessage) {
@@ -752,7 +660,7 @@ export const updateFriendChatMessageAction = async (
 
   try {
     const updatedMessage = await updateChatMessageDb(
-      chatId,
+      existingChat.id,
       existingChatMessage.id,
       { ...data, status: "updated", respondedAt: new Date() },
     );
@@ -776,10 +684,9 @@ export const updateFriendChatMessageAction = async (
 
 export const deleteFriendChatMessageAction = async (
   chatId: string,
-  friendRequestId: string,
   messageId: string,
 ) => {
-  if (!areValidIds([chatId, friendRequestId, messageId])) {
+  if (!areValidIds([chatId, messageId])) {
     return {
       error: true,
       message: NOT_FOUND_ERROR_MESSAGE,
@@ -793,38 +700,25 @@ export const deleteFriendChatMessageAction = async (
     };
   }
 
-  const [existingFriendRequest] = await db
-    .select({
-      id: FriendRequestTable.id,
-      otherUserId: user.id,
-    })
-    .from(FriendRequestTable)
-    .innerJoin(
-      user,
-      or(
-        and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
-        ),
-        and(
-          eq(FriendRequestTable.fromUserId, user.id),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(FriendRequestTable.id, friendRequestId),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
+  const [existingChat] = await db
+    .select()
+    .from(ChatTable)
+    .where(eq(ChatTable.id, chatId));
+  if (!existingChat || !existingChat.friendshipId) {
     return {
       error: true,
-      message: "You are not friends with this user.",
+      message: "Chat not found.",
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
+    return {
+      error: true,
+      message: NO_PERMISSION_DATA_MESSAGE,
     };
   }
 
@@ -835,7 +729,7 @@ export const deleteFriendChatMessageAction = async (
       and(
         eq(ChatMessageTable.userId, userId),
         eq(ChatMessageTable.id, messageId),
-        eq(ChatMessageTable.chatId, chatId),
+        eq(ChatMessageTable.chatId, existingChat.id),
       ),
     );
   if (!existingChatMessage) {
@@ -847,7 +741,7 @@ export const deleteFriendChatMessageAction = async (
 
   try {
     const deletedChatMessage = await deleteChatMessageDb(
-      chatId,
+      existingChat.id,
       existingChatMessage.id,
     );
     if (!deletedChatMessage) {
@@ -887,43 +781,18 @@ export const deleteFriendChatAction = async (chatId: string) => {
     .select()
     .from(ChatTable)
     .where(eq(ChatTable.id, chatId));
-  if (!existingChat || !existingChat.friendRequestId) {
+  if (!existingChat || !existingChat.friendshipId) {
     return {
       error: true,
       message: NOT_FOUND_ERROR_MESSAGE,
     };
   }
 
-  const [existingFriendRequest] = await db
-    .select({
-      id: FriendRequestTable.id,
-      otherUserId: user.id,
-    })
-    .from(FriendRequestTable)
-    .innerJoin(
-      user,
-      or(
-        and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
-        ),
-        and(
-          eq(FriendRequestTable.fromUserId, user.id),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(FriendRequestTable.id, existingChat.friendRequestId),
-        eq(FriendRequestTable.status, "accepted"),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
     return {
       error: true,
       message: NO_PERMISSION_DATA_MESSAGE,
@@ -939,11 +808,11 @@ export const deleteFriendChatAction = async (chatId: string) => {
 
       const insertedNotification = await insertNotificationDb(
         {
-          userId: existingFriendRequest.otherUserId,
+          userId: existingFriendship.friend.id,
           payload: {
             type: "chat_deleted",
             chatId: deletedChat.id,
-            userId: existingFriendRequest.otherUserId,
+            userId: existingFriendship.friend.id,
             title: "Chat Deleted",
             message: `${userInfo.name} deleted the following chat: "${deletedChat.title}".`,
           },

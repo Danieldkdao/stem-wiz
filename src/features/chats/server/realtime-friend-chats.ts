@@ -1,10 +1,6 @@
 import { db } from "@/db/db";
-import {
-  ChatMessageTable,
-  ChatTable,
-  FriendRequestTable,
-  user,
-} from "@/db/schema";
+import { ChatMessageTable, ChatTable, user } from "@/db/schema";
+import { findActiveFriendshipById } from "@/features/friends/server/friendships";
 import {
   RealtimeServerMessage,
   RealtimeWebSocket,
@@ -13,9 +9,9 @@ import {
   sendToConnection,
   sendToUser,
 } from "@/features/realtime/server/connection-state";
-import { and, eq, getTableColumns, isNotNull, or } from "drizzle-orm";
-import { getRealtimeFriendChatWsState } from "./connection-state";
 import { NO_PERMISSION_DATA_MESSAGE } from "@/lib/constants";
+import { and, eq, getTableColumns } from "drizzle-orm";
+import { getRealtimeFriendChatWsState } from "./connection-state";
 
 export const broadcastToFriendChat = (
   chatId: string,
@@ -40,8 +36,8 @@ export const handleBroadcastNewFriendChat = async (
   const [existingChat] = await db
     .select()
     .from(ChatTable)
-    .where(and(eq(ChatTable.id, chatId), isNotNull(ChatTable.friendRequestId)));
-  if (!existingChat || !existingChat.friendRequestId) {
+    .where(eq(ChatTable.id, chatId));
+  if (!existingChat || !existingChat.friendshipId) {
     sendToConnection(connectionId, {
       type: "error",
       message: "Chat not found.",
@@ -49,47 +45,23 @@ export const handleBroadcastNewFriendChat = async (
     return;
   }
 
-  const [existingFriendRequest] = await db
-    .select({
-      ...getTableColumns(FriendRequestTable),
-      otherUser: getTableColumns(user),
-    })
-    .from(FriendRequestTable)
-    .innerJoin(
-      user,
-      or(
-        and(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, user.id),
-        ),
-        and(
-          eq(FriendRequestTable.fromUserId, user.id),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(FriendRequestTable.id, existingChat.friendRequestId),
-        eq(FriendRequestTable.status, "accepted"),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
     sendToConnection(connectionId, {
       type: "error",
       message: NO_PERMISSION_DATA_MESSAGE,
     });
+    return;
   }
 
-  sendToUser(existingFriendRequest.otherUser.id, {
+  sendToUser(existingFriendship.friend.id, {
     type: "new_chat",
     chat: {
       ...existingChat,
-      user: existingFriendRequest.otherUser,
+      user: existingFriendship.friend,
       messageCount: 0,
     },
   });
@@ -109,31 +81,22 @@ export const connectToFriendChat = async (
     .select()
     .from(ChatTable)
     .where(eq(ChatTable.id, chatId));
-  if (!existingChat || !existingChat.friendRequestId) {
+  if (!existingChat || !existingChat.friendshipId) {
     sendToConnection(connectionId, {
       type: "connection_error",
-      message: "You don't have permission to access this chat.",
+      message: "Chat not found.",
     });
     return;
   }
 
-  const [existingFriendRequest] = await db
-    .select()
-    .from(FriendRequestTable)
-    .where(
-      and(
-        eq(FriendRequestTable.id, existingChat.friendRequestId),
-        eq(FriendRequestTable.status, "accepted"),
-        or(
-          eq(FriendRequestTable.fromUserId, userId),
-          eq(FriendRequestTable.toUserId, userId),
-        ),
-      ),
-    );
-  if (!existingFriendRequest) {
+  const existingFriendship = await findActiveFriendshipById(
+    existingChat.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
     sendToConnection(connectionId, {
       type: "connection_error",
-      message: "Invalid friend request.",
+      message: "You don't have permission to access this chat.",
     });
     return;
   }

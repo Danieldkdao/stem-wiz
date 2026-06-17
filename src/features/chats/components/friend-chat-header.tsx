@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
-import { ChatTable, FriendRequestTable } from "@/db/schema";
+import { ChatTable, FriendshipTable } from "@/db/schema";
 import { statusMap } from "@/features/arena/components";
 import { User } from "@/lib/auth/auth";
 import { EditIcon, Trash2Icon } from "lucide-react";
@@ -17,10 +17,10 @@ import { useRouter } from "next/navigation";
 
 export const FriendChatHeader = ({
   chat,
-  friendRequest,
+  friendship,
 }: {
   chat: typeof ChatTable.$inferSelect;
-  friendRequest: typeof FriendRequestTable.$inferSelect & { user: User };
+  friendship: typeof FriendshipTable.$inferSelect & { friend: User };
 }) => {
   const router = useRouter();
   const {
@@ -33,7 +33,7 @@ export const FriendChatHeader = ({
   } = useFriendChatSocket();
 
   const isFriendConnected =
-    friendsConnectionStatuses.get(chat.id)?.has(friendRequest.user.id) ?? false;
+    friendsConnectionStatuses.get(chat.id)?.has(friendship.friend.id) ?? false;
 
   useEffect(() => {
     if (status === "open" || status === "connecting") return;
@@ -80,9 +80,9 @@ export const FriendChatHeader = ({
     <div className="flex items-center gap-2 w-full">
       <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
         <div className="flex items-center gap-2">
-          <UserAvatar {...friendRequest.user} />
+          <UserAvatar {...friendship.friend} />
           <span className="text-lg font-semibold">
-            {friendRequest.user.name}
+            {friendship.friend.name}
           </span>
           <Badge variant={isFriendConnected ? "default" : "outline"}>
             {isFriendConnected ? "Active" : "Offline"}

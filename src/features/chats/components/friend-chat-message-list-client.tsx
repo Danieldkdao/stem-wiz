@@ -1,24 +1,22 @@
 "use client";
 
-import { ChatMessageTable } from "@/db/schema";
-import { FriendChatMessage } from "./friend-chat-message";
-import { User } from "@/lib/auth/auth";
-import { useFriendChatMessages } from "../hooks/use-friend-chat-messages";
-import { useEffect, useRef } from "react";
 import { CardContent } from "@/components/ui/card";
+import { ChatMessageTable } from "@/db/schema";
+import { User } from "@/lib/auth/auth";
 import { Loader2Icon, MessageSquareXIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useFriendChatMessages } from "../hooks/use-friend-chat-messages";
+import { FriendChatMessage } from "./friend-chat-message";
 
 export const FriendChatMessageListClient = ({
   initialMessages,
   initialHasNextPage,
   chatId,
-  friendRequestId,
   userId,
 }: {
   initialMessages: (typeof ChatMessageTable.$inferSelect & { user: User })[];
   initialHasNextPage: boolean;
   chatId: string;
-  friendRequestId: string;
   userId: string;
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -28,7 +26,6 @@ export const FriendChatMessageListClient = ({
       initialMessages,
       initialHasNextPage,
       chatId,
-      friendRequestId,
       scrollContainerRef,
     );
 
@@ -79,7 +76,6 @@ export const FriendChatMessageListClient = ({
             <FriendChatMessage
               key={msg.id}
               chatMessage={msg}
-              friendRequestId={friendRequestId}
               currentUserId={userId}
             />
           ))

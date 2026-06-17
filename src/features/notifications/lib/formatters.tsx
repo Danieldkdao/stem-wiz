@@ -1,6 +1,6 @@
 import { NotificationPayload, NotificationTable } from "@/db/schema";
 import { NotificationListItem } from "./types";
-import { RespondFriendRequestButton } from "@/features/friend-requests/components/respond-friend-request-button";
+import { RespondFriendRequestButton } from "@/features/friends/components/respond-friend-request-button";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 

@@ -3,6 +3,7 @@
 import { db } from "@/db/db";
 import {
   FriendRequestTable,
+  FriendshipTable,
   user,
   UserAvailabilityDayType,
   UserAvailabilityTimeOfDayType,
@@ -229,11 +230,12 @@ export const getUsersAction = async (
 
   const friendCount = sql<number>`(
     SELECT COUNT(*)::int
-    FROM ${FriendRequestTable} frt
-    WHERE frt.status = 'accepted'
+    FROM ${FriendshipTable} ft
+    WHERE ft.created_from_friend_request_id IS NOT NULL
+      AND ft.deleted_at IS NULL
       AND(
-        frt.from_user_id = ${user.id}
-        OR frt.to_user_id = ${user.id}
+        ft.user_one_id = ${user.id}
+        OR ft.user_two_id = ${user.id}
       )
   )`.mapWith(Number);
 
@@ -247,12 +249,13 @@ export const getUsersAction = async (
   const friendsFilter = sql`
     EXISTS (
       SELECT 1
-      FROM ${FriendRequestTable} frt
-      WHERE frt.status = 'accepted'
+      FROM ${FriendshipTable} ft
+      WHERE ft.created_from_friend_request_id IS NOT NULL
+        AND ft.deleted_at IS NULL
         AND (
-          (frt.from_user_id = ${userId} AND frt.to_user_id = ${user.id})
+          (ft.user_one_id = ${userId} AND ft.user_two_id = ${user.id})
           OR
-          (frt.from_user_id = ${user.id} AND frt.to_user_id = ${userId})
+          (ft.user_one_id = ${user.id} AND ft.user_two_id = ${userId})
         )
     )
   `;

@@ -1,31 +1,29 @@
 "use client";
 
-import { Controller, useForm } from "react-hook-form";
-import { chatInputSchema, ChatInputSchemaType } from "../actions/schemas";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Field, FieldContent, FieldError } from "@/components/ui/field";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldError } from "@/components/ui/field";
+import { LoadingSwap } from "@/components/ui/loading-swap";
+import { ChatMessageTable } from "@/db/schema";
+import { SetterType } from "@/lib/types";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { SendIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import {
   sendFriendChatMessageAction,
   updateFriendChatMessageAction,
 } from "../actions/actions";
-import { toast } from "sonner";
-import { LoadingSwap } from "@/components/ui/loading-swap";
-import { useRouter } from "next/navigation";
-import { ChatMessageTable } from "@/db/schema";
-import { SetterType } from "@/lib/types";
+import { chatInputSchema, ChatInputSchemaType } from "../actions/schemas";
 import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
 
 export const FriendChatMessageInput = ({
   chatId,
-  friendRequestId,
   existingChatMessage,
   setIsUpdating,
 }: {
   chatId: string;
-  friendRequestId: string;
   existingChatMessage?: typeof ChatMessageTable.$inferSelect;
   setIsUpdating?: SetterType<boolean>;
 }) => {
@@ -41,13 +39,8 @@ export const FriendChatMessageInput = ({
 
   const sendChatMessage = async (data: ChatInputSchemaType) => {
     const action = existingChatMessage
-      ? updateFriendChatMessageAction(
-          friendRequestId,
-          chatId,
-          existingChatMessage.id,
-          data,
-        )
-      : sendFriendChatMessageAction(friendRequestId, chatId, data);
+      ? updateFriendChatMessageAction(chatId, existingChatMessage.id, data)
+      : sendFriendChatMessageAction(chatId, data);
     const response = await action;
     if (response.error || !response.chatMessage) {
       toast.error(response.message);
