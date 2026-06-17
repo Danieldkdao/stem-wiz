@@ -13,6 +13,7 @@ import {
 import {
   broadcastCodeSubmission,
   connectToMatch,
+  disconnectFromMatch,
   finishMatchFromSocket,
 } from "./match-realtime";
 import { joinWaitingRoom, leaveWaitingRoom } from "./matchmaking";
@@ -32,6 +33,9 @@ export const handleArenaMessage = async (
       break;
     case "connect_to_match":
       await connectToMatch(ws, message.matchId);
+      break;
+    case "disconnect_from_match":
+      await disconnectFromMatch(ws, message.matchId);
       break;
     case "submitted_code":
       await broadcastCodeSubmission(ws, message.matchId);

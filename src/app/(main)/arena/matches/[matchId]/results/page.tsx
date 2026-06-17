@@ -1,5 +1,7 @@
 import { CodeEditor } from "@/components/code/code-editor";
+import { InfoCard } from "@/components/info-card";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
+import { NotFound } from "@/components/not-found";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -78,7 +80,14 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
   const match = await timeoutExpiredMatch(matchId);
 
   if (!match) {
-    return <div>reusable match not found component</div>;
+    return (
+      <div className="w-full h-full py-10 px-6">
+        <NotFound
+          title="Match not found"
+          description="We couldn't find this match. Try checking the url or refreshing the page."
+        />
+      </div>
+    );
   }
 
   if (
@@ -86,7 +95,25 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
     match.expiresAt > new Date() &&
     match.status !== "finished"
   ) {
-    return <div>still going on</div>;
+    return (
+      <div className="w-full h-full py-10 px-6">
+        <InfoCard
+          title="Match still ongoing"
+          description="This match is still ongoing. If you are a participant, jump back in to finish it. Otherwise you can watch the match."
+        >
+          <div className="w-full mx-auto flex flex-col gap-2 md:flex-row md:items-center max-w-150">
+            <Button variant="outline" className="w-full md:flex-1" asChild>
+              <Link href={`/arena/matches/${match.id}/observing`}>
+                Watch match
+              </Link>
+            </Button>
+            <Button className="w-full md:flex-1" asChild>
+              <Link href={`/arena/matches/${match.id}`}>Resume match</Link>
+            </Button>
+          </div>
+        </InfoCard>
+      </div>
+    );
   }
 
   const wasMatchParticipant = match.users.find(
@@ -132,9 +159,12 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
 
                 <CodeEditor
                   language={match.arenaProblem.programmingLanguage}
+                  path={`match:${matchId}:self`}
                   defaultValue={winningSubmission.code}
                   height={700}
                   options={{ readOnly: true }}
+                  key={match.id}
+                  keepCurrentModel
                 />
               </div>
             )}

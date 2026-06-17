@@ -25,6 +25,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { useMatchObserverSocket } from "../hooks/use-match-observer-socket";
 import { MatchParticipantStatuses } from "./match-participant-statuses";
 import { ObserverCodeOutput } from "./observer-code-output";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ObserverMatch = typeof MatchTable.$inferSelect & {
   arenaProblem: typeof ArenaProblemTable.$inferSelect;
@@ -64,11 +65,13 @@ const ObserverUserPanel = ({
   defaultSize,
   isMirrored,
   programmingLanguage,
+  matchId,
 }: {
   observedUser: ObservedUser;
   defaultSize: number;
   isMirrored: boolean;
   programmingLanguage: ObserverMatch["arenaProblem"]["programmingLanguage"];
+  matchId: string;
 }) => {
   const status = (
     <MatchParticipantStatuses
@@ -129,9 +132,12 @@ const ObserverUserPanel = ({
         <ResizablePanel minSize={30}>
           <div className="w-full h-full">
             <CodeEditor
+              key={matchId}
+              path={`match:${matchId}:observer:${observedUser.user.id}`}
               language={programmingLanguage}
               value={observedUser.code}
               options={{ readOnly: true }}
+              keepCurrentModel
             />
           </div>
         </ResizablePanel>
@@ -152,6 +158,7 @@ const ObserverUserPanel = ({
 
 export const ObserverMatchView = ({ match }: { match: ObserverMatch }) => {
   const { subscribeObserverEvent } = useMatchObserverSocket();
+  const isMobile = useIsMobile();
 
   const [users, setUsers] = useState<ObservedUser[]>(() =>
     getInitialUsers(match),
@@ -237,7 +244,7 @@ export const ObserverMatchView = ({ match }: { match: ObserverMatch }) => {
   const defaultPanelSize = users.length > 0 ? 100 / users.length : 100;
 
   return (
-    <ResizablePanelGroup orientation="horizontal">
+    <ResizablePanelGroup orientation={isMobile ? "vertical" : "horizontal"}>
       {users.map((user, index) => (
         <Fragment key={user.user.id}>
           {index > 0 && <ResizableHandle />}
@@ -246,6 +253,7 @@ export const ObserverMatchView = ({ match }: { match: ObserverMatch }) => {
             defaultSize={defaultPanelSize}
             isMirrored={index % 2 === 1}
             programmingLanguage={match.arenaProblem.programmingLanguage}
+            matchId={match.id}
           />
         </Fragment>
       ))}

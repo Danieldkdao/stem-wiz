@@ -14,6 +14,7 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { cn, getTimeValues } from "@/lib/utils";
 import { useMatchStore } from "@/store/use-match-store";
 import { TimerIcon } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,8 +25,6 @@ import {
 } from "../actions/actions";
 import { useMatchSocket } from "../hooks/use-match-socket";
 import { MatchFinishedDialog } from "./match-finished-dialog";
-import { TooltipWrapper } from "@/components/tooltip-wrapper";
-import Link from "next/link";
 
 export const MatchHeader = ({
   match,
@@ -47,6 +46,7 @@ export const MatchHeader = ({
   const {
     connect,
     connectToMatch,
+    disconnectFromMatch,
     status,
     opponentStatus,
     lastEvent,
@@ -76,6 +76,10 @@ export const MatchHeader = ({
     if (!shouldConnectToMatch) return;
 
     connectToMatch(match.id);
+
+    return () => {
+      disconnectFromMatch(match.id);
+    };
   }, [connectToMatch, match.id, status, isMatchFinished]);
 
   useEffect(() => {
@@ -185,6 +189,18 @@ export const MatchHeader = ({
     }
   };
 
+  const handleLeaveMatch = async () => {
+    setIsEnding(true);
+    await new Promise((resolve) => {
+      disconnectFromMatch(match.id);
+      setTimeout(() => {
+        resolve("Success");
+      }, 2000);
+    });
+    setIsEnding(false);
+    router.push("/matches");
+  };
+
   return (
     <>
       {confirmationDialog}
@@ -256,8 +272,12 @@ export const MatchHeader = ({
           </div>
 
           <div className="flex justify-end items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/matches">Back to matches</Link>
+            <Button
+              variant="outline"
+              disabled={isEnding}
+              onClick={handleLeaveMatch}
+            >
+              Back to matches
             </Button>
             <Button
               variant="destructive"

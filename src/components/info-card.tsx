@@ -1,9 +1,9 @@
-import { CircleXIcon } from "lucide-react";
-import { Card, CardContent } from "./ui/card";
 import { cn } from "@/lib/utils";
+import { InfoIcon } from "lucide-react";
 import { ReactNode } from "react";
+import { Card, CardContent } from "./ui/card";
 
-export const ErrorState = ({
+export const InfoCard = ({
   title,
   description,
   className,
@@ -17,16 +17,16 @@ export const ErrorState = ({
   return (
     <Card
       className={cn(
-        "ring-0 border-4 border-dashed border-destructive w-full",
+        "ring-0 border-4 border-dashed border-primary w-full",
         className,
       )}
     >
       <CardContent className="flex flex-col gap-2 items-center">
-        <CircleXIcon className="text-destructive size-10" />
-        <h2 className="text-2xl font-semibold text-center text-destructive">
+        <InfoIcon className="text-primary size-10" />
+        <h2 className="text-2xl font-semibold text-center text-primary">
           {title}
         </h2>
-        <p className="text-destructive text-lg text-center max-w-150">
+        <p className="text-primary text-lg text-center max-w-150">
           {description}
         </p>
         {children}

@@ -27,6 +27,7 @@ type MatchSocketContextType = {
   lastEvent: ArenaServerMessage | null;
   connect: () => Promise<void>;
   connectToMatch: (matchId: string) => boolean;
+  disconnectFromMatch: (matchId: string) => boolean;
   subscribeMatchEvent: <T extends MatchServerMessageType>(
     type: T,
     listener: MatchEventListener<T>,
@@ -177,6 +178,13 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     [send],
   );
 
+  const disconnectFromMatch = useCallback(
+    (matchId: string) => {
+      return send({ type: "disconnect_from_match", matchId });
+    },
+    [send],
+  );
+
   const broadcastCodeSnapshot = useCallback(
     (props: { matchId: string; code: string }) => {
       return send({ type: "code_snapshot", ...props });
@@ -221,6 +229,7 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
     lastEvent,
     connect,
     connectToMatch,
+    disconnectFromMatch,
     subscribeMatchEvent,
     opponentStatus,
     broadcastCodeSubmission,

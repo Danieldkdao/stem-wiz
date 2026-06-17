@@ -24,7 +24,7 @@ export const OracleSessionViewCodeEditor = ({
   const [saveStatus, setSaveStatus] = useState<
     "saving" | "saved" | "error" | null
   >(null);
-  const setEditor = useCodeEditorStore((state) => state.setEditor);
+  const setCode = useCodeEditorStore((state) => state.setCode);
 
   const handleCodeChange = useDebouncedCallback(
     async (value: string | undefined) => {
@@ -50,13 +50,16 @@ export const OracleSessionViewCodeEditor = ({
     <div className="w-full h-full relative">
       <CodeEditor
         {...props}
+        key={`${sessionId}:${problemId}`}
+        path={`session:${sessionId}:problem:${problemId}`}
         value={userCode}
-        onMount={(editor) => setEditor(editor)}
         onChange={(value) => {
           const nextCode = value ?? "";
+          setCode(nextCode);
           setUserCode(nextCode);
           handleCodeChange(nextCode);
         }}
+        keepCurrentModel
       />
       <div className="absolute bottom-2 left-2 flex items-center gap-2">
         {saveStatus ? (

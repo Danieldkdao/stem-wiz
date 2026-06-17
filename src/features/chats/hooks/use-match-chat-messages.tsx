@@ -73,10 +73,10 @@ export const MatchChatMessagesContextProvider = ({
           };
         }
 
-        const { chatMessages, metadata } = await getMatchChatMessagesAction(
-          matchId,
-          nextPage,
-        );
+        const response = await getMatchChatMessagesAction(matchId, nextPage);
+        if (!response) return;
+
+        const { chatMessages, metadata } = response;
 
         setChatMessages((prev) => {
           const existingMessageIds = new Set(prev.map((message) => message.id));

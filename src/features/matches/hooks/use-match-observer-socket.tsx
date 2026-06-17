@@ -135,9 +135,9 @@ export const MatchObserverSocketProvider = ({
             const newCount = message.newCount;
             setMatchesObserverCount((prev) => {
               const next = new Map(prev);
-              next.set(message.matchId, newCount);
+              const newMap = next.set(message.matchId, newCount);
 
-              return next;
+              return newMap;
             });
             break;
           case "connection_error":
@@ -146,9 +146,9 @@ export const MatchObserverSocketProvider = ({
           case "match_finished":
             setMatchesCompletionReason((prev) => {
               const next = new Map(prev);
-              next.set(message.matchId, message.reason);
+              const newMap = next.set(message.matchId, message.reason);
 
-              return next;
+              return newMap;
             });
             break;
           case "users_connection_statuses":

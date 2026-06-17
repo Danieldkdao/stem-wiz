@@ -1,14 +1,15 @@
 import { db } from "@/db/db";
 import { MatchTable, UserMatchTable } from "@/db/schema";
+import { RealtimeWebSocket } from "@/features/realtime/lib/types";
 import {
   sendToConnection,
   sendToUser,
 } from "@/features/realtime/server/connection-state";
 import { and, eq } from "drizzle-orm";
-import { ArenaServerMessage, ArenaWebSocket } from "../lib/types";
+import { ArenaServerMessage } from "../lib/types";
 import { cleanupUserConnection, getArenaWsState } from "./connection-state";
 
-export const connectToObservers = (ws: ArenaWebSocket) => {
+export const connectToObservers = (ws: RealtimeWebSocket) => {
   const { usersInWaitingRoom, usersInObservingRoom } = getArenaWsState();
 
   const userId = ws.user.id;
@@ -83,7 +84,7 @@ export const broadcastUpdatedMatchObserverCount = async (
 };
 
 export const broadcastCodeSnapshot = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
   code: string,
 ) => {
@@ -99,7 +100,7 @@ export const broadcastCodeSnapshot = async (
 };
 
 export const broadcastCodeOutput = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
   output?: string | null,
   error?: string | null,
@@ -117,7 +118,7 @@ export const broadcastCodeOutput = async (
 };
 
 export const broadcastRunningCode = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
 ) => {
   const userId = ws.user.id;
@@ -131,7 +132,7 @@ export const broadcastRunningCode = async (
 };
 
 export const broadcastUserSubmittedCode = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
 ) => {
   const userId = ws.user.id;
@@ -145,7 +146,7 @@ export const broadcastUserSubmittedCode = async (
 };
 
 export const subscribeObserverMatch = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
 ) => {
   const {
@@ -198,7 +199,7 @@ export const subscribeObserverMatch = async (
 };
 
 export const leaveObserverMatch = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
 ) => {
   const { activeObserversByUser } = getArenaWsState();

@@ -3,9 +3,10 @@
 import { CodeEditor } from "@/components/code/code-editor";
 import { MatchSubmissionTable } from "@/db/schema";
 import { ProgrammingLanguageType } from "@/db/shared";
-import { useCodeEditorStore } from "@/store/use-code-editor-store";
-import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { useDebouncer } from "@tanstack/react-pacer";
+import { useEffect, useRef } from "react";
 import { useMatchSocket } from "../hooks/use-match-socket";
+import { useCodeEditorStore } from "@/store/use-code-editor-store";
 
 type MatchCodeEditorProps = {
   matchId: string;
@@ -21,22 +22,41 @@ export const MatchCodeEditor = ({
   language,
   existingSubmission,
 }: MatchCodeEditorProps) => {
-  const setEditor = useCodeEditorStore((state) => state.setEditor);
+  const isMountedRef = useRef(true);
   const { status, broadcastCodeSnapshot } = useMatchSocket();
-  const handleCodeChange = useDebouncedCallback(
+  const setCode = useCodeEditorStore((state) => state.setCode);
+  const handleCodeChange = useDebouncer(
     (code: string | undefined) => {
-      if (status !== "open" || code === undefined) return;
+      if (!isMountedRef.current || status !== "open" || code === undefined)
+        return;
       broadcastCodeSnapshot({ matchId, code });
     },
     { wait: 250 },
   );
 
+  useEffect(() => {
+    setCode(existingSubmission?.code ?? "");
+  }, [matchId, existingSubmission?.code, setCode]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      handleCodeChange.cancel();
+    };
+  }, []);
+
   return (
     <CodeEditor
       language={language}
+      path={`match:${matchId}:self`}
+      key={matchId}
       defaultValue={existingSubmission?.code}
-      onMount={(editor) => setEditor(editor)}
-      onChange={handleCodeChange}
+      onChange={(value) => {
+        const code = value ?? "";
+        setCode(code);
+        handleCodeChange.maybeExecute(code);
+      }}
+      keepCurrentModel
     />
   );
 };

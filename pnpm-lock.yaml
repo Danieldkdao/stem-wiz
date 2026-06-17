@@ -115,6 +115,9 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
+      react-error-boundary:
+        specifier: ^6.1.2
+        version: 6.1.2(react@19.2.4)
       react-hook-form:
         specifier: ^7.75.0
         version: 7.76.0(react@19.2.4)
@@ -5277,6 +5280,11 @@ packages:
     engines: {node: '>=10', npm: '>=6'}
     peerDependencies:
       react: '>=16.13.1'
+
+  react-error-boundary@6.1.2:
+    resolution: {integrity: sha512-3DpCr5HVdZ0caUjYE/kIHBEJN0mNP3ZCgf16c48uJ5TbWjorKVp+YG8W3XqlJ7vJAVNw6wNIImyPXmFydwmyng==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
 
   react-hook-form@7.76.0:
     resolution: {integrity: sha512-eKtLGgFeSgkHqQD8J59AMZ9a4uD1D83iSIzt4YlTGD7liDen5rrjcUO1rVIGd9yC1gofryjtHbv+4ny4hkLWlw==}
@@ -11769,6 +11777,10 @@ snapshots:
   react-error-boundary@3.1.4(react@19.2.4):
     dependencies:
       '@babel/runtime': 7.29.2
+      react: 19.2.4
+
+  react-error-boundary@6.1.2(react@19.2.4):
+    dependencies:
       react: 19.2.4
 
   react-hook-form@7.76.0(react@19.2.4):

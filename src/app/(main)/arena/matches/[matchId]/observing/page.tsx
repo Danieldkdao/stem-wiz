@@ -1,3 +1,6 @@
+import { ErrorState } from "@/components/error-state";
+import { NotFound } from "@/components/not-found";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMatchChatMessagesAction } from "@/features/chats/actions/actions";
 import {
@@ -116,15 +119,26 @@ const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
   const userMatch = await isUserMatchActiveAction(matchId);
   if (userMatch) {
     return (
-      <div>
-        you are participating in this match, so you cannot watch it. please
-        finish + link there in the form of a button
+      <div className="w-full h-full py-10 px-6">
+        <ErrorState
+          title="Hold on right there."
+          description="You are currently participating in this match. In the spirit of good sportsmanship, please go back and finish the match."
+        >
+          <Button className="mt-2 w-full">Resume match</Button>
+        </ErrorState>
       </div>
     );
   }
 
   if (!match) {
-    return <div>reusable match not found component</div>;
+    return (
+      <div className="w-full h-full py-10 px-6">
+        <NotFound
+          title="Match not found"
+          description="We weren't able to find that match. Try checking the url or refreshing the page."
+        />
+      </div>
+    );
   }
 
   if (
@@ -132,14 +146,30 @@ const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
     match.users.length > NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS
   ) {
     return (
-      <div>something went wrong please try again or come back another time</div>
+      <div className="w-full h-full py-10 px-6">
+        <ErrorState
+          title="An error occurred"
+          description="Something went wrong that prevented the match from loading. Try refreshing the page or reloading the page."
+        >
+          <Button className="mt-2 w-full">Resume match</Button>
+        </ErrorState>
+      </div>
     );
   }
 
-  const { chatMessages, metadata } = await getMatchChatMessagesAction(
-    match.id,
-    DEFAULT_PAGE,
-  );
+  const response = await getMatchChatMessagesAction(match.id, DEFAULT_PAGE);
+  if (!response) {
+    return (
+      <div className="w-full h-full py-10 px-6">
+        <ErrorState
+          title="Match failed to load"
+          description="We were unable to load this match. Try checking the url to see if you have the right one or simply try refreshing the page."
+        />
+      </div>
+    );
+  }
+
+  const { chatMessages, metadata } = response;
 
   return (
     <ObservableMatchView

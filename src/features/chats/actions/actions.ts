@@ -52,11 +52,18 @@ import {
   friendChatSchema,
   FriendChatSchemaType,
 } from "./schemas";
+import { areValidIds } from "@/lib/utils";
 
 export const createMatchChatMessageAction = async (
   matchId: string,
   unsafeData: ChatInputSchemaType,
 ) => {
+  if (!areValidIds([matchId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -240,6 +247,12 @@ export const updateFriendChatAction = async (
   chatId: string,
   unsafeData: FriendChatSchemaType,
 ) => {
+  if (!areValidIds([chatId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -444,6 +457,7 @@ export const getFriendChatsAction = async (filterOptions: {
 };
 
 export const getFriendChatAction = async (chatId: string) => {
+  if (!areValidIds([chatId])) return null;
   const { userId } = await getCurrentUser();
   if (!userId) return null;
 
@@ -496,6 +510,7 @@ export const getFriendChatMessagesAction = async (
   friendRequestId: string,
   page: number,
 ) => {
+  if (!areValidIds([chatId, friendRequestId])) return null;
   const { userId } = await getCurrentUser();
   if (!userId) return null;
 
@@ -589,6 +604,12 @@ export const sendFriendChatMessageAction = async (
   chatId: string,
   unsafeData: ChatInputSchemaType,
 ) => {
+  if (!areValidIds([friendRequestId, chatId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -671,6 +692,12 @@ export const updateFriendChatMessageAction = async (
   messageId: string,
   unsafeData: ChatInputSchemaType,
 ) => {
+  if (!areValidIds([friendRequestId, chatId, messageId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -752,6 +779,12 @@ export const deleteFriendChatMessageAction = async (
   friendRequestId: string,
   messageId: string,
 ) => {
+  if (!areValidIds([chatId, friendRequestId, messageId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -836,6 +869,12 @@ export const deleteFriendChatMessageAction = async (
 };
 
 export const deleteFriendChatAction = async (chatId: string) => {
+  if (!areValidIds([chatId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId, user: userInfo } = await getCurrentUser({ allData: true });
   if (!userId || !userInfo) {
     return {
@@ -937,6 +976,7 @@ export const getMatchChatMessagesAction = async (
   matchId: string,
   page: number,
 ) => {
+  if (!areValidIds([matchId])) return null;
   const offset = (page - 1) * PAGE_SIZE;
 
   const chatMessages = await db

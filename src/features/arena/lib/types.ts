@@ -3,9 +3,7 @@ import {
   MatchObserverServerMessage,
   MatchServerMessage,
 } from "@/features/matches/lib/types";
-import { RealtimeUser, RealtimeWebSocket } from "@/features/realtime/lib/types";
-import { Server as HttpServer } from "http";
-import { WebSocketServer } from "ws";
+import { RealtimeUser } from "@/features/realtime/lib/types";
 
 export type ActiveUser = {
   connectionId: string | null;
@@ -35,16 +33,6 @@ export type ArenaWaitingServerMessage =
       type: "error";
       message: string;
     };
-
-export type ArenaWaitingServerMessageType = ArenaWaitingServerMessage["type"];
-
-export type ArenaSocketServer = HttpServer & {
-  // todo: note that you might have to switch to https in prod
-  arenaWss?: WebSocketServer;
-  arenaWsInitialized?: boolean;
-};
-
-export type ArenaWebSocket = RealtimeWebSocket;
 
 export type WaitingRoomUser = RealtimeUser & {
   userSettings: typeof UserProfileTable.$inferSelect;

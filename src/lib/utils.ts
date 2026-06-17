@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { FieldError } from "react-hook-form";
 import { twMerge } from "tailwind-merge";
 import { DeepKeys } from "./types";
+import z from "zod";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -88,4 +89,15 @@ export const changeObjectValues = <T>(
       ];
     }),
   ) as T;
+};
+
+export const areValidIds = (ids: string[]) => {
+  const idSchema = z.uuid();
+
+  const results: boolean[] = [];
+  ids.forEach((id) => {
+    results.push(idSchema.safeParse(id).success);
+  });
+
+  return results.every(Boolean);
 };

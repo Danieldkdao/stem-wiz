@@ -48,8 +48,10 @@ import {
   UserMatchesSortByOptionType,
 } from "../lib/params";
 import { upsertMatchSubmission } from "../server/match-results";
+import { areValidIds } from "@/lib/utils";
 
 const hasMatchFinished = async (matchId: string) => {
+  if (!areValidIds([matchId])) return false;
   const [match] = await db
     .select({ status: MatchTable.status })
     .from(MatchTable)
@@ -60,6 +62,7 @@ const hasMatchFinished = async (matchId: string) => {
 };
 
 const finalizeMatchIfAllUsersSubmitted = async (matchId: string) => {
+  if (!areValidIds([matchId])) return { finished: false, error: true };
   const latestMatch = await db.query.MatchTable.findFirst({
     where: and(
       eq(MatchTable.id, matchId),
@@ -110,6 +113,7 @@ const finalizeMatchIfAllUsersSubmitted = async (matchId: string) => {
 };
 
 export const confirmExistingMatch = async (matchId: string) => {
+  if (!areValidIds([matchId])) return null;
   const [existingMatch] = await db
     .select()
     .from(MatchTable)
@@ -131,8 +135,9 @@ export const checkExistingMatchAction = async ({
   id: string;
   forResults?: boolean;
 }) => {
+  if (!areValidIds([id])) return null;
   const { userId } = await getCurrentUser();
-  if (!userId) return;
+  if (!userId) return null;
 
   const existingMatch = await db.query.MatchTable.findFirst({
     where: and(
@@ -156,6 +161,7 @@ export const checkExistingMatchAction = async ({
 };
 
 export const timeoutExpiredMatch = async (matchId: string) => {
+  if (!areValidIds([matchId])) return null;
   const existingMatch = await db.query.MatchTable.findFirst({
     where: eq(MatchTable.id, matchId),
     with: {
@@ -207,6 +213,12 @@ export const timeoutExpiredMatch = async (matchId: string) => {
 };
 
 export const quitMatchAction = async (matchId: string) => {
+  if (!areValidIds([matchId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -289,6 +301,12 @@ export const quitMatchAction = async (matchId: string) => {
 };
 
 export const handleMatchTimeoutAction = async (matchId: string) => {
+  if (!areValidIds([matchId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -371,6 +389,12 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
 };
 
 export const handleUserMatchWinAction = async (matchId: string) => {
+  if (!areValidIds([matchId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -445,6 +469,12 @@ export const handleUserMatchWinAction = async (matchId: string) => {
 };
 
 export const codeSubmissionAction = async (matchId: string, code: string) => {
+  if (!areValidIds([matchId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -510,6 +540,7 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
 };
 
 export const isUserMatchActiveAction = async (matchId: string) => {
+  if (!areValidIds([matchId])) return null;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
 

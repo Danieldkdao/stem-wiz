@@ -23,6 +23,7 @@ import {
   insertFriendRequestDb,
   updateFriendRequestDb,
 } from "../server/friend-requests";
+import { areValidIds } from "@/lib/utils";
 
 export const createFriendRequestAction = async (friendUserId: string) => {
   const { userId, user: currentUser } = await getCurrentUser({ allData: true });
@@ -97,6 +98,12 @@ export const respondFriendRequestAction = async (
   friendRequestId: string,
   action: Exclude<FriendRequestStatusType, "pending">,
 ) => {
+  if (!areValidIds([friendRequestId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId, user: userInfo } = await getCurrentUser({ allData: true });
   if (!userId || !userInfo) {
     return {

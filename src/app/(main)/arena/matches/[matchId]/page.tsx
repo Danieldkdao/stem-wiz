@@ -1,17 +1,17 @@
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+import { ErrorState } from "@/components/error-state";
+import { NotFound } from "@/components/not-found";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArenaProblemDetails } from "@/features/arena-problems/components/arena-problem-details";
-import { checkExistingMatchAction } from "@/features/matches/actions/actions";
-import { MatchCodeEditor } from "@/features/matches/components/match-code-editor";
-import { MatchCodeOutput } from "@/features/matches/components/match-code-output";
+import {
+  checkExistingMatchAction,
+  isUserMatchActiveAction,
+} from "@/features/matches/actions/actions";
 import { MatchHeader } from "@/features/matches/components/match-header";
+import { MatchView } from "@/features/matches/components/match-view";
 import { auth } from "@/lib/auth/auth";
 import { ParamsId } from "@/lib/types";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -132,49 +132,50 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
     }
 
     return (
-      <div>
-        match not found reusable component in matches feature folder components
-        subfolder
+      <div className="w-full h-full py-10 px-6">
+        <NotFound
+          title="Match not found"
+          description="We couldn't find this match. Try checking the url or refreshing the page."
+        />
       </div>
     );
   }
 
-  const currentUserSubmission = match.submissions.find(
-    (submission) => submission.userId === session.user.id,
-  );
+  const existingParticipant = await isUserMatchActiveAction(match.id);
+  if (!existingParticipant) {
+    return (
+      <div className="w-full h-full py-10 px-6">
+        <ErrorState
+          title="Hold on right there."
+          description={`You are not a participant in this match. ${match.status === "in-progress" ? "If you want to watch this match," : "If you want to view the match results,"} you can click on the button below.`}
+        >
+          <div className="mt-2 w-full max-w-150 flex flex-col md:flex-row md:items-center gap-2">
+            <Button variant="outline" asChild className="md:flex-1 w-full">
+              <Link href="/dashboard">Back to dashboard</Link>
+            </Button>
+            <Button className="md:flex-1 w-full" asChild>
+              <Link
+                href={
+                  match.status === "in-progress"
+                    ? `/arena/matches/${match.id}/observing`
+                    : `/arena/matches/${match.id}/results`
+                }
+              >
+                {match.status === "in-progress"
+                  ? "Observe this match"
+                  : "View match results"}
+              </Link>
+            </Button>
+          </div>
+        </ErrorState>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full flex flex-col items-center">
       <MatchHeader match={match} />
-      <ResizablePanelGroup orientation="horizontal">
-        <ResizablePanel minSize="30%" className="p-4 sm:p-6 bg-card/75">
-          <ArenaProblemDetails arenaProblem={match.arenaProblem} />
-        </ResizablePanel>
-        <ResizableHandle />
-        <ResizablePanel minSize="40%">
-          <ResizablePanelGroup orientation="vertical">
-            <ResizablePanel minSize="30%">
-              <div className="w-full h-full">
-                <MatchCodeEditor
-                  matchId={match.id}
-                  language={match.arenaProblem.programmingLanguage}
-                  existingSubmission={currentUserSubmission}
-                />
-              </div>
-            </ResizablePanel>
-            <ResizableHandle />
-            <ResizablePanel minSize="30%">
-              <div className="w-full h-full">
-                <MatchCodeOutput
-                  language={match.arenaProblem.programmingLanguage}
-                  matchId={match.id}
-                  existingSubmission={currentUserSubmission}
-                />
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+      <MatchView match={match} currentUserId={session.user.id} />
     </div>
   );
 };

@@ -13,6 +13,10 @@ export const arenaClientMessageSchema = z.discriminatedUnion("type", [
     matchId: z.uuid(),
   }),
   z.object({
+    type: z.literal("disconnect_from_match"),
+    matchId: z.uuid(),
+  }),
+  z.object({
     type: z.literal("submitted_code"),
     matchId: z.uuid(),
   }),

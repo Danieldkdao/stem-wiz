@@ -1,12 +1,18 @@
 import { CodeEditor } from "@/components/code/code-editor";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
 import {
@@ -35,18 +41,12 @@ import {
   TagIcon,
   TrophyIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { Fragment } from "react/jsx-runtime";
 import {
   formatOracleSessionMode,
   formatSessionDuration,
 } from "../lib/formatters";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 
 export const OracleSessionSummaryView = ({
   session,
@@ -269,15 +269,18 @@ export const OracleSessionSummaryView = ({
                                 <div className="min-w-0 overflow-hidden">
                                   <CodeEditor
                                     options={{ readOnly: true }}
+                                    path={`session:${session.id}:problem:${problem.id}`}
                                     language={problem.language}
                                     value={
                                       problem.userCode ??
                                       "The user did not provide a solution."
                                     }
+                                    key={`${session.id}:${problem.id}`}
                                     height={
                                       (problem.userCode?.split(" ").length ??
                                         25) * 4
                                     }
+                                    keepCurrentModel
                                   />
                                 </div>
                               </div>

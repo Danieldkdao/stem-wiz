@@ -1,5 +1,4 @@
 import { db } from "@/db/db";
-import { ArenaWebSocket } from "../lib/types";
 import { getArenaWsState } from "./connection-state";
 import {
   ArenaProblemTable,
@@ -14,8 +13,9 @@ import {
   sendToClient,
   sendToConnection,
 } from "@/features/realtime/server/connection-state";
+import { RealtimeWebSocket } from "@/features/realtime/lib/types";
 
-export const joinWaitingRoom = async (ws: ArenaWebSocket) => {
+export const joinWaitingRoom = async (ws: RealtimeWebSocket) => {
   const { usersInWaitingRoom, activeMatchesByUser } = getArenaWsState();
   const userId = ws.user.id;
 
@@ -229,7 +229,7 @@ const tryPairUsers = async (
   }
 };
 
-export const leaveWaitingRoom = (ws: ArenaWebSocket) => {
+export const leaveWaitingRoom = (ws: RealtimeWebSocket) => {
   const { usersInWaitingRoom } = getArenaWsState();
   const userId = ws.user.id;
 

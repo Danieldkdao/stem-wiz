@@ -5,7 +5,12 @@ import { NotificationTable } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { getNotificationListItem } from "../lib/formatters";
-import { PAGE_SIZE, UNAUTHED_ERROR_MESSAGE } from "@/lib/constants";
+import {
+  NOT_FOUND_ERROR_MESSAGE,
+  PAGE_SIZE,
+  UNAUTHED_ERROR_MESSAGE,
+} from "@/lib/constants";
+import { areValidIds } from "@/lib/utils";
 
 export const getUserNotificationsAction = async (page: number) => {
   const { userId } = await getCurrentUser();
@@ -60,6 +65,12 @@ export const getUserNotificationsAction = async (page: number) => {
 export const markUserNotificationsReadAction = async (
   notificationId?: string,
 ) => {
+  if (notificationId && !areValidIds([notificationId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {

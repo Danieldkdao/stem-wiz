@@ -20,12 +20,12 @@ type RunCodeReturnType =
   | undefined;
 
 type CodeEditorStoreType = {
+  code: string;
+  setCode: (value: string) => void;
   output: string;
   isRunning: boolean;
   error: string | null;
-  editor: MonacoEditorType | null;
   executionResult: ExecutionResult | null;
-  setEditor: (editor: MonacoEditorType) => void;
   getCode: () => string;
   runCode: (
     language: ProgrammingLanguageType,
@@ -35,17 +35,15 @@ type CodeEditorStoreType = {
 
 export const useCodeEditorStore = create<CodeEditorStoreType>((set, get) => {
   return {
+    code: "",
+    setCode: (value) => set({ code: value }),
     output: "",
     isRunning: false,
     error: null,
-    editor: null,
     executionResult: null,
-    getCode: () => get().editor?.getValue() || "",
-    setEditor: (editor: MonacoEditorType) => {
-      set({ editor });
-    },
+    getCode: () => get().code,
     async runCode(language, version): Promise<RunCodeReturnType> {
-      const code = get().editor?.getValue() ?? "";
+      const code = get().code;
       if (!code.length) return null;
 
       try {

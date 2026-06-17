@@ -7,7 +7,6 @@ import {
 } from "@/features/realtime/server/connection-state";
 import { generateMatchResults } from "@/services/ai/matches";
 import { and, eq, gt } from "drizzle-orm";
-import { ArenaWebSocket } from "../lib/types";
 import {
   cleanupUserConnection,
   getArenaWsState,
@@ -16,7 +15,10 @@ import {
 import { finalizeMatch } from "./finalize-match";
 import { broadcastToMatchObservers } from "./match-observers";
 
-export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
+export const connectToMatch = async (
+  ws: RealtimeWebSocket,
+  matchId: string,
+) => {
   const { usersInWaitingRoom, activeMatchesByUser } = getArenaWsState();
 
   const userId = ws.user.id;
@@ -90,8 +92,69 @@ export const connectToMatch = async (ws: ArenaWebSocket, matchId: string) => {
   });
 };
 
+export const disconnectFromMatch = async (
+  ws: RealtimeWebSocket,
+  matchId: string,
+) => {
+  const { activeMatchesByUser } = getArenaWsState();
+
+  const userId = ws.user.id;
+  const connectionId = ws.id;
+
+  const existingMatch = await db.query.MatchTable.findFirst({
+    where: and(
+      eq(MatchTable.id, matchId),
+      eq(MatchTable.status, "in-progress"),
+      gt(MatchTable.expiresAt, new Date()),
+    ),
+    with: {
+      users: true,
+    },
+  });
+
+  if (!existingMatch) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "Match not found.",
+    });
+    return;
+  }
+
+  const currentMatchUser = existingMatch.users.find(
+    (user) => user.userId === userId,
+  );
+
+  if (!currentMatchUser) {
+    sendToConnection(connectionId, {
+      type: "error",
+      message: "You are not a participant in this match.",
+    });
+    return;
+  }
+
+  const opponentConnectionId = getOpponentConnectionId(userId);
+  if (opponentConnectionId) {
+    sendToConnection(opponentConnectionId, {
+      type: "opponent_left_match",
+    });
+  }
+
+  activeMatchesByUser.set(currentMatchUser.userId, {
+    matchId: currentMatchUser.matchId,
+    isConnected: false,
+    connectionId: null,
+  });
+
+  broadcastToMatchObservers(matchId, {
+    type: "users_connection_statuses",
+    users: [{ userId, isConnected: false }],
+  });
+
+  cleanupUserConnection(userId);
+};
+
 export const broadcastCodeSubmission = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
 ) => {
   const { activeMatchesByUser } = getArenaWsState();

@@ -1,16 +1,16 @@
 import { db } from "@/db/db";
-import { ArenaWebSocket } from "../lib/types";
-import { getArenaWsState } from "./connection-state";
-import { broadcastToMatchObservers } from "./match-observers";
 import { ChatMessageTable, user } from "@/db/schema";
-import { and, eq, getTableColumns } from "drizzle-orm";
+import { RealtimeWebSocket } from "@/features/realtime/lib/types";
 import {
   sendToConnection,
   sendToUser,
 } from "@/features/realtime/server/connection-state";
+import { and, eq, getTableColumns } from "drizzle-orm";
+import { getArenaWsState } from "./connection-state";
+import { broadcastToMatchObservers } from "./match-observers";
 
 export const broadcastChatMessageSent = async (
-  ws: ArenaWebSocket,
+  ws: RealtimeWebSocket,
   matchId: string,
   chat: {
     messageId: string;

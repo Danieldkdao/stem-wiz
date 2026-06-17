@@ -50,6 +50,7 @@ import {
   oracleSessionActionSchema,
   OracleSessionActionSchemaType,
 } from "./schemas";
+import { areValidIds } from "@/lib/utils";
 
 export const createNewSessionAction = async (
   unsafeData: OracleSessionActionSchemaType,
@@ -98,6 +99,12 @@ export const updateSessionAction = async (
   sessionId: string,
   unsafeData: OracleSessionActionSchemaType,
 ) => {
+  if (!areValidIds([sessionId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -237,6 +244,8 @@ export const getOneSessionAction = async (
   "use cache";
   cacheTag(getOracleSessionIdTag(sessionId));
 
+  if (!areValidIds([sessionId])) return null;
+
   const existingSession = await db.query.OracleSessionTable.findFirst({
     where: and(
       eq(OracleSessionTable.userId, userId),
@@ -288,6 +297,7 @@ export const getOracleChatMessagesAction = async (
   chatId: string,
   page: number,
 ) => {
+  if (!areValidIds([chatId])) return null;
   const { userId } = await getCurrentUser();
   if (!userId) return null;
 
@@ -351,6 +361,7 @@ export const getOracleChatMessagesAction = async (
 };
 
 export const startSessionAction = async (sessionId: string) => {
+  if (!areValidIds([sessionId])) return null;
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -429,6 +440,12 @@ export const saveUserCodeAction = async (
   problemId: string,
   userCode: string,
 ) => {
+  if (!areValidIds([sessionId, problemId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -505,6 +522,12 @@ export const handleUserProblemSubmissionAction = async (
   problemId: string,
   code: string,
 ) => {
+  if (!areValidIds([sessionId, problemId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -571,10 +594,11 @@ export const handleUserProblemSubmissionAction = async (
   }
 };
 
-export const checkSessionCompletionAction = async (
+const checkSessionCompletionAction = async (
   sessionId: string,
   tx?: DbTransaction,
 ) => {
+  if (!areValidIds([sessionId])) throw new Error(NOT_FOUND_ERROR_MESSAGE);
   const { userId } = await getCurrentUser();
   if (!userId) throw new Error(UNAUTHED_ERROR_MESSAGE);
 
