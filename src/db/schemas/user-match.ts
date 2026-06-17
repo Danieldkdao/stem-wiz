@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, text, uuid, varchar } from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { MatchTable } from "./match";
 import { relations } from "drizzle-orm";
@@ -12,6 +12,7 @@ export const UserMatchTable = pgTable(
     matchId: uuid("match_id")
       .references(() => MatchTable.id, { onDelete: "cascade" })
       .notNull(),
+    code: text("code"),
   },
   (t) => [primaryKey({ columns: [t.userId, t.matchId] })],
 );

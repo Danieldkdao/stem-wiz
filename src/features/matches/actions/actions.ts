@@ -16,6 +16,7 @@ import { auth, User } from "@/lib/auth/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
+  INVALID_DATA_ERROR_MESSAGE,
   NO_PERMISSION_DATA_MESSAGE,
   NOT_FOUND_ERROR_MESSAGE,
   PAGE_SIZE,
@@ -539,7 +540,7 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
   }
 };
 
-export const isUserMatchActiveAction = async (matchId: string) => {
+export const checkExistingParticipant = async (matchId: string) => {
   if (!areValidIds([matchId])) return null;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
@@ -801,4 +802,61 @@ export const getUserMatchesAction = async (filterOptions: {
       hasNextPage,
     },
   };
+};
+
+export const saveUserMatchCode = async (matchId: string, newCode: string) => {
+  if (!areValidIds([matchId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  if (!newCode.trim()) {
+    return {
+      error: true,
+      message: INVALID_DATA_ERROR_MESSAGE,
+    };
+  }
+
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const existingParticipant = await checkExistingParticipant(matchId);
+  if (!existingParticipant) {
+    return {
+      error: true,
+      message: NO_PERMISSION_DATA_MESSAGE,
+    };
+  }
+
+  try {
+    await db
+      .update(UserMatchTable)
+      .set({
+        code: newCode,
+      })
+      .where(
+        and(
+          eq(UserMatchTable.matchId, existingParticipant.matchId),
+          eq(UserMatchTable.userId, userId),
+        ),
+      );
+
+    return {
+      error: false,
+      message: "Code saved successfully!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
 };

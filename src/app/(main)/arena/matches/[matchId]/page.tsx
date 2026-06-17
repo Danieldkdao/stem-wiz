@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   checkExistingMatchAction,
-  isUserMatchActiveAction,
+  checkExistingParticipant,
 } from "@/features/matches/actions/actions";
 import { MatchHeader } from "@/features/matches/components/match-header";
 import { MatchView } from "@/features/matches/components/match-view";
@@ -141,7 +141,7 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
     );
   }
 
-  const existingParticipant = await isUserMatchActiveAction(match.id);
+  const existingParticipant = await checkExistingParticipant(match.id);
   if (!existingParticipant) {
     return (
       <div className="w-full h-full py-10 px-6">

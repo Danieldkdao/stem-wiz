@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getMatchChatMessagesAction } from "@/features/chats/actions/actions";
 import {
   checkExistingMatchAction,
-  isUserMatchActiveAction,
+  checkExistingParticipant,
 } from "@/features/matches/actions/actions";
 import { ObservableMatchView } from "@/features/matches/components/observable-match-view";
 import {
@@ -116,7 +116,7 @@ const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
   const { matchId } = await params;
   const match = await checkExistingMatchAction({ id: matchId });
 
-  const userMatch = await isUserMatchActiveAction(matchId);
+  const userMatch = await checkExistingParticipant(matchId);
   if (userMatch) {
     return (
       <div className="w-full h-full py-10 px-6">

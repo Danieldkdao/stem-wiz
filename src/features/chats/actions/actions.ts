@@ -9,7 +9,7 @@ import {
 } from "@/db/schema";
 import {
   confirmExistingMatch,
-  isUserMatchActiveAction,
+  checkExistingParticipant,
 } from "@/features/matches/actions/actions";
 import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
 import { getCurrentUser } from "@/lib/auth/helpers";
@@ -80,7 +80,7 @@ export const createMatchChatMessageAction = async (
     };
   }
 
-  const userMatch = await isUserMatchActiveAction(existingMatch.id);
+  const userMatch = await checkExistingParticipant(existingMatch.id);
   if (userMatch) {
     return {
       error: true,

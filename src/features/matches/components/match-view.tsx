@@ -30,6 +30,7 @@ export const MatchView = ({
   currentUserId: string;
 }) => {
   const isMobile = useIsMobile();
+  const currentUser = match.users.find((user) => user.userId === currentUserId);
   const currentUserSubmission = match.submissions.find(
     (submission) => submission.userId === currentUserId,
   );
@@ -47,7 +48,7 @@ export const MatchView = ({
               <MatchCodeEditor
                 matchId={match.id}
                 language={match.arenaProblem.programmingLanguage}
-                existingSubmission={currentUserSubmission}
+                existingCode={currentUser?.code ?? currentUserSubmission?.code}
               />
             </div>
           </ResizablePanel>
