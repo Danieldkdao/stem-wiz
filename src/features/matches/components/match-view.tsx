@@ -6,10 +6,11 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
+  ProblemTable,
   UserMatchTable,
 } from "@/db/schema";
 import { ArenaProblemDetails } from "@/features/arena-problems/components/arena-problem-details";
@@ -25,7 +26,9 @@ export const MatchView = ({
     result?: typeof MatchResultTable.$inferSelect | null;
     submissions: (typeof MatchSubmissionTable.$inferSelect)[];
     users: (typeof UserMatchTable.$inferSelect)[];
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
   };
   currentUserId: string;
 }) => {
@@ -34,11 +37,12 @@ export const MatchView = ({
   const currentUserSubmission = match.submissions.find(
     (submission) => submission.userId === currentUserId,
   );
+  const problem = match.arenaProblem.problem;
 
   return (
     <ResizablePanelGroup orientation={isMobile ? "vertical" : "horizontal"}>
       <ResizablePanel minSize="30%" className="p-4 sm:p-6 bg-card/75">
-        <ArenaProblemDetails arenaProblem={match.arenaProblem} />
+        <ArenaProblemDetails problem={problem} />
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel minSize="40%">
@@ -47,7 +51,7 @@ export const MatchView = ({
             <div className="w-full h-full">
               <MatchCodeEditor
                 matchId={match.id}
-                language={match.arenaProblem.programmingLanguage}
+                language={problem.programmingLanguage}
                 existingCode={currentUser?.code ?? currentUserSubmission?.code}
               />
             </div>
@@ -56,7 +60,7 @@ export const MatchView = ({
           <ResizablePanel minSize="30%">
             <div className="w-full h-full">
               <MatchCodeOutput
-                language={match.arenaProblem.programmingLanguage}
+                language={problem.programmingLanguage}
                 matchId={match.id}
                 existingSubmission={currentUserSubmission}
               />

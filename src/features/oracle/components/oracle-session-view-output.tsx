@@ -12,7 +12,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import { handleUserProblemSubmissionAction } from "../actions/actions";
 import { useOracleStore } from "@/store/use-oracle-store";
-import { OracleProblemTable } from "@/db/schema";
+import { OracleSessionProblemTable, ProblemTable } from "@/db/schema";
 
 export const OracleSessionViewOutput = ({
   language,
@@ -21,7 +21,9 @@ export const OracleSessionViewOutput = ({
 }: {
   language: ProgrammingLanguageType;
   sessionId: string;
-  problem: typeof OracleProblemTable.$inferSelect;
+  problem: typeof OracleSessionProblemTable.$inferSelect & {
+    problem: typeof ProblemTable.$inferSelect;
+  };
 }) => {
   const [isPending, startTransition] = useTransition();
   const [ConfirmationDialog, confirm] = useConfirm(

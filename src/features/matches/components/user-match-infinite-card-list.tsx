@@ -1,12 +1,17 @@
 "use client";
 
-import { ArenaProblemTable, MatchResultTable, MatchTable } from "@/db/schema";
+import {
+  ArenaProblemConfigTable,
+  MatchResultTable,
+  MatchTable,
+  ProblemTable,
+} from "@/db/schema";
 import { User } from "@/lib/auth/auth";
 import { DEFAULT_PAGE } from "@/lib/constants";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { useUserMatchParams } from "../hooks/use-user-match-params";
-import { getUserMatchesAction } from "../actions/actions";
 import { Loader2Icon, SearchXIcon } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { getUserMatchesAction } from "../actions/actions";
+import { useUserMatchParams } from "../hooks/use-user-match-params";
 import { UserMatchCard } from "./user-match-card";
 
 export const UserMatchInfiniteCardList = ({
@@ -16,7 +21,9 @@ export const UserMatchInfiniteCardList = ({
   initialMatches: (typeof MatchTable.$inferSelect & {
     result: typeof MatchResultTable.$inferSelect | null;
     opponent: User;
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
   })[];
   initialHasNextPage: boolean;
 }) => {

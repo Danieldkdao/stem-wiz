@@ -1,7 +1,8 @@
 import {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   ChatMessageTable,
   MatchTable,
+  ProblemTable,
   UserMatchTable,
 } from "@/db/schema";
 import { MatchResultReasonType } from "@/db/shared";
@@ -37,7 +38,9 @@ export type MatchObserverServerMessage =
         | {
             type: "added";
             match: typeof MatchTable.$inferSelect & {
-              arenaProblem: typeof ArenaProblemTable.$inferSelect;
+              arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+                problem: typeof ProblemTable.$inferSelect;
+              };
               users: (typeof UserMatchTable.$inferSelect & { user: User })[];
             };
           }

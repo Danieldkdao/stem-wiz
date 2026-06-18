@@ -1,7 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
-import { ArenaProblemTable, MatchResultTable, MatchTable } from "@/db/schema";
+import {
+  ArenaProblemConfigTable,
+  MatchResultTable,
+  MatchTable,
+  ProblemTable,
+} from "@/db/schema";
 import { formatDate } from "@/features/oracle/lib/formatters";
 import { User } from "@/lib/auth/auth";
 import { formatDistance, formatDistanceToNow } from "date-fns";
@@ -24,7 +29,9 @@ export const UserMatchCard = ({
   match: typeof MatchTable.$inferSelect & {
     result: typeof MatchResultTable.$inferSelect | null;
     opponent: User;
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
   };
 }) => {
   const isFinished =

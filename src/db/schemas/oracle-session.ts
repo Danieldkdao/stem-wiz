@@ -12,7 +12,7 @@ import {
   oracleSessionStatusEnum,
   programmingLanguageEnum,
 } from "../shared";
-import { OracleProblemTable } from "./oracle-problem";
+import { OracleSessionProblemTable } from "./oracle-problem";
 import { user } from "./user";
 
 export const OracleSessionTable = pgTable("oracle_sessions", {
@@ -42,6 +42,6 @@ export const oracleSessionRelations = relations(
       fields: [OracleSessionTable.userId],
       references: [user.id],
     }),
-    problems: many(OracleProblemTable),
+    problems: many(OracleSessionProblemTable),
   }),
 );

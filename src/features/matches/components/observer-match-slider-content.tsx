@@ -5,7 +5,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArenaProblemTable, MatchTable } from "@/db/schema";
+import { ArenaProblemConfigTable, MatchTable, ProblemTable } from "@/db/schema";
 import { ArenaProblemDetails } from "@/features/arena-problems/components/arena-problem-details";
 import { MatchChatInput } from "@/features/chats/components/match-chat-input";
 import { MatchChatMessageList } from "@/features/chats/components/match-chat-message-list";
@@ -15,7 +15,9 @@ export const ObserverMatchSliderContent = ({
   match,
 }: {
   match: typeof MatchTable.$inferSelect & {
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
   };
 }) => {
   return (
@@ -45,7 +47,7 @@ export const ObserverMatchSliderContent = ({
             value="problem-info"
             className="w-full h-full overflow-auto"
           >
-            <ArenaProblemDetails arenaProblem={match.arenaProblem} />
+            <ArenaProblemDetails problem={match.arenaProblem.problem} />
           </TabsContent>
           <TabsContent value="chat" className="min-h-0 w-full overflow-hidden">
             <div className="w-full h-full min-h-0 overflow-hidden flex flex-col gap-2">

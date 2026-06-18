@@ -1,5 +1,9 @@
 import { db } from "@/db/db";
-import { OracleProblemTable, OracleSessionTable } from "@/db/schema";
+import {
+  OracleSessionProblemTable,
+  OracleSessionTable,
+  ProblemTable,
+} from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
@@ -7,7 +11,7 @@ import {
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
 import { generateText, Output } from "ai";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, getTableColumns, isNull } from "drizzle-orm";
 import { mistral } from "./models/mistral";
 import {
   GENERATE_ORACLE_PROBLEM_FEEDBACK_SYSTEM,
@@ -97,14 +101,21 @@ export const generateUserProblemSubmissionFeedback = async (
   }
 
   const [existingProblem] = await db
-    .select()
-    .from(OracleProblemTable)
+    .select({
+      ...getTableColumns(OracleSessionProblemTable),
+      problem: getTableColumns(ProblemTable),
+    })
+    .from(OracleSessionProblemTable)
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, OracleSessionProblemTable.problemId),
+    )
     .where(
       and(
-        eq(OracleProblemTable.id, problemId),
-        eq(OracleProblemTable.sessionId, existingSession.id),
-        eq(OracleProblemTable.status, "in-progress"),
-        isNull(OracleProblemTable.completedAt),
+        eq(OracleSessionProblemTable.id, problemId),
+        eq(OracleSessionProblemTable.sessionId, existingSession.id),
+        eq(OracleSessionProblemTable.status, "in-progress"),
+        isNull(OracleSessionProblemTable.completedAt),
       ),
     );
   if (!existingProblem) {
@@ -123,7 +134,7 @@ export const generateUserProblemSubmissionFeedback = async (
       }),
       prompt: generateOracleProblemFeedbackPrompt({
         session: existingSession,
-        problem: existingProblem,
+        oracleProblem: existingProblem,
         user: user ?? null,
       }),
     });

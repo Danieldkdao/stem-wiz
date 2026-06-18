@@ -1,5 +1,4 @@
 import { programmingLanguages } from "@/db/shared";
-import { SORT_BY_OPTIONS } from "@/lib/constants";
 import {
   createLoader,
   parseAsArrayOf,
@@ -8,7 +7,7 @@ import {
 } from "nuqs/server";
 import { USER_MATCHES_SORT_BY_OPTIONS } from "./params";
 
-export const filterSearchParams = {
+const filterSearchParams = {
   search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
   sortBy: parseAsStringEnum([...USER_MATCHES_SORT_BY_OPTIONS])
     .withDefault("most_recent")

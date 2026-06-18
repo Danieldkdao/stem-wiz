@@ -19,8 +19,9 @@ import {
   ChatMessageTable,
   ChatTable,
   DifficultyLevelType,
-  OracleProblemTable,
+  OracleSessionProblemTable,
   OracleSessionTable,
+  ProblemTable,
 } from "@/db/schema";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
 import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
@@ -53,7 +54,8 @@ export const OracleSessionSummaryView = ({
 }: {
   session: typeof OracleSessionTable.$inferSelect & {
     user: User;
-    problems: (typeof OracleProblemTable.$inferSelect & {
+    problems: (typeof OracleSessionProblemTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
       chat:
         | (typeof ChatTable.$inferSelect & {
             messages: (typeof ChatMessageTable.$inferSelect)[];
@@ -85,7 +87,7 @@ export const OracleSessionSummaryView = ({
     {
       label: "Concepts",
       icon: SparklesIcon,
-      data: session.problems.flatMap((problem) => problem.concepts).length,
+      data: session.problems.flatMap(({ problem }) => problem.concepts).length,
       iconColor: "text-fuchsia-600",
     },
   ];
@@ -231,21 +233,21 @@ export const OracleSessionSummaryView = ({
         <div className="flex flex-col gap-4">
           <h2 className="text-4xl font-semibold">Problem Breakdown</h2>
           <div className="flex flex-col gap-4">
-            {session.problems.map((problem) => (
-              <Card key={problem.id}>
+            {session.problems.map(({ problem, ...oracleProblem }) => (
+              <Card key={oracleProblem.id}>
                 <CardContent className="p-0">
                   <Collapsible className="flex flex-col gap-4">
                     <CollapsibleTrigger className=" px-6 group flex flex-col items-start gap-4 md:items-center md:gap-2 md:flex-row md:justify-between w-full cursor-pointer">
                       <div className="flex flex-col gap-2">
                         <h3 className="text-xl text-left font-semibold">
-                          {problem.order}. {problem.title}
+                          {oracleProblem.order}. {problem.title}
                         </h3>
                         <div className="flex items-center gap-4">
                           {getOracleMathProblemDifficultyBadge(
-                            problem.difficulty,
+                            problem.difficultyLevel,
                           )}
                           <span className="text-lg font-medium tracking-widest">
-                            Score: {problem.score}/10
+                            Score: {oracleProblem.score}/10
                           </span>
                         </div>
                       </div>
@@ -269,16 +271,16 @@ export const OracleSessionSummaryView = ({
                                 <div className="min-w-0 overflow-hidden">
                                   <CodeEditor
                                     options={{ readOnly: true }}
-                                    path={`session:${session.id}:problem:${problem.id}`}
-                                    language={problem.language}
+                                    path={`session:${session.id}:problem:${oracleProblem.id}`}
+                                    language={problem.programmingLanguage}
                                     value={
-                                      problem.userCode ??
+                                      oracleProblem.userCode ??
                                       "The user did not provide a solution."
                                     }
-                                    key={`${session.id}:${problem.id}`}
+                                    key={`${session.id}:${oracleProblem.id}`}
                                     height={
-                                      (problem.userCode?.split(" ").length ??
-                                        25) * 4
+                                      (oracleProblem.userCode?.split(" ")
+                                        .length ?? 25) * 4
                                     }
                                     keepCurrentModel
                                   />
@@ -312,8 +314,8 @@ export const OracleSessionSummaryView = ({
                                 </div>
                                 <div className="flex flex-col gap-4">
                                   {getProblemMetadata(
-                                    problem.startedAt,
-                                    problem.completedAt,
+                                    oracleProblem.startedAt,
+                                    oracleProblem.completedAt,
                                   ).map((data, index) => (
                                     <Fragment key={index}>
                                       <div className="flex items-center gap-2 justify-between flex-wrap">
@@ -337,53 +339,55 @@ export const OracleSessionSummaryView = ({
                                   </span>
                                 </div>
                                 <div className="overflow-y-auto max-h-300 flex flex-col gap-4">
-                                  {problem.chat?.messages?.length ? (
-                                    problem.chat.messages.map((message) => (
-                                      <div
-                                        className={cn(
-                                          "flex w-full min-w-0 flex-col gap-2 rounded-md p-4",
-                                          message.role === "user" &&
-                                            "bg-background",
-                                        )}
-                                        key={message.id}
-                                      >
-                                        <div className="flex w-full min-w-0 items-start gap-2.5">
-                                          {message.role === "user" ? (
-                                            <UserAvatar {...session.user} />
-                                          ) : (
-                                            <div className="size-8 shrink-0 rounded-full flex items-center justify-center bg-muted border border-border">
-                                              <BotIcon className="text-primary" />
-                                            </div>
+                                  {oracleProblem.chat?.messages?.length ? (
+                                    oracleProblem.chat.messages.map(
+                                      (message) => (
+                                        <div
+                                          className={cn(
+                                            "flex w-full min-w-0 flex-col gap-2 rounded-md p-4",
+                                            message.role === "user" &&
+                                              "bg-background",
                                           )}
-                                          <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-x-hidden">
-                                            <div className="flex min-w-0 items-center gap-2">
-                                              <h2 className="truncate text-lg font-medium">
-                                                {message.role === "user"
-                                                  ? `${session.user.name} (You)`
-                                                  : "The Oracle"}
-                                              </h2>
-                                              <span>•</span>
-                                              <span className="shrink-0">
-                                                {(
-                                                  message.createdAt ??
-                                                  new Date()
-                                                ).toDateString()}
-                                              </span>
-                                            </div>
-
+                                          key={message.id}
+                                        >
+                                          <div className="flex w-full min-w-0 items-start gap-2.5">
                                             {message.role === "user" ? (
-                                              <p className="min-w-0 max-w-full wrap-break-word text-base text-muted-foreground">
-                                                {message.text}
-                                              </p>
+                                              <UserAvatar {...session.user} />
                                             ) : (
-                                              <MarkdownRenderer className="min-w-0 max-w-full text-base">
-                                                {message.text}
-                                              </MarkdownRenderer>
+                                              <div className="size-8 shrink-0 rounded-full flex items-center justify-center bg-muted border border-border">
+                                                <BotIcon className="text-primary" />
+                                              </div>
                                             )}
+                                            <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-x-hidden">
+                                              <div className="flex min-w-0 items-center gap-2">
+                                                <h2 className="truncate text-lg font-medium">
+                                                  {message.role === "user"
+                                                    ? `${session.user.name} (You)`
+                                                    : "The Oracle"}
+                                                </h2>
+                                                <span>•</span>
+                                                <span className="shrink-0">
+                                                  {(
+                                                    message.createdAt ??
+                                                    new Date()
+                                                  ).toDateString()}
+                                                </span>
+                                              </div>
+
+                                              {message.role === "user" ? (
+                                                <p className="min-w-0 max-w-full wrap-break-word text-base text-muted-foreground">
+                                                  {message.text}
+                                                </p>
+                                              ) : (
+                                                <MarkdownRenderer className="min-w-0 max-w-full text-base">
+                                                  {message.text}
+                                                </MarkdownRenderer>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))
+                                      ),
+                                    )
                                   ) : (
                                     <h1 className="text-center mx-auto italic text-lg font-medium">
                                       No chat messages
@@ -401,7 +405,7 @@ export const OracleSessionSummaryView = ({
                                   Feedback
                                 </span>
                                 <MarkdownRenderer>
-                                  {problem.feedback ?? ""}
+                                  {oracleProblem.feedback ?? ""}
                                 </MarkdownRenderer>
                               </div>
                             </div>

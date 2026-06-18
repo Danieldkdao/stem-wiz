@@ -15,7 +15,11 @@ export const generateMatchResults = async (matchId: string) => {
       eq(MatchTable.status, "in-progress"),
     ),
     with: {
-      arenaProblem: true,
+      arenaProblem: {
+        with: {
+          problem: true,
+        },
+      },
       users: true,
       submissions: true,
       result: true,

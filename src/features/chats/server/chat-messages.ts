@@ -1,4 +1,4 @@
-import { db, DbTransaction } from "@/db/db";
+import { db } from "@/db/db";
 import { ChatMessageTable } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 

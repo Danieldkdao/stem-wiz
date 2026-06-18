@@ -1,3 +1,4 @@
+import { ArenaProblemConfigTable, ProblemTable } from "@/db/schema";
 import { MatchResultReasonType } from "@/db/shared";
 import {
   UserMatchesFilterByOptionType,
@@ -69,4 +70,23 @@ export const formatUserMatchResultOptions = (
         `Unknown user match result option: ${option satisfies never}`,
       );
   }
+};
+
+export const mapProblemToArenaProblem = <
+  T extends {
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect;
+    problem: typeof ProblemTable.$inferSelect;
+  },
+>(
+  match: T,
+) => {
+  const { arenaProblem, problem, ...fields } = match;
+
+  return {
+    ...fields,
+    arenaProblem: {
+      ...arenaProblem,
+      problem,
+    },
+  };
 };

@@ -2,10 +2,9 @@ import { relations } from "drizzle-orm";
 import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { createdAt, id } from "../helpers";
 import { ChatMessageTable } from "./chat-message";
-import { FriendRequestTable } from "./friend-request";
 import { FriendshipTable } from "./friendship";
 import { MatchTable } from "./match";
-import { OracleProblemTable } from "./oracle-problem";
+import { OracleSessionProblemTable } from "./oracle-problem";
 
 export const ChatTable = pgTable("chats", {
   id,
@@ -14,7 +13,7 @@ export const ChatTable = pgTable("chats", {
     onDelete: "cascade",
   }),
   oracleProblemId: uuid("oracle_problem_id").references(
-    () => OracleProblemTable.id,
+    () => OracleSessionProblemTable.id,
     { onDelete: "cascade" },
   ),
   friendshipId: uuid("friendship_id").references(() => FriendshipTable.id, {
@@ -28,9 +27,9 @@ export const chatRelations = relations(ChatTable, ({ one, many }) => ({
     fields: [ChatTable.matchId],
     references: [MatchTable.id],
   }),
-  oracleProblem: one(OracleProblemTable, {
+  oracleProblem: one(OracleSessionProblemTable, {
     fields: [ChatTable.oracleProblemId],
-    references: [OracleProblemTable.id],
+    references: [OracleSessionProblemTable.id],
   }),
   friendship: one(FriendshipTable, {
     fields: [ChatTable.friendshipId],

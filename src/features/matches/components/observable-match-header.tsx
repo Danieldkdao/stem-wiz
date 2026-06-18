@@ -5,10 +5,11 @@ import { LoadingSwap } from "@/components/ui/loading-swap";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
+  ProblemTable,
   UserMatchTable,
 } from "@/db/schema";
 import { statusMap } from "@/features/arena/components";
@@ -32,7 +33,9 @@ type ObservableMatchHeaderProps = {
     submissions: (typeof MatchSubmissionTable.$inferSelect)[];
     users: (typeof UserMatchTable.$inferSelect & { user: User })[];
     result?: typeof MatchResultTable.$inferSelect | null;
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
   };
 };
 

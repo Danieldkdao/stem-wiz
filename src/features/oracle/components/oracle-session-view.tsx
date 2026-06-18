@@ -8,8 +8,9 @@ import {
 import {
   ChatMessageTable,
   ChatTable,
-  OracleProblemTable,
+  OracleSessionProblemTable,
   OracleSessionTable,
+  ProblemTable,
 } from "@/db/schema";
 import { useEffect, useState } from "react";
 import { OracleSessionProblemDetails } from "./oracle-session-problem-details";
@@ -24,7 +25,8 @@ export const OracleSessionView = ({
   problems,
 }: {
   session: typeof OracleSessionTable.$inferSelect;
-  problems: (typeof OracleProblemTable.$inferSelect & {
+  problems: (typeof OracleSessionProblemTable.$inferSelect & {
+    problem: typeof ProblemTable.$inferSelect;
     chat:
       | (typeof ChatTable.$inferSelect & {
           messages: (typeof ChatMessageTable.$inferSelect)[];
@@ -65,7 +67,7 @@ export const OracleSessionView = ({
           orientation="horizontal"
           className="flex-1 overflow-y-auto"
         >
-          <OracleSessionProblemDetails problem={currentProblem} />
+          <OracleSessionProblemDetails problem={currentProblem.problem} />
           <ResizableHandle />
           <ResizablePanel minSize="30%">
             <ResizablePanelGroup orientation="vertical">
@@ -77,7 +79,7 @@ export const OracleSessionView = ({
                   language={session.programmingLanguage}
                   serverUserCode={
                     currentProblem.userCode ??
-                    currentProblem.starterCode ??
+                    currentProblem.problem.starterCode ??
                     null
                   }
                 />

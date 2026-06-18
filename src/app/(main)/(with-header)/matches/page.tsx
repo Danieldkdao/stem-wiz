@@ -1,3 +1,4 @@
+import { ErrorState } from "@/components/error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserMatchesAction } from "@/features/matches/actions/actions";
@@ -94,7 +95,14 @@ const UserMatchesSuspense = async ({
     page: DEFAULT_PAGE,
   });
   if (!response) {
-    return <div>Failed to fetch user matches</div>;
+    return (
+      <div className="py-10 px-6 w-full h-full">
+        <ErrorState
+          title="An error occurred"
+          description="We were unable to load your match history. Try refreshing the page or come back later if the issue persists."
+        />
+      </div>
+    );
   }
 
   const { matches, metadata } = response;

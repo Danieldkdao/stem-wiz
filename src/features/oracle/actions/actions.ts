@@ -4,10 +4,11 @@ import { db, DbTransaction } from "@/db/db";
 import {
   ChatMessageTable,
   ChatTable,
-  OracleProblemTable,
+  OracleSessionProblemTable,
   OracleSessionModeType,
   OracleSessionStatusType,
   OracleSessionTable,
+  ProblemTable,
   ProgrammingLanguageType,
 } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
@@ -255,6 +256,7 @@ export const getOneSessionAction = async (
       user: true,
       problems: {
         with: {
+          problem: true,
           chat: {
             with: {
               messages: {
@@ -267,7 +269,10 @@ export const getOneSessionAction = async (
             },
           },
         },
-        orderBy: [asc(OracleProblemTable.order), asc(OracleProblemTable.id)],
+        orderBy: [
+          asc(OracleSessionProblemTable.order),
+          asc(OracleSessionProblemTable.id),
+        ],
       },
     },
   });
@@ -310,12 +315,12 @@ export const getOracleChatMessagesAction = async (
     .from(ChatMessageTable)
     .innerJoin(ChatTable, eq(ChatTable.id, ChatMessageTable.chatId))
     .innerJoin(
-      OracleProblemTable,
-      eq(OracleProblemTable.id, ChatTable.oracleProblemId),
+      OracleSessionProblemTable,
+      eq(OracleSessionProblemTable.id, ChatTable.oracleProblemId),
     )
     .innerJoin(
       OracleSessionTable,
-      eq(OracleSessionTable.id, OracleProblemTable.sessionId),
+      eq(OracleSessionTable.id, OracleSessionProblemTable.sessionId),
     )
     .where(
       and(
@@ -334,12 +339,12 @@ export const getOracleChatMessagesAction = async (
     .from(ChatMessageTable)
     .innerJoin(ChatTable, eq(ChatTable.id, ChatMessageTable.chatId))
     .innerJoin(
-      OracleProblemTable,
-      eq(OracleProblemTable.id, ChatTable.oracleProblemId),
+      OracleSessionProblemTable,
+      eq(OracleSessionProblemTable.id, ChatTable.oracleProblemId),
     )
     .innerJoin(
       OracleSessionTable,
-      eq(OracleSessionTable.id, OracleProblemTable.sessionId),
+      eq(OracleSessionTable.id, OracleSessionProblemTable.sessionId),
     )
     .where(
       and(
@@ -361,7 +366,12 @@ export const getOracleChatMessagesAction = async (
 };
 
 export const startSessionAction = async (sessionId: string) => {
-  if (!areValidIds([sessionId])) return null;
+  if (!areValidIds([sessionId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -412,11 +422,23 @@ export const startSessionAction = async (sessionId: string) => {
         throw new Error(response.message);
       }
 
-      await tx.insert(OracleProblemTable).values(
-        response.problems.map((problem, index) => ({
-          ...problem,
+      const insertedProblems = await tx
+        .insert(ProblemTable)
+        .values(
+          response.problems.map((problem) => ({
+            ...problem,
+            programmingLanguage: updatedSession.programmingLanguage,
+            source: "ai" as const,
+          })),
+        )
+        .returning();
+      if (insertedProblems.length !== response.problems.length)
+        throw new Error("Failed to create session problems.");
+
+      await tx.insert(OracleSessionProblemTable).values(
+        insertedProblems.map((problem, index) => ({
+          problemId: problem.id,
           sessionId: existingSession.id,
-          language: existingSession.programmingLanguage,
           order: index + 1,
         })),
       );
@@ -472,11 +494,11 @@ export const saveUserCodeAction = async (
 
   const [existingProblem] = await db
     .select()
-    .from(OracleProblemTable)
+    .from(OracleSessionProblemTable)
     .where(
       and(
-        eq(OracleProblemTable.id, problemId),
-        eq(OracleProblemTable.sessionId, existingSession.id),
+        eq(OracleSessionProblemTable.id, problemId),
+        eq(OracleSessionProblemTable.sessionId, existingSession.id),
       ),
     );
 
@@ -617,8 +639,8 @@ const checkSessionCompletionAction = async (
 
   const sessionProblems = await dbSrc
     .select()
-    .from(OracleProblemTable)
-    .where(eq(OracleProblemTable.sessionId, existingOracleSession.id));
+    .from(OracleSessionProblemTable)
+    .where(eq(OracleSessionProblemTable.sessionId, existingOracleSession.id));
   if (sessionProblems.length !== existingOracleSession.numberOfProblems)
     throw new Error(NOT_FOUND_ERROR_MESSAGE);
 

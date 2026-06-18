@@ -1,7 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
-import { ArenaProblemTable, MatchTable, UserMatchTable } from "@/db/schema";
+import {
+  ArenaProblemConfigTable,
+  MatchTable,
+  ProblemTable,
+  UserMatchTable,
+} from "@/db/schema";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
 import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 import { User } from "@/lib/auth/auth";
@@ -11,25 +16,25 @@ export const ObservableMatchCard = ({
   match,
 }: {
   match: typeof MatchTable.$inferSelect & {
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
     users: (typeof UserMatchTable.$inferSelect & { user: User })[];
   };
 }) => {
+  const problem = match.arenaProblem.problem;
+
   return (
     <Link href={`/arena/matches/${match.id}/observing`}>
       <Card>
         <CardContent className="w-full h-full flex flex-col items-center gap-2">
-          <h1 className="text-xl font-medium text-center">
-            {match.arenaProblem.title}
-          </h1>
+          <h1 className="text-xl font-medium text-center">{problem.title}</h1>
           <div className="flex items-center gap-2">
             <Badge size="sm">
-              {formatProgrammingLanguage(
-                match.arenaProblem.programmingLanguage,
-              )}
+              {formatProgrammingLanguage(problem.programmingLanguage)}
             </Badge>
             <Badge size="sm">
-              {formatDifficultyLevel(match.arenaProblem.difficultyLevel)}
+              {formatDifficultyLevel(problem.difficultyLevel)}
             </Badge>
           </div>
           <div className="mt-2 flex w-full min-w-0 flex-col items-center gap-1">

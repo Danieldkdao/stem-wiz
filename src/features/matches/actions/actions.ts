@@ -2,11 +2,12 @@
 
 import { db } from "@/db/db";
 import {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   MatchResultReasonType,
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
+  ProblemTable,
   ProgrammingLanguageType,
   user,
   UserMatchTable,
@@ -22,6 +23,7 @@ import {
   PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
+import { areValidIds } from "@/lib/utils";
 import { generateMatchResults } from "@/services/ai/matches";
 import {
   and,
@@ -43,13 +45,13 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { headers } from "next/headers";
+import { mapProblemToArenaProblem } from "../lib/formatters";
 import {
   UserMatchesFilterByOptionType,
   UserMatchesResultOptionType,
   UserMatchesSortByOptionType,
 } from "../lib/params";
 import { upsertMatchSubmission } from "../server/match-results";
-import { areValidIds } from "@/lib/utils";
 
 const hasMatchFinished = async (matchId: string) => {
   if (!areValidIds([matchId])) return false;
@@ -147,7 +149,11 @@ export const checkExistingMatchAction = async ({
     ),
     with: {
       submissions: true,
-      arenaProblem: true,
+      arenaProblem: {
+        with: {
+          problem: true,
+        },
+      },
       users: {
         with: {
           user: true,
@@ -171,7 +177,11 @@ export const timeoutExpiredMatch = async (matchId: string) => {
           user: true,
         },
       },
-      arenaProblem: true,
+      arenaProblem: {
+        with: {
+          problem: true,
+        },
+      },
       submissions: true,
       result: true,
     },
@@ -206,7 +216,11 @@ export const timeoutExpiredMatch = async (matchId: string) => {
           user: true,
         },
       },
-      arenaProblem: true,
+      arenaProblem: {
+        with: {
+          problem: true,
+        },
+      },
       submissions: true,
       result: true,
     },
@@ -609,7 +623,7 @@ export const getObservableMatchesAction = async (filterOptions: {
     ),
     gt(MatchTable.expiresAt, new Date()),
     languages.length
-      ? inArray(ArenaProblemTable.programmingLanguage, languages)
+      ? inArray(ProblemTable.programmingLanguage, languages)
       : undefined,
     searchQuery,
   );
@@ -617,14 +631,17 @@ export const getObservableMatchesAction = async (filterOptions: {
   const matches = await db
     .select({
       ...getTableColumns(MatchTable),
-      arenaProblem: getTableColumns(ArenaProblemTable),
-      users: sql<{ userId: string; matchId: string; user: User }[]>`(
+      arenaProblem: getTableColumns(ArenaProblemConfigTable),
+      problem: getTableColumns(ProblemTable),
+
+      users: sql<(typeof UserMatchTable.$inferSelect & { user: User })[]>`(
         COALESCE(
           (
             SELECT jsonb_agg(
               jsonb_build_object(
                 'userId', umt.user_id,
                 'matchId', umt.match_id,
+                'code', umt.code,
                 'user', to_jsonb(ut)
               )
             )
@@ -638,8 +655,12 @@ export const getObservableMatchesAction = async (filterOptions: {
     })
     .from(MatchTable)
     .innerJoin(
-      ArenaProblemTable,
-      eq(ArenaProblemTable.id, MatchTable.problemId),
+      ArenaProblemConfigTable,
+      eq(ArenaProblemConfigTable.id, MatchTable.problemId),
+    )
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, ArenaProblemConfigTable.problemId),
     )
     .where(whereQuery)
     .orderBy(sortByMap[sortBy])
@@ -652,8 +673,12 @@ export const getObservableMatchesAction = async (filterOptions: {
     })
     .from(MatchTable)
     .innerJoin(
-      ArenaProblemTable,
-      eq(ArenaProblemTable.id, MatchTable.problemId),
+      ArenaProblemConfigTable,
+      eq(ArenaProblemConfigTable.id, MatchTable.problemId),
+    )
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, ArenaProblemConfigTable.problemId),
     )
     .where(whereQuery);
 
@@ -661,7 +686,9 @@ export const getObservableMatchesAction = async (filterOptions: {
   const hasNextPage = page * PAGE_SIZE < totalMatches.count;
 
   return {
-    matches,
+    matches: matches.map((match) =>
+      mapProblemToArenaProblem<typeof match>(match),
+    ),
     metadata: {
       hasPrevPage,
       hasNextPage,
@@ -727,13 +754,18 @@ export const getUserMatchesAction = async (filterOptions: {
       ...getTableColumns(MatchTable),
       result: getTableColumns(MatchResultTable),
       opponent: getTableColumns(user),
-      arenaProblem: getTableColumns(ArenaProblemTable),
+      arenaProblem: getTableColumns(ArenaProblemConfigTable),
+      problem: getTableColumns(ProblemTable),
     })
     .from(MatchTable)
     .leftJoin(MatchResultTable, eq(MatchResultTable.matchId, MatchTable.id))
     .innerJoin(
-      ArenaProblemTable,
-      eq(ArenaProblemTable.id, MatchTable.problemId),
+      ArenaProblemConfigTable,
+      eq(ArenaProblemConfigTable.id, MatchTable.problemId),
+    )
+    .innerJoin(
+      ProblemTable,
+      eq(ArenaProblemConfigTable.problemId, ProblemTable.id),
     )
     .innerJoin(
       currentUserMatch,
@@ -776,6 +808,14 @@ export const getUserMatchesAction = async (filterOptions: {
       ),
     )
     .innerJoin(
+      ArenaProblemConfigTable,
+      eq(ArenaProblemConfigTable.id, MatchTable.problemId),
+    )
+    .innerJoin(
+      ProblemTable,
+      eq(ArenaProblemConfigTable.problemId, ProblemTable.id),
+    )
+    .innerJoin(
       opponentUserMatch,
       and(
         not(eq(opponentUserMatch.userId, userId)),
@@ -796,7 +836,9 @@ export const getUserMatchesAction = async (filterOptions: {
   const hasNextPage = page * PAGE_SIZE < totalMatches.count;
 
   return {
-    matches,
+    matches: matches.map((match) =>
+      mapProblemToArenaProblem<typeof match>(match),
+    ),
     metadata: {
       hasPrevPage,
       hasNextPage,

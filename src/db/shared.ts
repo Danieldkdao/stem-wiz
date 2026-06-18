@@ -240,3 +240,7 @@ export const chatMessageStatusEnum = pgEnum(
   "chat_message_statuses",
   chatMessageStatuses,
 );
+
+export const problemSources = ["ai", "system", "user"] as const;
+export type ProblemSourceType = (typeof problemSources)[number];
+export const problemSourceEnum = pgEnum("problem_sources", problemSources);

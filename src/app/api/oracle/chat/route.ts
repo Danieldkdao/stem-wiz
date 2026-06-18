@@ -2,7 +2,7 @@ import { db } from "@/db/db";
 import {
   ChatMessageTable,
   ChatTable,
-  OracleProblemTable,
+  OracleSessionProblemTable,
   OracleSessionTable,
 } from "@/db/schema";
 import { revalidateOracleSessionCache } from "@/features/oracle/server/cache/oracle-sessions";
@@ -52,12 +52,13 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
-  const existingProblem = await db.query.OracleProblemTable.findFirst({
+  const existingProblem = await db.query.OracleSessionProblemTable.findFirst({
     where: and(
-      eq(OracleProblemTable.id, problemId),
-      eq(OracleProblemTable.sessionId, existingSession.id),
+      eq(OracleSessionProblemTable.id, problemId),
+      eq(OracleSessionProblemTable.sessionId, existingSession.id),
     ),
     with: {
+      problem: true,
       chat: {
         with: {
           messages: {
@@ -145,7 +146,7 @@ export const POST = async (req: NextRequest) => {
     model: mistral("mistral-medium-latest"),
     system: generateOracleProblemChatSystemPrompt({
       session: existingSession,
-      problem: existingProblem,
+      oracleProblem: existingProblem,
     }),
     messages: await convertToModelMessages(modelMessages),
   });

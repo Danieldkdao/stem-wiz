@@ -14,7 +14,7 @@ export const oracleProblemSchema = z.object({
     .describe(
       "The actual problem including the problem statement and all information about the problem. Make sure this is renderable markdown.",
     ),
-  difficulty: z
+  difficultyLevel: z
     .enum(difficultyLevels)
     .describe("The difficulty level of the problem. Decide accordingly."),
   starterCode: z
@@ -23,7 +23,7 @@ export const oracleProblemSchema = z.object({
     .describe(
       "These are coding problems so this is the starter code for the user to begin writing their solution.",
     ),
-  solutionOutline: z
+  solution: z
     .string()
     .min(10)
     .describe(

@@ -3,7 +3,12 @@
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChatMessageTable, ChatTable, OracleProblemTable } from "@/db/schema";
+import {
+  ChatMessageTable,
+  ChatTable,
+  OracleSessionProblemTable,
+  ProblemTable,
+} from "@/db/schema";
 import { TabValue, useOracleStore } from "@/store/use-oracle-store";
 import { CircleXIcon, Loader2Icon, MessageSquareDotIcon } from "lucide-react";
 import { OracleSessionChat } from "./oracle-session-chat";
@@ -11,7 +16,8 @@ import { OracleSessionChat } from "./oracle-session-chat";
 export const OraclePanel = ({
   problem,
 }: {
-  problem: typeof OracleProblemTable.$inferSelect & {
+  problem: typeof OracleSessionProblemTable.$inferSelect & {
+    problem: typeof ProblemTable.$inferSelect;
     chat:
       | (typeof ChatTable.$inferSelect & {
           hasNextMessagesPage?: boolean;

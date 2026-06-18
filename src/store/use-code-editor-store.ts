@@ -1,8 +1,5 @@
 import { ProgrammingLanguageType } from "@/db/shared";
-import { OnMount } from "@monaco-editor/react";
 import { create } from "zustand";
-
-type MonacoEditorType = Parameters<OnMount>[0];
 
 type ExecutionResult = {
   code: string;

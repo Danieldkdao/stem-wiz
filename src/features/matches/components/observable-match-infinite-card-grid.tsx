@@ -1,6 +1,11 @@
 "use client";
 
-import { ArenaProblemTable, MatchTable, UserMatchTable } from "@/db/schema";
+import {
+  ArenaProblemConfigTable,
+  MatchTable,
+  ProblemTable,
+  UserMatchTable,
+} from "@/db/schema";
 import { ObservableMatchCard } from "@/features/matches/components/observable-match-card";
 import { useObservableMatchParams } from "@/features/matches/hooks/use-observable-match-params";
 import { useObservableMatches } from "@/features/matches/hooks/use-observable-matches";
@@ -12,7 +17,9 @@ export const ObservableMatchInfiniteCardGrid = ({
   hasNextPage,
 }: {
   initialMatches: (typeof MatchTable.$inferSelect & {
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
     users: (typeof UserMatchTable.$inferSelect & { user: User })[];
   })[];
   hasNextPage: boolean;

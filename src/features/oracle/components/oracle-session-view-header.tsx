@@ -8,7 +8,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { OracleProblemTable, OracleSessionTable } from "@/db/schema";
+import {
+  OracleSessionProblemTable,
+  OracleSessionTable,
+  ProblemTable,
+} from "@/db/schema";
 import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
 import { SetterType } from "@/lib/types";
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon } from "lucide-react";
@@ -29,7 +33,9 @@ export const OracleSessionViewHeader = ({
   setCurrentProblemIndex,
 }: {
   session: typeof OracleSessionTable.$inferSelect;
-  problems: (typeof OracleProblemTable.$inferSelect)[];
+  problems: (typeof OracleSessionProblemTable.$inferSelect & {
+    problem: typeof ProblemTable.$inferSelect;
+  })[];
   currentProblemIndex: number;
   setCurrentProblemIndex: SetterType<number>;
 }) => {

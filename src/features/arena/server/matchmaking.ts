@@ -1,13 +1,14 @@
 import { db } from "@/db/db";
 import { getArenaWsState } from "./connection-state";
 import {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   MatchTable,
+  ProblemTable,
   ProgrammingLanguageType,
   UserMatchTable,
   UserProfileTable,
 } from "@/db/schema";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, getTableColumns, gt } from "drizzle-orm";
 import {
   sendToUser,
   sendToClient,
@@ -131,9 +132,16 @@ const tryPairUsers = async (
     });
 
     const [arenaProblem] = await db
-      .select()
-      .from(ArenaProblemTable)
-      .where(eq(ArenaProblemTable.programmingLanguage, preferredLanguage))
+      .select({
+        ...getTableColumns(ArenaProblemConfigTable),
+        problem: getTableColumns(ProblemTable),
+      })
+      .from(ArenaProblemConfigTable)
+      .innerJoin(
+        ProblemTable,
+        eq(ArenaProblemConfigTable.problemId, ProblemTable.id),
+      )
+      .where(eq(ProblemTable.programmingLanguage, preferredLanguage))
       .limit(1);
     if (!arenaProblem) {
       devSockets.forEach((devSocket) => {

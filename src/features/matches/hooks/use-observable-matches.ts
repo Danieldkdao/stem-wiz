@@ -1,4 +1,9 @@
-import { ArenaProblemTable, MatchTable, UserMatchTable } from "@/db/schema";
+import {
+  ArenaProblemConfigTable,
+  MatchTable,
+  ProblemTable,
+  UserMatchTable,
+} from "@/db/schema";
 import { User } from "@/lib/auth/auth";
 import { DEFAULT_PAGE } from "@/lib/constants";
 import { changeObjectValues } from "@/lib/utils";
@@ -8,7 +13,9 @@ import { useMatchObserverSocket } from "./use-match-observer-socket";
 import { useObservableMatchParams } from "./use-observable-match-params";
 
 type ObservableMatch = typeof MatchTable.$inferSelect & {
-  arenaProblem: typeof ArenaProblemTable.$inferSelect;
+  arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+    problem: typeof ProblemTable.$inferSelect;
+  };
   users: (typeof UserMatchTable.$inferSelect & { user: User })[];
 };
 

@@ -1,5 +1,5 @@
 import { db, DbTransaction } from "@/db/db";
-import { OracleProblemTable } from "@/db/schema";
+import { OracleSessionProblemTable } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidateOracleSessionCache } from "./cache/oracle-sessions";
 
@@ -7,16 +7,21 @@ export const updateOracleProblem = async (
   userId: string,
   sessionId: string,
   problemId: string,
-  data: Partial<typeof OracleProblemTable.$inferSelect>,
+  data: Partial<
+    Omit<
+      typeof OracleSessionProblemTable.$inferSelect,
+      "id" | "problemId" | "sessionId"
+    >
+  >,
   tx?: DbTransaction,
 ) => {
   const [updatedProblem] = await (tx ?? db)
-    .update(OracleProblemTable)
+    .update(OracleSessionProblemTable)
     .set(data)
     .where(
       and(
-        eq(OracleProblemTable.sessionId, sessionId),
-        eq(OracleProblemTable.id, problemId),
+        eq(OracleSessionProblemTable.sessionId, sessionId),
+        eq(OracleSessionProblemTable.id, problemId),
       ),
     )
     .returning();

@@ -127,6 +127,7 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
   const winningSubmission = match.submissions.find(
     (submission) => submission.userId === matchWinner?.userId,
   );
+  const problem = match.arenaProblem.problem;
 
   return (
     <div className="py-10 px-6 overflow-auto h-full">
@@ -158,7 +159,7 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
                 </h2>
 
                 <CodeEditor
-                  language={match.arenaProblem.programmingLanguage}
+                  language={problem.programmingLanguage}
                   path={`match:${matchId}:self`}
                   defaultValue={winningSubmission.code}
                   height={700}
@@ -173,7 +174,7 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
               <h2 className="text-xl font-medium text-center">
                 Problem Solution
               </h2>
-              <MarkdownRenderer>{match.arenaProblem.solution}</MarkdownRenderer>
+              <MarkdownRenderer>{problem.solution}</MarkdownRenderer>
             </div>
           </CardContent>
         </Card>

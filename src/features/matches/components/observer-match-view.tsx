@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/user-avatar";
 import {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   MatchSubmissionTable,
   MatchTable,
+  ProblemTable,
   UserMatchTable,
 } from "@/db/schema";
 import { statusMap } from "@/features/arena/components";
@@ -28,7 +29,9 @@ import { ObserverCodeOutput } from "./observer-code-output";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type ObserverMatch = typeof MatchTable.$inferSelect & {
-  arenaProblem: typeof ArenaProblemTable.$inferSelect;
+  arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+    problem: typeof ProblemTable.$inferSelect;
+  };
   submissions: (typeof MatchSubmissionTable.$inferSelect)[];
   users: (typeof UserMatchTable.$inferSelect & { user: User })[];
 };
@@ -70,7 +73,7 @@ const ObserverUserPanel = ({
   observedUser: ObservedUser;
   defaultSize: number;
   isMirrored: boolean;
-  programmingLanguage: ObserverMatch["arenaProblem"]["programmingLanguage"];
+  programmingLanguage: ObserverMatch["arenaProblem"]["problem"]["programmingLanguage"];
   matchId: string;
 }) => {
   const status = (
@@ -252,7 +255,7 @@ export const ObserverMatchView = ({ match }: { match: ObserverMatch }) => {
             observedUser={user}
             defaultSize={defaultPanelSize}
             isMirrored={index % 2 === 1}
-            programmingLanguage={match.arenaProblem.programmingLanguage}
+            programmingLanguage={match.arenaProblem.problem.programmingLanguage}
             matchId={match.id}
           />
         </Fragment>

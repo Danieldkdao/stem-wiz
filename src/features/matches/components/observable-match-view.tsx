@@ -1,11 +1,12 @@
 "use client";
 
 import {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   ChatMessageTable,
   MatchResultTable,
   MatchSubmissionTable,
   MatchTable,
+  ProblemTable,
   UserMatchTable,
 } from "@/db/schema";
 import { MatchChatMessagesContextProvider } from "@/features/chats/hooks/use-match-chat-messages";
@@ -22,7 +23,9 @@ export const ObservableMatchView = ({
     submissions: (typeof MatchSubmissionTable.$inferSelect)[];
     users: (typeof UserMatchTable.$inferSelect & { user: User })[];
     result?: typeof MatchResultTable.$inferSelect | null;
-    arenaProblem: typeof ArenaProblemTable.$inferSelect;
+    arenaProblem: typeof ArenaProblemConfigTable.$inferSelect & {
+      problem: typeof ProblemTable.$inferSelect;
+    };
   };
   initialMessages: (typeof ChatMessageTable.$inferSelect & {
     user: User;

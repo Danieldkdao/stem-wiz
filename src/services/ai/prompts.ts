@@ -1,10 +1,10 @@
 import type {
-  ArenaProblemTable,
+  ArenaProblemConfigTable,
   MatchSubmissionTable,
-  OracleProblemTable,
+  OracleSessionProblemTable,
   OracleSessionTable,
+  ProblemTable,
   UserMatchTable,
-  user as UserTable,
 } from "@/db/schema";
 import { OracleSessionModeType } from "@/db/shared";
 import { formatOracleSessionMode } from "@/features/oracle/lib/formatters";
@@ -13,13 +13,17 @@ import {
   formatProfileForPrompt,
   formatProgrammingLanguage,
 } from "@/features/user/lib/formatters";
+import { User } from "@/lib/auth/auth";
 import type { AiUserCandidate } from "./tools";
 
-type ArenaProblem = typeof ArenaProblemTable.$inferSelect;
+type ArenaProblem = typeof ArenaProblemConfigTable.$inferSelect & {
+  problem: typeof ProblemTable.$inferSelect;
+};
 type MatchSubmission = typeof MatchSubmissionTable.$inferSelect;
-type OracleProblem = typeof OracleProblemTable.$inferSelect;
+type OracleProblem = typeof OracleSessionProblemTable.$inferSelect & {
+  problem: typeof ProblemTable.$inferSelect;
+};
 type OracleSession = typeof OracleSessionTable.$inferSelect;
-type User = typeof UserTable.$inferSelect;
 type UserMatch = typeof UserMatchTable.$inferSelect;
 
 type GenerateMatchResultsPromptArgs = {
@@ -30,13 +34,13 @@ type GenerateMatchResultsPromptArgs = {
 
 type GenerateOracleProblemFeedbackPromptArgs = {
   session: OracleSession;
-  problem: OracleProblem;
+  oracleProblem: OracleProblem;
   user: User | null;
 };
 
 type GenerateOracleProblemChatSystemPromptArgs = {
   session: OracleSession;
-  problem: OracleProblem;
+  oracleProblem: OracleProblem;
 };
 
 type GenerateDiscoverUsersRankingPromptArgs = {
@@ -352,15 +356,16 @@ Output rules:
 
 export const generateOracleProblemFeedbackPrompt = ({
   session,
-  problem,
+  oracleProblem,
   user,
 }: GenerateOracleProblemFeedbackPromptArgs) => {
-  const languageLabel = formatProgrammingLanguage(problem.language);
+  const problem = oracleProblem.problem;
+  const languageLabel = formatProgrammingLanguage(problem.programmingLanguage);
   const modeLabel = formatOracleSessionMode(session.mode);
   const userName = user?.name?.trim();
   const additionalInstructions = session.additionalInstructions?.trim();
   const sessionDescription = session.description?.trim();
-  const userCode = problem.userCode?.trim();
+  const userCode = oracleProblem.userCode?.trim();
 
   return `
 Generate feedback for this Oracle problem submission.
@@ -373,29 +378,29 @@ Session context:
 - Title: ${session.title}
 - Description: ${sessionDescription || "No session description was provided."}
 - Mode: ${modeLabel}
-- Programming language: ${languageLabel} (${problem.language})
+- Programming language: ${languageLabel} (${problem.programmingLanguage})
 - Additional instructions: ${
     additionalInstructions || "No additional instructions were provided."
   }
 
 Problem:
 - Title: ${problem.title}
-- Difficulty: ${problem.difficulty}
+- Difficulty: ${problem.difficultyLevel}
 - Concepts: ${problem.concepts.join(", ")}
 
 Problem description:
 ${problem.description}
 
 Starter code:
-\`\`\`${problem.language}
+\`\`\`${problem.programmingLanguage}
 ${problem.starterCode || "[no starter code was provided]"}
 \`\`\`
 
 Expected solution outline:
-${problem.solutionOutline}
+${problem.solution}
 
 User's submitted solution:
-\`\`\`${problem.language}
+\`\`\`${problem.programmingLanguage}
 ${userCode || "[no submitted solution]"}
 \`\`\`
 
@@ -449,17 +454,20 @@ const ORACLE_CHAT_MODE_GUIDANCE: Record<OracleSessionModeType, string> = {
 
 export const generateOracleProblemChatSystemPrompt = ({
   session,
-  problem,
+  oracleProblem,
 }: GenerateOracleProblemChatSystemPromptArgs) => {
+  const problem = oracleProblem.problem;
   const sessionLanguageLabel = formatProgrammingLanguage(
     session.programmingLanguage,
   );
-  const problemLanguageLabel = formatProgrammingLanguage(problem.language);
+  const problemLanguageLabel = formatProgrammingLanguage(
+    problem.programmingLanguage,
+  );
   const modeLabel = formatOracleSessionMode(session.mode);
   const sessionDescription = session.description?.trim();
   const additionalInstructions = session.additionalInstructions?.trim();
   const starterCode = problem.starterCode?.trim();
-  const userCode = problem.userCode?.trim();
+  const userCode = oracleProblem.userCode?.trim();
   const modeGuidance = ORACLE_CHAT_MODE_GUIDANCE[session.mode];
 
   return `
@@ -491,21 +499,21 @@ Session context:
 
 Active problem context:
 - Title: ${problem.title}
-- Difficulty: ${problem.difficulty}
-- Programming language: ${problemLanguageLabel} (${problem.language})
+- Difficulty: ${problem.difficultyLevel}
+- Programming language: ${problemLanguageLabel} (${problem.programmingLanguage})
 - Concepts: ${problem.concepts.join(", ")}
-- Status: ${problem.status}
+- Status: ${oracleProblem.status}
 
 Problem description:
 ${problem.description}
 
 Starter code:
-\`\`\`${problem.language}
+\`\`\`${problem.programmingLanguage}
 ${starterCode || "[no starter code was provided]"}
 \`\`\`
 
 Current user code:
-\`\`\`${problem.language}
+\`\`\`${problem.programmingLanguage}
 ${userCode || "[no user code has been saved yet]"}
 \`\`\`
 
@@ -584,6 +592,7 @@ export const generateMatchResultsPrompt = ({
   users,
   submissions,
 }: GenerateMatchResultsPromptArgs) => {
+  const problem = arenaProblem.problem;
   const submissionByUserId = new Map(
     submissions.map((submission) => [submission.userId, submission]),
   );
@@ -599,7 +608,7 @@ Submission ${index + 1}
 User ID: ${user.userId}
 Submitted: ${submission ? "yes" : "no"}
 Code:
-\`\`\`${arenaProblem.programmingLanguage}
+\`\`\`${problem.programmingLanguage}
 ${code || "[no submitted code]"}
 \`\`\`
 `.trim();
@@ -617,17 +626,17 @@ You must choose exactly one of those options. Choose a user ID only if that user
 You may sometimes receive only one submitted solution. A lone submission is not automatically the winner. Grade it against the same standards as a normal match: it must be a valid attempt, show decent effort, be relevant to the problem, not be gibberish or placeholder code, and be somewhat or fully correct for the core requirements. If the only submitted solution does not clear that bar, choose "none".
 
 Problem:
-Title: ${arenaProblem.title}
-Difficulty: ${arenaProblem.difficultyLevel}
-Programming language: ${arenaProblem.programmingLanguage}
+Title: ${problem.title}
+Difficulty: ${problem.difficultyLevel}
+Programming language: ${problem.programmingLanguage}
 Time limit: ${arenaProblem.timeLimit}ms
 
 Problem description:
-${arenaProblem.description}
+${problem.description}
 
 Reference solution:
-\`\`\`${arenaProblem.programmingLanguage}
-${arenaProblem.solution}
+\`\`\`${problem.programmingLanguage}
+${problem.solution}
 \`\`\`
 
 User submissions:
