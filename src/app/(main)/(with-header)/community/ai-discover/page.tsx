@@ -1,4 +1,4 @@
-import { CommunityAiDiscoverForm } from "@/features/user/components/community-ai-discover-form";
+import { CommunityAiDiscoverForm } from "@/features/social/components/community-ai-discover-form";
 
 const CommunityAiDiscoverPage = () => {
   return (

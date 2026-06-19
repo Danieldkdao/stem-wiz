@@ -1,5 +1,5 @@
-import { getUsersAction } from "@/features/user/actions/actions";
-import { communityFilterOptionsSchema } from "@/features/user/actions/schemas";
+import { getUsersAction } from "@/features/social/actions/actions";
+import { communityFilterOptionsSchema } from "@/features/social/actions/schemas";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { tool } from "ai";
 

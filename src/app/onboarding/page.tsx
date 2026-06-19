@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { OnboardingForm } from "@/features/user/components/onboarding-form";
+import { OnboardingForm } from "@/features/social/components/onboarding-form";
 
 const OnboardingPage = () => {
   return (

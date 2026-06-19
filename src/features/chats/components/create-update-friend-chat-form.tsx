@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { ChatTable } from "@/db/schema";
-import { FriendsSelect } from "@/features/user/components/friends-select";
+import { FriendsSelect } from "@/features/social/components/friends-select";
 import { getInputErrorStyle } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,7 @@ import {
 import { friendChatSchema, FriendChatSchemaType } from "../actions/schemas";
 import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
 import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
+import { useTransition } from "react";
 
 export const CreateUpdateFriendChatForm = ({
   existingChat,
@@ -33,6 +34,7 @@ export const CreateUpdateFriendChatForm = ({
   afterAction?: () => void;
 }) => {
   const router = useRouter();
+  const [isRouting, startRoutingTransition] = useTransition();
   const { broadcastChatCreated, broadcastChatUpdated } = useFriendChatSocket();
   const { notifyFriendChatAction } = useNotificationsSocket();
   const form = useForm<FriendChatSchemaType>({
@@ -62,9 +64,12 @@ export const CreateUpdateFriendChatForm = ({
     } else {
       toast.success(response.message);
       form.reset();
+      afterAction?.();
       if (existingChat) {
-        router.refresh();
         broadcastChatUpdated(response.chatId);
+        startRoutingTransition(() => {
+          router.refresh();
+        });
       } else {
         broadcastChatCreated(response.chatId);
         // @ts-expect-error This will always be defined because if
@@ -72,9 +77,10 @@ export const CreateUpdateFriendChatForm = ({
         // have ran and since being in this part of the code guarantees
         // no errors occurred, the notification id must be defined.
         notifyFriendChatAction(response.notificationId, "new_chat");
-        router.push(`/community/chats/${response.chatId}`);
+        startRoutingTransition(() => {
+          router.push(`/community/chats/${response.chatId}`);
+        });
       }
-      afterAction?.();
     }
   };
 
@@ -124,8 +130,8 @@ export const CreateUpdateFriendChatForm = ({
           </Field>
         )}
       />
-      <Button disabled={form.formState.isSubmitting}>
-        <LoadingSwap isLoading={form.formState.isSubmitting}>
+      <Button disabled={form.formState.isSubmitting || isRouting}>
+        <LoadingSwap isLoading={form.formState.isSubmitting || isRouting}>
           {existingChat ? "Save changes" : "Create"}
         </LoadingSwap>
       </Button>

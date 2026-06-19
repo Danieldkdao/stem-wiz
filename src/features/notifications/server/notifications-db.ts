@@ -1,6 +1,6 @@
 import { db, DbTransaction } from "@/db/db";
 import { NotificationTable } from "@/db/schema";
-import { revalidateUserCache } from "@/features/user/server/cache/users";
+import { revalidateUserCache } from "@/features/social/server/cache/users";
 import { and, eq } from "drizzle-orm";
 
 export const insertNotificationDb = async (

@@ -1,7 +1,7 @@
 import { db, DbTransaction } from "@/db/db";
 import { FriendRequestTable } from "@/db/schema";
 import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
-import { revalidateUserCache } from "@/features/user/server/cache/users";
+import { revalidateUserCache } from "@/features/social/server/cache/users";
 import { eq } from "drizzle-orm";
 
 export const insertFriendRequestDb = async (

@@ -4,7 +4,7 @@ import { ResizablePanel } from "@/components/ui/resizable";
 import { Separator } from "@/components/ui/separator";
 import { ProblemTable } from "@/db/schema";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 
 export const OracleSessionProblemDetails = ({
   problem,

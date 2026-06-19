@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/error-state";
 import { SearchParams } from "nuqs";
 import { loadFriendChatSearchParams } from "@/features/chats/lib/friend-chat-params";
 import { DEFAULT_PAGE } from "@/lib/constants";
-import { CommunityChatFilters } from "@/features/user/components/community-chat-filters";
+import { CommunityChatFilters } from "@/features/social/components/community-chat-filters";
 
 type CommunityChatParams = {
   searchParams: Promise<SearchParams>;

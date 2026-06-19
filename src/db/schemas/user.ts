@@ -7,6 +7,7 @@ import { FriendRequestTable } from "./friend-request";
 import { NotificationTable } from "./notification";
 import { OracleSessionTable } from "./oracle-session";
 import { FriendshipTable } from "./friendship";
+import { CommunityProblemTable } from "./community-problem";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -96,6 +97,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
     relationName: "friendship_user_two",
   }),
   oracleSessions: many(OracleSessionTable),
+  communityProblems: many(CommunityProblemTable),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({

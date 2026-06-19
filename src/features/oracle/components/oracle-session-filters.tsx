@@ -33,7 +33,7 @@ import {
   programmingLanguages,
   ProgrammingLanguageType,
 } from "@/db/shared";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 
 export const OracleSessionFilters = () => {
   const [filters, setFilters] = useOracleSessionParams();

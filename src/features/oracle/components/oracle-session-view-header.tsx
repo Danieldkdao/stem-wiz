@@ -13,7 +13,7 @@ import {
   OracleSessionTable,
   ProblemTable,
 } from "@/db/schema";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { SetterType } from "@/lib/types";
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon } from "lucide-react";
 import Link from "next/link";

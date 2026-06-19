@@ -1,7 +1,7 @@
 "use client";
 
 import { ProgrammingLanguageType } from "@/db/shared";
-import { LANGUAGE_VERSION_MAP } from "@/features/user/lib/constants";
+import { LANGUAGE_VERSION_MAP } from "@/features/social/lib/constants";
 import { useCodeEditorStore } from "@/store/use-code-editor-store";
 import { CheckCircleIcon, PlayIcon, SendIcon } from "lucide-react";
 import { Button } from "../../../components/ui/button";
@@ -70,10 +70,7 @@ export const MatchCodeOutput = ({
         toast.error(response.message);
       } else {
         toast.success(response.message);
-        if (
-          !response.matchFinished &&
-          !broadcastCodeSubmission(matchId)
-        ) {
+        if (!response.matchFinished && !broadcastCodeSubmission(matchId)) {
           toast.warning(
             "Submission saved, but live match notification could not be sent.",
           );

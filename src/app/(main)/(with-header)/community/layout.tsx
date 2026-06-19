@@ -1,4 +1,4 @@
-import { CommunityTabLinks } from "@/features/user/components/community-tab-links";
+import { CommunityTabLinks } from "@/features/social/components/community-tab-links";
 import { ReactNode, Suspense } from "react";
 
 const CommunityLayout = ({ children }: { children: ReactNode }) => {

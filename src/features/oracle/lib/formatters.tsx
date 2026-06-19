@@ -1,7 +1,13 @@
-import { OracleSessionModeType, OracleSessionStatusType } from "@/db/shared";
-import { OracleSession } from "./types";
+import {
+  DifficultyLevelType,
+  OracleSessionModeType,
+  OracleSessionStatusType,
+} from "@/db/shared";
 import { getDuration } from "@/lib/utils";
 import { OracleSessionsSortByOptionsType } from "./params";
+import { OracleSession } from "./types";
+import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
+import { Badge } from "@/components/ui/badge";
 
 export const formatOracleSessionMode = (mode: OracleSessionModeType) => {
   switch (mode) {
@@ -77,6 +83,42 @@ export const formatOracleSessionSortByOptions = (
     default:
       throw new Error(
         `Unknown oracle session sort by option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const getDifficultyBadge = (difficulty: DifficultyLevelType) => {
+  switch (difficulty) {
+    case "easy":
+      return (
+        <Badge
+          variant="outline"
+          className="text-accent border-accent bg-accent/30"
+        >
+          {formatDifficultyLevel(difficulty)}
+        </Badge>
+      );
+    case "medium":
+      return (
+        <Badge
+          variant="outline"
+          className="text-warning border-warning bg-warning/30"
+        >
+          {formatDifficultyLevel(difficulty)}
+        </Badge>
+      );
+    case "hard":
+      return (
+        <Badge
+          variant="outline"
+          className="text-destructive border-destructive bg-destructive/30"
+        >
+          {formatDifficultyLevel(difficulty)}
+        </Badge>
+      );
+    default:
+      throw new Error(
+        `Unknown difficulty level: ${difficulty satisfies never}`,
       );
   }
 };

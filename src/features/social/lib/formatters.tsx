@@ -1,4 +1,4 @@
-import type { UserProfileTable } from "@/db/schema";
+import type { CommunityProblemStatusType, UserProfileTable } from "@/db/schema";
 import {
   ProgrammingLanguageType,
   UserAvailabilityDayType,
@@ -21,6 +21,7 @@ import {
   FriendChatsFilterByOptionType,
   FriendChatsSortByOptionType,
 } from "@/features/chats/lib/friend-chat-params";
+import { ArchiveIcon, EarthIcon, EyeIcon, LockIcon } from "lucide-react";
 
 export type DiscoverUsersPromptUser = User & {
   profile: typeof UserProfileTable.$inferSelect;
@@ -337,5 +338,47 @@ export const formatFriendChatFilterByOptions = (
       throw new Error(
         `Unknown friend chat filter by option: ${option satisfies never}`,
       );
+  }
+};
+
+export const formatCommunityProblemStatus = (
+  status: CommunityProblemStatusType,
+) => {
+  switch (status) {
+    case "archived":
+      return {
+        label: "Archived",
+        description:
+          "An archived problem stays in your archives, where only you have access.",
+      };
+    case "private":
+      return {
+        label: "Private",
+        description:
+          "A private problem will remain private to you and others who you grant access to.",
+      };
+    case "public":
+      return {
+        label: "Public",
+        description:
+          "A public problem is viewable by everyone with a Synapse account.",
+      };
+    default:
+      throw new Error(
+        `Unknown community problem status: ${status satisfies never}`,
+      );
+  }
+};
+
+export const getVisibilityStatusIcon = (status: CommunityProblemStatusType) => {
+  switch (status) {
+    case "archived":
+      return <ArchiveIcon />;
+    case "private":
+      return <LockIcon />;
+    case "public":
+      return <EarthIcon />;
+    default:
+      throw new Error(`Unknown visibility status: ${status satisfies never}`);
   }
 };

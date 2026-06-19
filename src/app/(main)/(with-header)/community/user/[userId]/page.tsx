@@ -10,7 +10,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user-avatar";
 import { FriendRequestStatusButtons } from "@/features/friends/components/friend-request-status-buttons";
-import { getUserAction } from "@/features/user/actions/actions";
+import { getUserAction } from "@/features/social/actions/actions";
 import {
   formatProgrammingLanguage,
   formatUserAvailabilityDays,
@@ -20,7 +20,7 @@ import {
   formatUserGoals,
   formatUserLookingFor,
   formatUserMeetupPreference,
-} from "@/features/user/lib/formatters";
+} from "@/features/social/lib/formatters";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
 import {

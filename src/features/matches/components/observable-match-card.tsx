@@ -8,7 +8,7 @@ import {
   UserMatchTable,
 } from "@/db/schema";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { User } from "@/lib/auth/auth";
 import Link from "next/link";
 

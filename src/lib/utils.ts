@@ -11,6 +11,7 @@ export function cn(...inputs: ClassValue[]) {
 export const getInputErrorStyle = (error?: FieldError) =>
   error ? "border-red-destructive" : undefined;
 
+// Example: getTimeValues(3665) returns { hours: 1, minutes: 1, seconds: 5 }.
 export const getTimeValues = (time: number) => {
   const hours = Math.floor(time / 3600);
   const minutes = Math.floor((time % 3600) / 60);
@@ -19,6 +20,7 @@ export const getTimeValues = (time: number) => {
   return { hours, minutes, seconds };
 };
 
+// Example: formatTime(date) returns "Oct 20, 2026 at 4:30 PM".
 export const formatTime = (
   date?: Date | string | number | null | undefined,
 ) => {
@@ -38,6 +40,7 @@ export const formatTime = (
   return formatted;
 };
 
+// Example: getDuration(start, end) returns "1 hr 12 min 5 sec".
 export const getDuration = (
   start?: Date | null | undefined | string | number,
   end?: Date | null | undefined | string | number,
@@ -63,6 +66,15 @@ export const getDuration = (
 
   return parts.join(" ");
 };
+
+// returns => Oct 20, 2026
+export const formatShortDate = (date: Date | string | number) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(date));
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value != null && !Array.isArray(value);
 };

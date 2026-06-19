@@ -5,13 +5,23 @@ import { usePathname } from "next/navigation";
 
 import { tabsListVariants, tabsTriggerClassName } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { MessagesSquareIcon, SparklesIcon, UsersIcon } from "lucide-react";
+import {
+  BracesIcon,
+  MessagesSquareIcon,
+  SparklesIcon,
+  UsersIcon,
+} from "lucide-react";
 
 const tabLinks = [
   {
     name: "Explore",
     icon: UsersIcon,
     pathname: "/community",
+  },
+  {
+    name: "Problems",
+    icon: BracesIcon,
+    pathname: "/community/problems",
   },
   {
     name: "Chat",

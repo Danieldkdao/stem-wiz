@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getUserProfileAction } from "@/features/user/actions/actions";
-import { UserProfileForm } from "@/features/user/components/user-profile-form";
+import { getUserProfileAction } from "@/features/social/actions/actions";
+import { UserProfileForm } from "@/features/social/components/user-profile-form";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { Suspense } from "react";
 

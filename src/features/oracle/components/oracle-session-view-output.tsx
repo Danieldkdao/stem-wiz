@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { ProgrammingLanguageType } from "@/db/shared";
-import { LANGUAGE_VERSION_MAP } from "@/features/user/lib/constants";
+import { LANGUAGE_VERSION_MAP } from "@/features/social/lib/constants";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useCodeEditorStore } from "@/store/use-code-editor-store";
 import { PlayIcon, SendIcon } from "lucide-react";

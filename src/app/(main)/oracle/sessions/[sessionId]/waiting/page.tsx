@@ -19,7 +19,7 @@ import {
   formatDate,
   formatSessionDuration,
 } from "@/features/oracle/lib/formatters";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
 import {

@@ -322,7 +322,7 @@ export const MarkdownEditor = ({
       data-color-mode={resolvedTheme === "dark" ? "dark" : "light"}
       data-variant={variant}
       className={cn(
-        "markdown-font-scope overflow-visible border border-input",
+        "markdown-font-scope w-full min-w-0 max-w-full overflow-hidden border border-input",
         isTransparent
           ? "rounded-md bg-transparent shadow-none"
           : "rounded-md bg-transparent shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30",
@@ -339,13 +339,13 @@ export const MarkdownEditor = ({
         height={height ?? (isMobile ? 360 : 520)}
         textareaProps={{
           placeholder:
-            "Write markdown. Use KaTeX blocks or inline math for equations.",
+            "Write markdown. Use ```your_programming_language ending with ``` for code blocks.",
           onKeyDownCapture: handleListEnter,
         }}
         previewOptions={previewOptions}
         extraCommands={[codeEdit, codeLive, codePreview, fullscreen]}
         className={cn(
-          "overflow-hidden text-base rounded-none border-0! font-sans shadow-none! [&>.w-md-editor-toolbar]:rounded-none! [&_.w-md-editor-content]:rounded-none! [&_.w-md-editor-preview]:rounded-none! [&_.w-md-editor-preview]:shadow-none! [&_.w-md-editor-text-input]:text-lg! [&_.w-md-editor-text-pre>code]:text-lg!",
+          "w-full min-w-0 max-w-full overflow-x-hidden text-base rounded-none border-0! font-sans shadow-none! [&>.w-md-editor-toolbar]:max-w-full! [&>.w-md-editor-toolbar]:overflow-x-hidden! [&>.w-md-editor-toolbar]:rounded-none! [&_.w-md-editor-content]:min-w-0! [&_.w-md-editor-content]:max-w-full! [&_.w-md-editor-content]:rounded-none! [&_.w-md-editor-preview]:rounded-none! [&_.w-md-editor-preview]:shadow-none! [&_.w-md-editor-text-input]:text-lg! [&_.w-md-editor-text-pre>code]:text-lg!",
           isTransparent
             ? "rounded-none bg-transparent! [&>.w-md-editor-toolbar]:border-b! [&>.w-md-editor-toolbar]:border-input! [&>.w-md-editor-toolbar]:bg-transparent! [&_.w-md-editor-content]:bg-transparent! [&_.w-md-editor-input]:bg-transparent! [&_.w-md-editor-preview]:bg-transparent! [&_.w-md-editor-text]:bg-transparent! [&_.wmde-markdown-color]:bg-transparent! [&_.wmde-markdown]:bg-transparent!"
             : "bg-transparent! [&>.w-md-editor-toolbar]:bg-transparent! [&_.w-md-editor-content]:bg-transparent! [&_.w-md-editor-input]:bg-transparent! [&_.w-md-editor-preview]:bg-transparent! [&_.w-md-editor-text]:bg-transparent! [&_.wmde-markdown-color]:bg-transparent! [&_.wmde-markdown]:bg-transparent!",
@@ -360,7 +360,6 @@ export const MarkdownEditor = ({
           "[&_.w-md-editor-toolbar_button_svg]:stroke-current!",
           "[&_.w-md-editor-toolbar_button]:p-2!",
           "[&_.w-md-editor-toolbar-child]:z-9999!",
-          "overflow-visible!",
         )}
       />
     </div>

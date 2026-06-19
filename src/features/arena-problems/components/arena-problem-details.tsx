@@ -2,7 +2,7 @@ import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ProblemTable } from "@/db/schema";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { formatDifficultyLevel } from "../lib/formatters";
 
 export const ArenaProblemDetails = ({

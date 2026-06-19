@@ -2,8 +2,10 @@
 
 import { db } from "@/db/db";
 import {
+  CommunityProblemTable,
   FriendRequestTable,
   FriendshipTable,
+  ProblemTable,
   user,
   UserAvailabilityDayType,
   UserAvailabilityTimeOfDayType,
@@ -51,10 +53,16 @@ import { upsertUserProfile } from "../server/user-profiles";
 import {
   communityFilterOptionsSchema,
   CommunityFilterOptionsSchemaType,
+  communityProblemSchema,
+  CommunityProblemSchemaType,
   userProfileSchema,
   UserProfileSchemaType,
 } from "./schemas";
 import { discoverUsers } from "@/services/ai/discover-users";
+import {
+  getCommunityProblemGlobalTag,
+  revalidateCommunityProblemCache,
+} from "../server/cache/community-problems";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -433,4 +441,142 @@ export const aiDiscoverUsersAction = async (
     message: "Success!",
     ...response,
   };
+};
+
+export const createCommunityProblemAction = async (
+  unsafeData: CommunityProblemSchemaType,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const { data, success } = communityProblemSchema.safeParse(unsafeData);
+  if (!success) {
+    return {
+      error: true,
+      message: INVALID_DATA_ERROR_MESSAGE,
+    };
+  }
+
+  const { status, ...otherData } = data;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [insertedProblem] = await tx
+        .insert(ProblemTable)
+        .values(otherData)
+        .returning();
+      if (!insertedProblem) throw new Error("Failed to create problem.");
+
+      const [insertedCommunityProblem] = await tx
+        .insert(CommunityProblemTable)
+        .values({
+          status,
+          problemId: insertedProblem.id,
+          authorUserId: userId,
+        })
+        .returning();
+      if (!insertedCommunityProblem)
+        throw new Error("Failed to create problem.");
+
+      return insertedProblem;
+    });
+
+    revalidateCommunityProblemCache();
+
+    return {
+      error: false,
+      message: "Community problem created successfully!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const updateCommunityProblemAction = async (
+  problemId: string,
+  unsafeData: CommunityProblemSchemaType,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const { data, success } = communityProblemSchema.safeParse(unsafeData);
+  if (!success) {
+    return {
+      error: true,
+      message: INVALID_DATA_ERROR_MESSAGE,
+    };
+  }
+
+  const { status, ...otherData } = data;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [updatedCommunityProblem] = await tx
+        .update(CommunityProblemTable)
+        .set({
+          status,
+        })
+        .where(eq(CommunityProblemTable.id, problemId))
+        .returning();
+      if (!updatedCommunityProblem)
+        throw new Error("Failed to create problem.");
+
+      const [updatedProblem] = await tx
+        .update(ProblemTable)
+        .set(otherData)
+        .where(eq(ProblemTable.id, updatedCommunityProblem.problemId))
+        .returning();
+      if (!updatedProblem) throw new Error("Failed to create problem.");
+      return updatedProblem;
+    });
+
+    revalidateCommunityProblemCache();
+
+    return {
+      error: false,
+      message: "Community problem updated successfully!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const getCommunityProblemsAction = async () => {
+  "use cache";
+  cacheTag(getCommunityProblemGlobalTag());
+
+  // todo: add infinite scroll and private sharing support
+  const communityProblems = await db
+    .select({
+      ...getTableColumns(CommunityProblemTable),
+      problem: getTableColumns(ProblemTable),
+      author: getTableColumns(user),
+    })
+    .from(CommunityProblemTable)
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, CommunityProblemTable.problemId),
+    )
+    .innerJoin(user, eq(user.id, CommunityProblemTable.authorUserId))
+    .where(eq(CommunityProblemTable.status, "public"));
+
+  return communityProblems;
 };

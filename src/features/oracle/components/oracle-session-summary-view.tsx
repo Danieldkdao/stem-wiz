@@ -18,13 +18,11 @@ import { UserAvatar } from "@/components/user-avatar";
 import {
   ChatMessageTable,
   ChatTable,
-  DifficultyLevelType,
   OracleSessionProblemTable,
   OracleSessionTable,
   ProblemTable,
 } from "@/db/schema";
-import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { User } from "@/lib/auth/auth";
 import { cn, formatTime, getDuration } from "@/lib/utils";
 import {
@@ -47,6 +45,7 @@ import { Fragment } from "react/jsx-runtime";
 import {
   formatOracleSessionMode,
   formatSessionDuration,
+  getDifficultyBadge,
 } from "../lib/formatters";
 
 export const OracleSessionSummaryView = ({
@@ -91,44 +90,6 @@ export const OracleSessionSummaryView = ({
       iconColor: "text-fuchsia-600",
     },
   ];
-
-  const getOracleMathProblemDifficultyBadge = (
-    difficulty: DifficultyLevelType,
-  ) => {
-    switch (difficulty) {
-      case "easy":
-        return (
-          <Badge
-            variant="outline"
-            className="text-accent border-accent bg-accent/30"
-          >
-            {formatDifficultyLevel(difficulty)}
-          </Badge>
-        );
-      case "medium":
-        return (
-          <Badge
-            variant="outline"
-            className="text-warning border-warning bg-warning/30"
-          >
-            {formatDifficultyLevel(difficulty)}
-          </Badge>
-        );
-      case "hard":
-        return (
-          <Badge
-            variant="outline"
-            className="text-destructive border-destructive bg-destructive/30"
-          >
-            {formatDifficultyLevel(difficulty)}
-          </Badge>
-        );
-      default:
-        throw new Error(
-          `Unknown difficulty level: ${difficulty satisfies never}`,
-        );
-    }
-  };
 
   const metadata = [
     {
@@ -243,9 +204,7 @@ export const OracleSessionSummaryView = ({
                           {oracleProblem.order}. {problem.title}
                         </h3>
                         <div className="flex items-center gap-4">
-                          {getOracleMathProblemDifficultyBadge(
-                            problem.difficultyLevel,
-                          )}
+                          {getDifficultyBadge(problem.difficultyLevel)}
                           <span className="text-lg font-medium tracking-widest">
                             Score: {oracleProblem.score}/10
                           </span>

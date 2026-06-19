@@ -1,4 +1,6 @@
 import {
+  communityProblemStatuses,
+  difficultyLevels,
   programmingLanguages,
   userAvailabilityDays,
   userAvailabilityTimeOfDay,
@@ -262,3 +264,26 @@ export const communityAiDiscoverSchema = z.object({
 export type CommunityAiDiscoverSchemaType = z.infer<
   typeof communityAiDiscoverSchema
 >;
+
+export const communityProblemSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, { error: "Title must be at least one character." }),
+  description: z
+    .string()
+    .trim()
+    .min(20, { error: "Description must be longer than 20 characters." }),
+  difficultyLevel: z.enum(difficultyLevels),
+  programmingLanguage: z.enum(programmingLanguages),
+  solution: z
+    .string()
+    .trim()
+    .min(20, { error: "Solution must be longer than 20 characters." }),
+  concepts: z
+    .array(z.string().min(1))
+    .max(5, { error: "You cannot have more than 5 concepts." }),
+  status: z.enum(communityProblemStatuses),
+  sharedWithUserIds: z.array(z.string().min(1)),
+});
+export type CommunityProblemSchemaType = z.infer<typeof communityProblemSchema>;

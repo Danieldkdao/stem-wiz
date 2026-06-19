@@ -19,7 +19,7 @@ import { programmingLanguages, ProgrammingLanguageType } from "@/db/shared";
 import { useObservableMatchParams } from "@/features/matches/hooks/use-observable-match-params";
 import { formatUserMatchSortByOptions } from "@/features/matches/lib/formatters";
 import { USER_MATCHES_SORT_BY_OPTIONS } from "@/features/matches/lib/params";
-import { formatProgrammingLanguage } from "../../user/lib/formatters";
+import { formatProgrammingLanguage } from "../../social/lib/formatters";
 
 export const ObservableMatchFilters = () => {
   const [filters, setFilters] = useObservableMatchParams();

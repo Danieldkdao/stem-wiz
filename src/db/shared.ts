@@ -244,3 +244,15 @@ export const chatMessageStatusEnum = pgEnum(
 export const problemSources = ["ai", "system", "user"] as const;
 export type ProblemSourceType = (typeof problemSources)[number];
 export const problemSourceEnum = pgEnum("problem_sources", problemSources);
+
+export const communityProblemStatuses = [
+  "public",
+  "private",
+  "archived",
+] as const;
+export type CommunityProblemStatusType =
+  (typeof communityProblemStatuses)[number];
+export const communityProblemStatusEnum = pgEnum(
+  "community_problem_statuses",
+  communityProblemStatuses,
+);

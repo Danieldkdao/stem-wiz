@@ -12,7 +12,7 @@ import {
   type DiscoverUsersPromptUser,
   formatProfileForPrompt,
   formatProgrammingLanguage,
-} from "@/features/user/lib/formatters";
+} from "@/features/social/lib/formatters";
 import { User } from "@/lib/auth/auth";
 import type { AiUserCandidate } from "./tools";
 

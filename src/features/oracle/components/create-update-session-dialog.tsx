@@ -29,7 +29,7 @@ import { oracleSessionModes, programmingLanguages } from "@/db/shared";
 import { SetterType } from "@/lib/types";
 import { cn, getInputErrorStyle } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ComponentProps, ReactNode, useState } from "react";
+import { ComponentProps, ReactNode, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   oracleSessionActionSchema,
@@ -44,7 +44,7 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { OracleSession } from "../lib/types";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 
 type CreateUpdateSessionDialogProps = {
   open?: boolean;
@@ -67,6 +67,7 @@ export const CreateUpdateSessionDialog = ({
   const [hasChildrenOpen, setHasChildrenOpen] = useState(false);
   const [startAfterCreation, setStartAfterCreation] =
     useState(!existingSession);
+  const [isRefreshing, startRefreshTransition] = useTransition();
   const form = useForm<OracleSessionActionSchemaType>({
     resolver: zodResolver(oracleSessionActionSchema),
     defaultValues: existingSession
@@ -93,9 +94,15 @@ export const CreateUpdateSessionDialog = ({
       toast.error(response.message);
     } else {
       toast.success(response.message);
+      if (useButton) {
+        setHasChildrenOpen(false);
+      } else {
+        setOpen?.(false);
+      }
       form.reset();
-      router.refresh();
-      useButton ? setHasChildrenOpen(false) : setOpen?.(false);
+      startRefreshTransition(() => {
+        router.refresh();
+      });
       if (startAfterCreation) {
         // todo: navigate to start page
       }
@@ -277,7 +284,7 @@ export const CreateUpdateSessionDialog = ({
                     </Select>
                   </FieldContent>
                   <FieldDescription>
-                    The mode you select will control the Oracle's personality
+                    The mode you select will control the Oracle&apos;s personality
                     during the session.
                   </FieldDescription>
                   {fieldState.error && (
@@ -339,8 +346,13 @@ export const CreateUpdateSessionDialog = ({
                 </FieldDescription>
               </Field>
             )}
-            <Button className="w-full" disabled={form.formState.isSubmitting}>
-              <LoadingSwap isLoading={form.formState.isSubmitting}>
+            <Button
+              className="w-full"
+              disabled={form.formState.isSubmitting || isRefreshing}
+            >
+              <LoadingSwap
+                isLoading={form.formState.isSubmitting || isRefreshing}
+              >
                 {existingSession ? "Save changes" : "Create Session"}
               </LoadingSwap>
             </Button>

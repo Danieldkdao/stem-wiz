@@ -21,7 +21,7 @@ import {
 import { ClockIcon, CodeIcon, LucideIcon, SquareStackIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { formatProgrammingLanguage } from "@/features/user/lib/formatters";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 
 export const OracleSessionCard = ({
   session,
