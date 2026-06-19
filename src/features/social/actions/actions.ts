@@ -61,8 +61,10 @@ import {
 import { discoverUsers } from "@/services/ai/discover-users";
 import {
   getCommunityProblemGlobalTag,
+  getCommunityProblemIdTag,
   revalidateCommunityProblemCache,
 } from "../server/cache/community-problems";
+import { areValidIds } from "@/lib/utils";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -465,7 +467,7 @@ export const createCommunityProblemAction = async (
   const { status, ...otherData } = data;
 
   try {
-    await db.transaction(async (tx) => {
+    const insertedCommunityProblem = await db.transaction(async (tx) => {
       const [insertedProblem] = await tx
         .insert(ProblemTable)
         .values(otherData)
@@ -483,10 +485,10 @@ export const createCommunityProblemAction = async (
       if (!insertedCommunityProblem)
         throw new Error("Failed to create problem.");
 
-      return insertedProblem;
+      return insertedCommunityProblem;
     });
 
-    revalidateCommunityProblemCache();
+    revalidateCommunityProblemCache(insertedCommunityProblem.id);
 
     return {
       error: false,
@@ -505,6 +507,12 @@ export const updateCommunityProblemAction = async (
   problemId: string,
   unsafeData: CommunityProblemSchemaType,
 ) => {
+  if (!areValidIds([problemId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId } = await getCurrentUser();
   if (!userId) {
     return {
@@ -524,7 +532,7 @@ export const updateCommunityProblemAction = async (
   const { status, ...otherData } = data;
 
   try {
-    await db.transaction(async (tx) => {
+    const updatedCommunityProblem = await db.transaction(async (tx) => {
       const [updatedCommunityProblem] = await tx
         .update(CommunityProblemTable)
         .set({
@@ -541,10 +549,11 @@ export const updateCommunityProblemAction = async (
         .where(eq(ProblemTable.id, updatedCommunityProblem.problemId))
         .returning();
       if (!updatedProblem) throw new Error("Failed to create problem.");
-      return updatedProblem;
+
+      return updatedCommunityProblem;
     });
 
-    revalidateCommunityProblemCache();
+    revalidateCommunityProblemCache(updatedCommunityProblem.id);
 
     return {
       error: false,
@@ -579,4 +588,25 @@ export const getCommunityProblemsAction = async () => {
     .where(eq(CommunityProblemTable.status, "public"));
 
   return communityProblems;
+};
+
+export const getCommunityProblemAction = async (problemId: string) => {
+  "use cache";
+  cacheTag(getCommunityProblemIdTag(problemId));
+
+  if (!areValidIds([problemId])) return null;
+
+  const communityProblem = await db.query.CommunityProblemTable.findFirst({
+    where: eq(CommunityProblemTable.id, problemId),
+    with: {
+      author: {
+        with: {
+          profile: true,
+        },
+      },
+      problem: true,
+    },
+  });
+
+  return communityProblem ?? null;
 };

@@ -21,7 +21,7 @@ import {
   FriendChatsFilterByOptionType,
   FriendChatsSortByOptionType,
 } from "@/features/chats/lib/friend-chat-params";
-import { ArchiveIcon, EarthIcon, EyeIcon, LockIcon } from "lucide-react";
+import { ArchiveIcon, EarthIcon, LockIcon } from "lucide-react";
 
 export type DiscoverUsersPromptUser = User & {
   profile: typeof UserProfileTable.$inferSelect;

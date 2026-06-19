@@ -2,7 +2,6 @@
 
 import { CommunityProblemTable, ProblemTable } from "@/db/schema";
 import { User } from "@/lib/auth/auth";
-import { useState } from "react";
 import { CommunityProblemCard } from "./community-problem-card";
 
 export const CommunityProblemInfiniteCardGrid = ({
@@ -13,11 +12,9 @@ export const CommunityProblemInfiniteCardGrid = ({
     author: User;
   })[];
 }) => {
-  const [problems, setProblems] = useState(initialProblems);
-
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {problems.map((problem) => (
+      {initialProblems.map((problem) => (
         <CommunityProblemCard key={problem.id} communityProblem={problem} />
       ))}
     </div>
