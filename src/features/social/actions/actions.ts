@@ -2,10 +2,13 @@
 
 import { db } from "@/db/db";
 import {
+  CommunityProblemStatusType,
   CommunityProblemTable,
+  DifficultyLevelType,
   FriendRequestTable,
   FriendshipTable,
   ProblemTable,
+  ProgrammingLanguageType,
   user,
   UserAvailabilityDayType,
   UserAvailabilityTimeOfDayType,
@@ -65,6 +68,7 @@ import {
   revalidateCommunityProblemCache,
 } from "../server/cache/community-problems";
 import { areValidIds } from "@/lib/utils";
+import { SortByType } from "@/lib/types";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -568,11 +572,74 @@ export const updateCommunityProblemAction = async (
   }
 };
 
-export const getCommunityProblemsAction = async () => {
+export const getCommunityProblemsAction = async (
+  userId: string,
+  filterOptions: {
+    search: string;
+    sortBy: SortByType;
+    languages: ProgrammingLanguageType[];
+    difficulty: DifficultyLevelType[];
+    statuses: CommunityProblemStatusType[];
+    page: number;
+  },
+) => {
   "use cache";
   cacheTag(getCommunityProblemGlobalTag());
 
-  // todo: add infinite scroll and private sharing support
+  const { search, sortBy, languages, difficulty, statuses, page } =
+    filterOptions;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const sortByMap: Record<SortByType, SQL<unknown>> = {
+    most_recent: desc(CommunityProblemTable.createdAt),
+    oldest: asc(CommunityProblemTable.createdAt),
+  };
+
+  const searchPattern = `%${search.trim()}%`;
+
+  const problemConceptsSearch = sql`
+    EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements_text(${ProblemTable.concepts}) AS concept(value)
+      WHERE concept.value ILIKE ${searchPattern}
+    )
+  `;
+  const searchQuery = search.trim()
+    ? or(
+        ilike(user.name, searchPattern),
+        ilike(ProblemTable.title, searchPattern),
+        ilike(ProblemTable.description, searchPattern),
+        problemConceptsSearch,
+      )
+    : undefined;
+
+  const statusMap: Record<
+    CommunityProblemStatusType,
+    SQL<unknown> | undefined
+  > = {
+    archived: and(
+      eq(user.id, userId),
+      eq(CommunityProblemTable.status, "archived"),
+    ),
+    // todo: add private sharing support
+    private: undefined,
+    public: eq(CommunityProblemTable.status, "public"),
+  };
+
+  const whereQuery = and(
+    searchQuery,
+    languages.length
+      ? inArray(ProblemTable.programmingLanguage, languages)
+      : undefined,
+    difficulty.length
+      ? inArray(ProblemTable.difficultyLevel, difficulty)
+      : undefined,
+    statuses.length
+      ? or(...statuses.map((status) => statusMap[status]))
+      : eq(CommunityProblemTable.status, "public"),
+  );
+
   const communityProblems = await db
     .select({
       ...getTableColumns(CommunityProblemTable),
@@ -585,9 +652,33 @@ export const getCommunityProblemsAction = async () => {
       eq(ProblemTable.id, CommunityProblemTable.problemId),
     )
     .innerJoin(user, eq(user.id, CommunityProblemTable.authorUserId))
-    .where(eq(CommunityProblemTable.status, "public"));
+    .where(whereQuery)
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(PAGE_SIZE);
 
-  return communityProblems;
+  const [totalCommunityProblems] = await db
+    .select({
+      count: count(),
+    })
+    .from(CommunityProblemTable)
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, CommunityProblemTable.problemId),
+    )
+    .innerJoin(user, eq(user.id, CommunityProblemTable.authorUserId))
+    .where(whereQuery);
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalCommunityProblems.count;
+
+  return {
+    communityProblems,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };
 
 export const getCommunityProblemAction = async (problemId: string) => {
