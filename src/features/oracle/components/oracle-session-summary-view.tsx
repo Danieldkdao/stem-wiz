@@ -1,7 +1,7 @@
 import { CodeEditor } from "@/components/code/code-editor";
+import { LinkButton } from "@/components/link-button";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
@@ -40,7 +40,6 @@ import {
   TagIcon,
   TrophyIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { Fragment } from "react/jsx-runtime";
 import {
   formatOracleSessionMode,
@@ -136,12 +135,10 @@ export const OracleSessionSummaryView = ({
 
   return (
     <div className="flex flex-col items-start gap-4">
-      <Button variant="ghost" asChild>
-        <Link href="/oracle/sessions">
-          <ArrowLeftIcon />
-          Back to sessions
-        </Link>
-      </Button>
+      <LinkButton variant="ghost" href="/oracle/sessions">
+        <ArrowLeftIcon />
+        Back to sessions
+      </LinkButton>
       <div className="flex flex-col gap-6 w-full">
         <div>
           <h1 className="text-6xl font-semibold flex-1 truncate">

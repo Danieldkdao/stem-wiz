@@ -37,7 +37,6 @@ import {
   Trash2Icon,
   UserCircleIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { Suspense } from "react";
 
 type ProblemIdParams = { params: Promise<{ problemId: string }> };
@@ -382,16 +381,14 @@ const ProblemIdSuspense = async ({ params }: ProblemIdParams) => {
                   {profile?.bio ?? "This user has not filled in their bio."}
                 </p>
               </div>
-              <Button
+              <LinkButton
                 className="h-10 text-primary hover:text-primary"
                 variant="outline"
-                asChild
+                href={`/community/users/${author.id}`}
               >
-                <Link href={`/community/users/${author.id}`}>
-                  View full profile
-                  <SquareArrowOutUpRightIcon className="text-primary" />
-                </Link>
-              </Button>
+                View full profile
+                <SquareArrowOutUpRightIcon className="text-primary" />
+              </LinkButton>
             </CardContent>
           </Card>
         </div>

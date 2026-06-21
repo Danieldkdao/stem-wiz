@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/link-button";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SetterType } from "@/lib/types";
-import Link from "next/link";
 import { MatchResultReasonType } from "@/db/shared";
 
 type MatchFinishedDialog = {
@@ -67,11 +66,9 @@ export const MatchFinishedDialog = ({
         <p className="text-center text-muted-foreground">
           {reasonDisplay.message}
         </p>
-        <Button className="w-full" asChild>
-          <Link href={reasonDisplay.redirectTo}>
-            {reasonDisplay.redirectText}
-          </Link>
-        </Button>
+        <LinkButton className="w-full" href={reasonDisplay.redirectTo}>
+          {reasonDisplay.redirectText}
+        </LinkButton>
       </DialogContent>
     </Dialog>
   );

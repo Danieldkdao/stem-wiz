@@ -1,8 +1,7 @@
 import { NotificationPayload, NotificationTable } from "@/db/schema";
 import { NotificationListItem } from "./types";
 import { RespondFriendRequestButton } from "@/features/friends/components/respond-friend-request-button";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { LinkButton } from "@/components/link-button";
 
 export const getNotificationListItem = (
   notification: typeof NotificationTable.$inferSelect,
@@ -63,17 +62,21 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
       );
     case "new_chat":
       return (
-        <Button className="w-full" asChild>
-          <Link href={`/community/chats/${payload.chatId}`}>View chat</Link>
-        </Button>
+        <LinkButton
+          className="w-full"
+          href={`/community/chats/${payload.chatId}`}
+        >
+          View chat
+        </LinkButton>
       );
     case "community_problem_shared_with_you":
       return (
-        <Button className="w-full" asChild>
-          <Link href={`/community/problems/${payload.communityProblemId}`}>
-            View problem
-          </Link>
-        </Button>
+        <LinkButton
+          className="w-full"
+          href={`/community/problems/${payload.communityProblemId}`}
+        >
+          View problem
+        </LinkButton>
       );
     case "community_problem_deleted":
     case "community_problem_access_revoked":

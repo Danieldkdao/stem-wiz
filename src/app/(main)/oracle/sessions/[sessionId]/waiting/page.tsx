@@ -1,6 +1,6 @@
+import { LinkButton } from "@/components/link-button";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOneSessionAction } from "@/features/oracle/actions/actions";
@@ -35,7 +35,6 @@ import {
   SparklesIcon,
   TimerIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ReactNode, Suspense } from "react";
 
@@ -45,12 +44,10 @@ const SessionWaitingPage = (props: SessionWaitingProps) => {
   return (
     <div className="h-full w-full overflow-y-auto px-4 py-8 sm:px-6 lg:py-12">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-        <Button asChild variant="ghost" className="w-fit">
-          <Link href="/oracle/sessions">
-            <ArrowLeftIcon />
-            Sessions
-          </Link>
-        </Button>
+        <LinkButton variant="ghost" className="w-fit" href="/oracle/sessions">
+          <ArrowLeftIcon />
+          Sessions
+        </LinkButton>
         <Suspense fallback={<SessionWaitingLoading />}>
           <SessionWaitingSuspense {...props} />
         </Suspense>
@@ -308,12 +305,10 @@ const SessionWaitingNotice = ({
       <p className="mx-auto mt-2 max-w-md text-muted-foreground">
         {description}
       </p>
-      <Button asChild variant="outline" className="mt-6">
-        <Link href="/oracle/sessions">
-          <ArrowLeftIcon />
-          Back to sessions
-        </Link>
-      </Button>
+      <LinkButton variant="outline" className="mt-6" href="/oracle/sessions">
+        <ArrowLeftIcon />
+        Back to sessions
+      </LinkButton>
     </div>
   );
 };

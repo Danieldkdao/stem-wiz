@@ -1,3 +1,4 @@
+import { LinkButton } from "@/components/link-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +46,6 @@ import {
   UsersIcon,
   XCircleIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { ReactNode, Suspense } from "react";
 import { FaGithub, FaLinkedin } from "react-icons/fa6";
 
@@ -125,9 +125,7 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
                 This developer profile may have been moved or removed.
               </p>
             </div>
-            <Button asChild>
-              <Link href="/community">Back to Community</Link>
-            </Button>
+            <LinkButton href="/community">Back to Community</LinkButton>
           </CardContent>
         </Card>
       </div>
@@ -195,12 +193,10 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
             </div>
 
             <div className="flex flex-wrap gap-2 lg:justify-end">
-              <Button variant="outline" asChild>
-                <Link href={`mailto:${user.email}`}>
-                  <MailIcon />
-                  Email
-                </Link>
-              </Button>
+              <LinkButton variant="outline" href={`mailto:${user.email}`}>
+                <MailIcon />
+                Email
+              </LinkButton>
               <ProfileLink
                 href={profile?.githubUrl}
                 label="GitHub"

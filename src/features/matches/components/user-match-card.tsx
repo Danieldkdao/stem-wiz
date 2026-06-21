@@ -1,3 +1,4 @@
+import { LinkButton } from "@/components/link-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
@@ -12,8 +13,6 @@ import { User } from "@/lib/auth/auth";
 import { formatDistance, formatDistanceToNow } from "date-fns";
 import { formatMatchResultReason } from "../lib/formatters";
 import { cn, getDuration } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import {
   CircleXIcon,
   EyeIcon,
@@ -153,31 +152,27 @@ export const UserMatchCard = ({
           ))}
         </div>
         <Separator />
-        <Button
+        <LinkButton
           variant={isFinished ? "outline" : "default"}
           className="w-full mt-auto"
-          asChild
+          href={
+            isFinished
+              ? `/arena/matches/${match.id}/results`
+              : `/arena/matches/${match.id}`
+          }
         >
-          <Link
-            href={
-              isFinished
-                ? `/arena/matches/${match.id}/results`
-                : `/arena/matches/${match.id}`
-            }
-          >
-            {isFinished ? (
-              <>
-                <EyeIcon />
-                View Results
-              </>
-            ) : (
-              <>
-                <PlayIcon />
-                Resume Match
-              </>
-            )}
-          </Link>
-        </Button>
+          {isFinished ? (
+            <>
+              <EyeIcon />
+              View Results
+            </>
+          ) : (
+            <>
+              <PlayIcon />
+              Resume Match
+            </>
+          )}
+        </LinkButton>
       </CardContent>
     </Card>
   );

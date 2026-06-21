@@ -4,7 +4,6 @@ import { LinkButton } from "@/components/link-button";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { NotFound } from "@/components/not-found";
 import { RefreshPageButton } from "@/components/refresh-page-button";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +11,6 @@ import { timeoutExpiredMatch } from "@/features/matches/actions/actions";
 import { auth } from "@/lib/auth/auth";
 import { ParamsId } from "@/lib/types";
 import { headers } from "next/headers";
-import Link from "next/link";
 import { Suspense } from "react";
 
 type MatchCompeteParams = ParamsId<"matchId">;
@@ -117,14 +115,19 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
           description="This match is still ongoing. If you are a participant, jump back in to finish it. Otherwise you can watch the match."
         >
           <div className="w-full mx-auto flex flex-col gap-2 md:flex-row md:items-center max-w-150">
-            <Button variant="outline" className="w-full md:flex-1" asChild>
-              <Link href={`/arena/matches/${match.id}/observing`}>
-                Watch match
-              </Link>
-            </Button>
-            <Button className="w-full md:flex-1" asChild>
-              <Link href={`/arena/matches/${match.id}`}>Resume match</Link>
-            </Button>
+            <LinkButton
+              variant="outline"
+              className="w-full md:flex-1"
+              href={`/arena/matches/${match.id}/observing`}
+            >
+              Watch match
+            </LinkButton>
+            <LinkButton
+              className="w-full md:flex-1"
+              href={`/arena/matches/${match.id}`}
+            >
+              Resume match
+            </LinkButton>
           </div>
         </InfoCard>
       </div>
@@ -159,12 +162,16 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
                   : `The winner is ${matchWinner?.user.name}!`}
             </h1>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-150">
-              <Button className="w-full" asChild>
-                <Link href="/arena/waiting">Start New Match</Link>
-              </Button>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard">Back to Dashboard</Link>
-              </Button>
+              <LinkButton className="w-full" href="/arena/waiting">
+                Start New Match
+              </LinkButton>
+              <LinkButton
+                variant="outline"
+                className="w-full"
+                href="/dashboard"
+              >
+                Back to Dashboard
+              </LinkButton>
             </div>
             <Separator />
             {winningSubmission && (

@@ -1,3 +1,4 @@
+import { LinkButton } from "@/components/link-button";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,6 @@ import {
 import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { SetterType } from "@/lib/types";
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon } from "lucide-react";
-import Link from "next/link";
 import {
   formatOracleSessionMode,
   formatSessionDuration,
@@ -77,12 +77,10 @@ export const OracleSessionViewHeader = ({
   return (
     <header className="w-full p-5 bg-card border-b grid grid-cols-3">
       <div className="w-full flex justify-start place-items-center-safe">
-        <Button variant="ghost" asChild>
-          <Link href="/oracle/sessions">
-            <ArrowLeftIcon />
-            Sessions
-          </Link>
-        </Button>
+        <LinkButton variant="ghost" href="/oracle/sessions">
+          <ArrowLeftIcon />
+          Sessions
+        </LinkButton>
       </div>
       <div className="flex items-center justify-center gap-4">
         <TooltipWrapper content="Previous problem">

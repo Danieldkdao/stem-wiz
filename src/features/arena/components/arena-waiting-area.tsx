@@ -1,12 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/link-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import { useWaitingArenaSocket } from "@/features/arena/hooks/use-waiting-arena-socket";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { SwordsIcon } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { statusMap } from ".";
@@ -35,9 +34,13 @@ const renderWaitingResponse = (message: ArenaWaitingServerMessage) => {
             being redirected to the battle now. If that did not work, you can
             click on the link below.
           </p>
-          <Button variant="outline" className="w-full">
-            <Link href={`/arena/matches/${message.matchId}`}>Battle!</Link>
-          </Button>
+          <LinkButton
+            variant="outline"
+            className="w-full"
+            href={`/arena/matches/${message.matchId}`}
+          >
+            Battle!
+          </LinkButton>
         </div>
       );
     case "active_match_exists":
@@ -50,11 +53,13 @@ const renderWaitingResponse = (message: ArenaWaitingServerMessage) => {
             You already have an active match. Head back to it before joining a
             new waiting room.
           </p>
-          <Button variant="outline" className="w-full" asChild>
-            <Link href={`/arena/matches/${message.matchId}`}>
-              Return to Match
-            </Link>
-          </Button>
+          <LinkButton
+            variant="outline"
+            className="w-full"
+            href={`/arena/matches/${message.matchId}`}
+          >
+            Return to Match
+          </LinkButton>
         </div>
       );
     case "no_problems_found":
@@ -78,9 +83,9 @@ const renderWaitingResponse = (message: ArenaWaitingServerMessage) => {
             Please update your preferences and settings so we know what you like
             and who we should pair you up with.
           </p>
-          <Button variant="outline" className="w-full">
-            <Link href={`/settings`}>Head to settings</Link>
-          </Button>
+          <LinkButton variant="outline" className="w-full" href="/settings">
+            Head to settings
+          </LinkButton>
         </div>
       );
     case "error":

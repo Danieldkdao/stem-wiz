@@ -1,3 +1,4 @@
+import { LinkButton } from "@/components/link-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -20,7 +21,6 @@ import {
 } from "../lib/constants";
 import { ClockIcon, CodeIcon, LucideIcon, SquareStackIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 
 export const OracleSessionCard = ({
@@ -85,20 +85,24 @@ export const OracleSessionCard = ({
             );
           })}
         </div>
-        <Button
-          variant={statusState.buttonVariant}
-          disabled={statusState.isDisabled}
-          className="w-full"
-          asChild
-        >
-          {statusState.href ? (
-            <Link href={statusState.href(session.id)}>
-              {statusState.buttonText}
-            </Link>
-          ) : (
-            statusState.buttonText
-          )}
-        </Button>
+        {statusState.href ? (
+          <LinkButton
+            variant={statusState.buttonVariant}
+            disabled={statusState.isDisabled}
+            className="w-full"
+            href={statusState.href(session.id)}
+          >
+            {statusState.buttonText}
+          </LinkButton>
+        ) : (
+          <Button
+            variant={statusState.buttonVariant}
+            disabled={statusState.isDisabled}
+            className="w-full"
+          >
+            {statusState.buttonText}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

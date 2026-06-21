@@ -332,7 +332,7 @@ export const CommunityProblemForm = ({
 
       <Button
         className="w-full"
-        disabled={form.formState.isSubmitting}
+        disabled={form.formState.isSubmitting || !form.formState.isDirty}
         type="submit"
       >
         <LoadingSwap isLoading={form.formState.isSubmitting}>

@@ -2,7 +2,6 @@ import { ErrorState } from "@/components/error-state";
 import { LinkButton } from "@/components/link-button";
 import { NotFound } from "@/components/not-found";
 import { RefreshPageButton } from "@/components/refresh-page-button";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   checkExistingMatchAction,
@@ -13,7 +12,6 @@ import { MatchView } from "@/features/matches/components/match-view";
 import { auth } from "@/lib/auth/auth";
 import { ParamsId } from "@/lib/types";
 import { headers } from "next/headers";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -165,22 +163,25 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
           description={`You are not a participant in this match. ${match.status === "in-progress" ? "If you want to watch this match," : "If you want to view the match results,"} you can click on the button below.`}
         >
           <div className="mt-2 w-full max-w-150 flex flex-col md:flex-row md:items-center gap-2">
-            <Button variant="outline" asChild className="md:flex-1 w-full">
-              <Link href="/dashboard">Back to dashboard</Link>
-            </Button>
-            <Button className="md:flex-1 w-full" asChild>
-              <Link
-                href={
-                  match.status === "in-progress"
-                    ? `/arena/matches/${match.id}/observing`
-                    : `/arena/matches/${match.id}/results`
-                }
-              >
-                {match.status === "in-progress"
-                  ? "Observe this match"
-                  : "View match results"}
-              </Link>
-            </Button>
+            <LinkButton
+              variant="outline"
+              className="md:flex-1 w-full"
+              href="/dashboard"
+            >
+              Back to dashboard
+            </LinkButton>
+            <LinkButton
+              className="md:flex-1 w-full"
+              href={
+                match.status === "in-progress"
+                  ? `/arena/matches/${match.id}/observing`
+                  : `/arena/matches/${match.id}/results`
+              }
+            >
+              {match.status === "in-progress"
+                ? "Observe this match"
+                : "View match results"}
+            </LinkButton>
           </div>
         </ErrorState>
       </div>

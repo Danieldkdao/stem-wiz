@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/link-button";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SetterType } from "@/lib/types";
-import Link from "next/link";
 
 type OracleSessionCompleteDialogProps = {
   open: boolean;
@@ -33,14 +32,15 @@ export const OracleSessionCompleteDialog = ({
           You have completed all problems in the session. Go to the summary page
           to take a look at the breakdown.
         </p>
-        <Button className="w-full" asChild>
-          <Link href={`/oracle/sessions/${sessionId}/summary`}>
-            View Summary
-          </Link>
-        </Button>
-        <Button className="w-full" variant="outline" asChild>
-          <Link href={`/oracle/sessions`}>Back to sessions</Link>
-        </Button>
+        <LinkButton
+          className="w-full"
+          href={`/oracle/sessions/${sessionId}/summary`}
+        >
+          View Summary
+        </LinkButton>
+        <LinkButton className="w-full" variant="outline" href="/oracle/sessions">
+          Back to sessions
+        </LinkButton>
       </DialogContent>
     </Dialog>
   );
