@@ -20,7 +20,7 @@ export const CommunityProblemTable = pgTable("community_problems", {
 
 export const communityProblemRelations = relations(
   CommunityProblemTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     problem: one(ProblemTable, {
       fields: [CommunityProblemTable.problemId],
       references: [ProblemTable.id],
@@ -29,5 +29,6 @@ export const communityProblemRelations = relations(
       fields: [CommunityProblemTable.authorUserId],
       references: [user.id],
     }),
+    invitations: many(CommunityProblemTable),
   }),
 );

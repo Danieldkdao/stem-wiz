@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getCommunityProblemsAction } from "@/features/social/actions/actions";
 import { CommunityProblemDialog } from "@/features/social/components/community-problem-dialog";
 import { CommunityProblemFilters } from "@/features/social/components/community-problem-filters";
@@ -32,7 +34,56 @@ const CommunityProblemsPage = (props: CommunityProblemsParams) => {
 };
 
 const CommunityProblemsLoading = () => {
-  return <div>loading</div>;
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-11 w-full rounded-md" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Skeleton className="h-9 w-32 rounded-md" />
+          <Skeleton className="h-9 w-36 rounded-md" />
+          <Skeleton className="h-9 w-44 rounded-md" />
+          <Skeleton className="h-9 w-40 rounded-md" />
+        </div>
+      </div>
+      <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <CommunityProblemCardSkeleton key={index} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CommunityProblemCardSkeleton = () => {
+  return (
+    <Card className="h-full w-full min-w-0">
+      <CardContent className="flex flex-col gap-4 min-w-0">
+        <Skeleton className="h-8 w-4/5" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Skeleton className="size-6 shrink-0 rounded-full" />
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-5 w-2 rounded-full" />
+          <Skeleton className="h-5 w-24" />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-28 rounded-full" />
+          <Skeleton className="h-7 w-24 rounded-full" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-11/12" />
+          <Skeleton className="h-5 w-4/5" />
+          <Skeleton className="h-5 w-9/12" />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Skeleton className="h-6 w-20 rounded-sm" />
+          <Skeleton className="h-6 w-24 rounded-sm" />
+          <Skeleton className="h-6 w-16 rounded-sm" />
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 const CommunityProblemsSuspense = async ({

@@ -7,7 +7,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
-import { friendRequestStatusEnum } from "../shared";
+import { invitationStatusEnum } from "../shared";
 import { FriendshipTable } from "./friendship";
 import { user } from "./user";
 
@@ -23,7 +23,7 @@ export const FriendRequestTable = pgTable(
         onDelete: "cascade",
       })
       .notNull(),
-    status: friendRequestStatusEnum("status").notNull().default("pending"),
+    status: invitationStatusEnum("status").notNull().default("pending"),
     respondedAt: timestamp("responded_at", { withTimezone: true }),
     createdAt,
     updatedAt,

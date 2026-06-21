@@ -2,7 +2,7 @@
 
 import { db } from "@/db/db";
 import {
-  FriendRequestStatusType,
+  InvitationStatusType,
   FriendRequestTable,
   FriendshipTable,
   NotificationEventTypeType,
@@ -117,7 +117,7 @@ export const createFriendRequestAction = async (friendUserId: string) => {
 
 export const respondFriendRequestAction = async (
   friendRequestId: string,
-  action: Exclude<FriendRequestStatusType, "pending">,
+  action: Exclude<InvitationStatusType, "pending">,
 ) => {
   if (!areValidIds([friendRequestId])) {
     return {

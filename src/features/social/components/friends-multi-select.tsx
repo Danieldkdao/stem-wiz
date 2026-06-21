@@ -1,23 +1,26 @@
 "use client";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from "@/components/ui/multi-select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user-avatar";
 import { getUserFriendsAction } from "@/features/friends/actions/actions";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { ComponentProps } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 
-export const FriendsSelect = ({
+export const FriendsMultiSelect = ({
   triggerClassName,
   ...props
-}: { triggerClassName?: string } & ComponentProps<typeof Select>) => {
+}: { triggerClassName?: string } & Omit<
+  ComponentProps<typeof MultiSelect>,
+  "children"
+>) => {
   const {
     data: friends,
     isPending,
@@ -27,21 +30,20 @@ export const FriendsSelect = ({
     queryFn: getUserFriendsAction,
   });
 
-  if (isPending) {
+  if (isPending)
     return <Skeleton className={cn("h-9 w-full", triggerClassName)} />;
-  }
-  // todo: make these states better
+
   if (error) return <div>error</div>;
   if (!friends || !friends.length) return <div>no data</div>;
 
   return (
-    <Select {...props}>
-      <SelectTrigger className={cn("w-full", triggerClassName)}>
-        <SelectValue placeholder="Select a friend..." />
-      </SelectTrigger>
-      <SelectContent>
+    <MultiSelect {...props}>
+      <MultiSelectTrigger className={cn("w-full", triggerClassName)}>
+        <MultiSelectValue placeholder="Select friends" />
+      </MultiSelectTrigger>
+      <MultiSelectContent>
         {friends.map((friend) => (
-          <SelectItem
+          <MultiSelectItem
             key={friend.id}
             value={friend.id}
             className="flex items-center gap-2"
@@ -52,9 +54,9 @@ export const FriendsSelect = ({
               textClassName="text-xs"
             />
             <span className="text-sm font-medium">{friend.user.name}</span>
-          </SelectItem>
+          </MultiSelectItem>
         ))}
-      </SelectContent>
-    </Select>
+      </MultiSelectContent>
+    </MultiSelect>
   );
 };

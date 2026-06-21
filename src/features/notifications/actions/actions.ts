@@ -33,18 +33,6 @@ export const getUserNotificationsAction = async (page: number) => {
     .from(NotificationTable)
     .where(eq(NotificationTable.userId, userId));
 
-  const [unreadNotifications] = await db
-    .select({
-      count: count(),
-    })
-    .from(NotificationTable)
-    .where(
-      and(
-        eq(NotificationTable.userId, userId),
-        isNull(NotificationTable.readAt),
-      ),
-    );
-
   const hasPrevPage = page > 1;
   const hasNextPage = page * PAGE_SIZE < totalNotifications.count;
 
@@ -57,7 +45,6 @@ export const getUserNotificationsAction = async (page: number) => {
     metadata: {
       hasPrevPage,
       hasNextPage,
-      unreadCount: unreadNotifications.count,
     },
   };
 };

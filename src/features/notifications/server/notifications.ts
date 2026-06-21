@@ -8,6 +8,8 @@ import {
 import { eq } from "drizzle-orm";
 import { NotificationClientEventType } from "../lib/schemas";
 import {
+  handleCommunityProblemDeletedEvent,
+  handleCommunityProblemEvent,
   handleFriendChatEvent,
   handleFriendRequestSentEvent,
   handleRespondFriendRequestEvent,
@@ -49,6 +51,19 @@ export const handleNewNotification = async (
       case "new_chat":
       case "chat_deleted":
         recipientUserId = await handleFriendChatEvent(payload);
+        break;
+      case "community_problem_access_revoked":
+      case "community_problem_shared_with_you":
+        recipientUserId = await handleCommunityProblemEvent(
+          ws.user.id,
+          payload,
+        );
+        break;
+      case "community_problem_deleted":
+        recipientUserId = await handleCommunityProblemDeletedEvent(
+          ws.user.id,
+          payload,
+        );
         break;
       case "match_finished":
       case "match_invite":

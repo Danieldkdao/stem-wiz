@@ -15,3 +15,4 @@ export * from "./schemas/oracle-session";
 export * from "./schemas/friendship";
 export * from "./schemas/problem";
 export * from "./schemas/community-problem";
+export * from "./schemas/community-problem-invitation";

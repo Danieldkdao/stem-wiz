@@ -1,4 +1,6 @@
+import { LinkButton } from "@/components/link-button";
 import { NotFound } from "@/components/not-found";
+import { RefreshPageButton } from "@/components/refresh-page-button";
 import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFriendChatAction } from "@/features/chats/actions/actions";
@@ -87,7 +89,20 @@ const ChatIdSuspense = async ({ params }: ChatIdParams) => {
         <NotFound
           title="Chat not found"
           description="We were unable to find that chat. Try checking the url or refreshing the page."
-        />
+        >
+          <div className="flex flex-col md:flex-row md:items-center gap-2">
+            <LinkButton
+              href="/community/chats"
+              variant="outline"
+              className="w-full md:flex-1"
+            >
+              Back to chats
+            </LinkButton>
+            <RefreshPageButton className="w-full md:flex-1">
+              Reload the page
+            </RefreshPageButton>
+          </div>
+        </NotFound>
       </div>
     );
   }

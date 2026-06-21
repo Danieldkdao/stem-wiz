@@ -2,7 +2,7 @@ import { db, DbTransaction } from "@/db/db";
 import { FriendRequestTable, FriendshipTable, user } from "@/db/schema";
 import { User } from "@/lib/auth/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { and, eq, getTableColumns, isNull, or } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, isNull, or } from "drizzle-orm";
 
 type FindFriendshipReturnType = Promise<
   | (typeof FriendshipTable.$inferSelect & {
@@ -18,6 +18,36 @@ const sortUserIds = (userIds: [string, string]) => {
     userOneId < userTwoId ? [userOneId, userTwoId] : [userTwoId, userOneId];
 
   return sortedUserIds;
+};
+
+export const findActiveFriendshipsByIds = async (
+  friendIds: string[],
+  tx?: DbTransaction,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return [];
+  const existingFriends = await (tx ?? db)
+    .select({
+      ...getTableColumns(FriendshipTable),
+      friend: getTableColumns(user),
+    })
+    .from(FriendshipTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
+        ),
+        and(
+          eq(FriendshipTable.userOneId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+        ),
+      ),
+    )
+    .where(inArray(FriendshipTable.id, friendIds));
+
+  return existingFriends;
 };
 
 export const findActiveFriendshipById = async (

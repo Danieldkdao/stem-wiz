@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_PAGE } from "@/lib/constants";
 import { UserProfileDropdown } from "./user-profile-dropdown";
 import { HeaderLinksMobileDropdown } from "./header-links-mobile-dropdown";
+import { ErrorState } from "@/components/error-state";
 
 const headerLinks = [
   {
@@ -68,7 +69,12 @@ const HeaderLoading = () => {
 const HeaderSuspense = async () => {
   const response = await getUserNotificationsAction(DEFAULT_PAGE);
   if (!response) {
-    return <div>notification error fetching component</div>;
+    return (
+      <ErrorState
+        title="Fetch Error"
+        description="We were unable to fetch your notifications. Try refreshing the page or come back later. "
+      />
+    );
   }
 
   const { notificationListItems, metadata } = response;
@@ -77,7 +83,6 @@ const HeaderSuspense = async () => {
     <HeaderClient
       initialNotifications={notificationListItems}
       initialHasNextPage={metadata.hasNextPage}
-      unreadCount={metadata.unreadCount}
     />
   );
 };

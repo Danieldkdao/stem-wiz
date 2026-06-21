@@ -1,5 +1,7 @@
 import { ErrorState } from "@/components/error-state";
+import { LinkButton } from "@/components/link-button";
 import { NotFound } from "@/components/not-found";
+import { RefreshPageButton } from "@/components/refresh-page-button";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -136,7 +138,20 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
         <NotFound
           title="Match not found"
           description="We couldn't find this match. Try checking the url or refreshing the page."
-        />
+        >
+          <div className="flex flex-col md:flex-row md:items-center gap-2">
+            <LinkButton
+              href="/matches"
+              variant="outline"
+              className="w-full md:flex-1"
+            >
+              Back to matches
+            </LinkButton>
+            <RefreshPageButton className="w-full md:flex-1">
+              Reload the page
+            </RefreshPageButton>
+          </div>
+        </NotFound>
       </div>
     );
   }

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
-import { FriendRequestStatusType } from "@/db/shared";
+import { InvitationStatusType } from "@/db/shared";
 import { useConfirm } from "@/hooks/use-confirm";
 import { usePendingActionStore } from "@/store/use-pending-action-store";
 import { ComponentProps, ReactNode } from "react";
@@ -20,7 +20,7 @@ export const RespondFriendRequestButton = ({
   ...props
 }: {
   friendRequestId: string;
-  action: Exclude<FriendRequestStatusType, "pending">;
+  action: Exclude<InvitationStatusType, "pending">;
   children: ReactNode;
 } & ComponentProps<typeof Button>) => {
   const router = useRouter();

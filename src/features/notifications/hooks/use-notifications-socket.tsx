@@ -1,5 +1,6 @@
 "use client";
 
+import { InvitationStatusType } from "@/db/shared";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -15,7 +16,6 @@ import {
   NotificationServerMessage,
   NotificationServerMessageType,
 } from "../lib/types";
-import { FriendRequestStatusType } from "@/db/shared";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -33,13 +33,22 @@ type NotificationSocketContextType = {
   ) => () => void;
   notifyFriendRequestResponse: (
     notificationId: string,
-    action: Exclude<FriendRequestStatusType, "pending">,
+    action: Exclude<InvitationStatusType, "pending">,
   ) => void;
   notifyFriendChatAction: (
     notificationId: string,
     action: "new_chat" | "chat_deleted",
   ) => boolean;
   notifyFriendRequestSent: (notificationId: string) => boolean;
+  notifyCommunityProblemFriends: (
+    notificationEvents: {
+      id: string;
+      type:
+        | "community_problem_shared_with_you"
+        | "community_problem_access_revoked";
+    }[],
+  ) => boolean;
+  notifyFriendsCommunityProblemDeletion: (notificationIds: string[]) => boolean;
 };
 
 export type NotificationEventListener<T extends NotificationServerMessageType> =
@@ -181,7 +190,7 @@ export const NotificationSocketProvider = ({
 
   const notifyFriendRequestResponse = (
     notificationId: string,
-    action: Exclude<FriendRequestStatusType, "pending">,
+    action: Exclude<InvitationStatusType, "pending">,
   ) => {
     return send({
       type: "new_notification",
@@ -199,6 +208,45 @@ export const NotificationSocketProvider = ({
     });
   };
 
+  const notifyCommunityProblemFriends = (
+    notificationEvents: {
+      id: string;
+      type:
+        | "community_problem_shared_with_you"
+        | "community_problem_access_revoked";
+    }[],
+  ) => {
+    if (!notificationEvents.length) return false;
+    const results: boolean[] = [];
+
+    notificationEvents.forEach((event) => {
+      const result = send({
+        type: "new_notification",
+        event: { type: event.type, notificationId: event.id },
+      });
+      results.push(result);
+    });
+    return results.every(Boolean);
+  };
+
+  const notifyFriendsCommunityProblemDeletion = (notificationIds: string[]) => {
+    if (!notificationIds.length) return false;
+    const results: boolean[] = [];
+
+    notificationIds.forEach((notificationId) => {
+      const result = send({
+        type: "new_notification",
+        event: {
+          notificationId,
+          type: "community_problem_deleted",
+        },
+      });
+      results.push(result);
+    });
+
+    return results.every(Boolean);
+  };
+
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -214,6 +262,8 @@ export const NotificationSocketProvider = ({
     notifyFriendRequestResponse,
     notifyFriendChatAction,
     notifyFriendRequestSent,
+    notifyCommunityProblemFriends,
+    notifyFriendsCommunityProblemDeletion,
   };
 
   return (

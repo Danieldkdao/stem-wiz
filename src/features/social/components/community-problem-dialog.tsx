@@ -8,7 +8,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { CommunityProblemTable, ProblemTable } from "@/db/schema";
+import {
+  CommunityProblemInvitationTable,
+  CommunityProblemTable,
+  ProblemTable,
+} from "@/db/schema";
 import { ReactNode, useLayoutEffect, useState } from "react";
 import { CommunityProblemForm } from "./community-problem-form";
 
@@ -19,7 +23,7 @@ export const CommunityProblemDialog = ({
   children: ReactNode;
   existingProblem?: typeof CommunityProblemTable.$inferSelect & {
     problem: typeof ProblemTable.$inferSelect;
-    // todo: implement restricted viewing access when you have the table in db
+    invitations: (typeof CommunityProblemInvitationTable.$inferSelect)[];
   };
 }) => {
   const [open, setOpen] = useState(false);

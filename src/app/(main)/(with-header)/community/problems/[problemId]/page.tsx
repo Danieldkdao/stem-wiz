@@ -1,5 +1,7 @@
+import { LinkButton } from "@/components/link-button";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { NotFound } from "@/components/not-found";
+import { RefreshPageButton } from "@/components/refresh-page-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,16 +9,23 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user-avatar";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
-import { getCommunityProblemAction } from "@/features/social/actions/actions";
+import {
+  getCommunityProblemAction,
+  hasPermissionToViewCommunityProblemAction,
+} from "@/features/social/actions/actions";
 import { CommunityProblemBadges } from "@/features/social/components/community-problem-badges";
+import { CommunityProblemDialog } from "@/features/social/components/community-problem-dialog";
+import { DeleteCommunityProblemButton } from "@/features/social/components/delete-community-problem-button";
 import {
   formatCommunityProblemStatus,
   formatProgrammingLanguage,
 } from "@/features/social/lib/formatters";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { cn, formatShortDate } from "@/lib/utils";
 import {
   CalendarIcon,
   CodeIcon,
+  EditIcon,
   EyeIcon,
   FileTextIcon,
   GaugeCircleIcon,
@@ -25,6 +34,7 @@ import {
   PlayIcon,
   SquareArrowOutUpRightIcon,
   TagsIcon,
+  Trash2Icon,
   UserCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -143,7 +153,32 @@ const ProblemIdLoading = () => {
 };
 
 const ProblemIdSuspense = async ({ params }: ProblemIdParams) => {
+  const { userId } = await getCurrentUser();
   const { problemId } = await params;
+
+  if (!(await hasPermissionToViewCommunityProblemAction(problemId))) {
+    return (
+      <div className="py-10">
+        <NotFound
+          title="Not found"
+          description="We weren't able to find this commumity problem. Try checking the url or refresh the page. The problem also might have been deleted by the author."
+        >
+          <div className="flex flex-col md:flex-row md:items-center gap-2">
+            <LinkButton
+              href="/community/problems"
+              variant="outline"
+              className="w-full md:flex-1"
+            >
+              Back to community problems
+            </LinkButton>
+            <RefreshPageButton className="w-full md:flex-1">
+              Reload the page
+            </RefreshPageButton>
+          </div>
+        </NotFound>
+      </div>
+    );
+  }
 
   const response = await getCommunityProblemAction(problemId);
   if (!response) {
@@ -152,7 +187,20 @@ const ProblemIdSuspense = async ({ params }: ProblemIdParams) => {
         <NotFound
           title="Not found"
           description="We weren't able to find this commumity problem. Try checking the url or refresh the page. The problem also might have been deleted by the author."
-        />
+        >
+          <div className="flex flex-col md:flex-row md:items-center gap-2">
+            <LinkButton
+              href="/community/problems"
+              variant="outline"
+              className="w-full md:flex-1"
+            >
+              Back to community problems
+            </LinkButton>
+            <RefreshPageButton className="w-full md:flex-1">
+              Reload the page
+            </RefreshPageButton>
+          </div>
+        </NotFound>
       </div>
     );
   }
@@ -193,7 +241,28 @@ const ProblemIdSuspense = async ({ params }: ProblemIdParams) => {
 
   return (
     <div className="w-full flex flex-col gap-6 min-w-0 pt-4">
-      <h1 className="text-4xl font-semibold">{problem.title}</h1>
+      <div className="flex flex-col md:flex-row md:items-center gap-2">
+        <h1 className="text-4xl font-semibold min-w-0 flex-1">
+          {problem.title}
+        </h1>
+        {communityProblem.authorUserId === userId && (
+          <div className="flex items-center gap-2">
+            <CommunityProblemDialog>
+              <Button variant="outline" size="icon">
+                <EditIcon />
+              </Button>
+            </CommunityProblemDialog>
+            <DeleteCommunityProblemButton
+              communityProblemId={communityProblem.id}
+              variant="destructive"
+              size="icon"
+            >
+              <Trash2Icon />
+            </DeleteCommunityProblemButton>
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <UserAvatar {...author} />
@@ -211,7 +280,7 @@ const ProblemIdSuspense = async ({ params }: ProblemIdParams) => {
           status={communityProblem.status}
         />
       </div>
-      <div className="grid grid-cols-[2fr_1fr] gap-4 w-full min-w-0">
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4 w-full min-w-0">
         <Card className="border-t-4 border-t-primary">
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
@@ -261,13 +330,21 @@ const ProblemIdSuspense = async ({ params }: ProblemIdParams) => {
                 <TagsIcon className="text-primary" />
                 <h2 className="text-2xl font-semibold">Concepts</h2>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {problem.concepts.map((concept) => (
-                  <Badge key={concept} variant="outline">
-                    {concept}
-                  </Badge>
-                ))}
-              </div>
+              {problem.concepts.length ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {problem.concepts.map((concept) => (
+                    <Badge key={concept} variant="outline">
+                      {concept}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full flex items-center justify-center">
+                  <span className="text-center text-base font-medium text-muted-foreground">
+                    No concepts
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card className="border-t-4 border-t-primary w-full min-w-0">

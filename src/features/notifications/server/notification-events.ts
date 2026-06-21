@@ -1,7 +1,13 @@
 import { db } from "@/db/db";
-import { ChatTable, FriendRequestTable } from "@/db/schema";
+import {
+  ChatTable,
+  CommunityProblemTable,
+  FriendRequestTable,
+  FriendshipTable,
+} from "@/db/schema";
 import { NotificationPayloadEvent } from "@/db/shared";
 import { findActiveFriendshipById } from "@/features/friends/server/friendships";
+import { NOT_FOUND_ERROR_MESSAGE } from "@/lib/constants";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
 export const handleRespondFriendRequestEvent = async (
@@ -86,6 +92,46 @@ export const handleFriendChatEvent = async (
     userId,
   );
   if (!existingFriendship) return null;
+
+  return existingFriendship.friend.id;
+};
+
+export const handleCommunityProblemEvent = async (
+  userId: string,
+  event: NotificationPayloadEvent<
+    "community_problem_access_revoked" | "community_problem_shared_with_you"
+  >,
+) => {
+  const [existingCommunityProblem] = await db
+    .select()
+    .from(CommunityProblemTable)
+    .where(
+      and(
+        eq(CommunityProblemTable.id, event.communityProblemId),
+        eq(CommunityProblemTable.authorUserId, userId),
+      ),
+    );
+  if (!existingCommunityProblem) throw new Error(NOT_FOUND_ERROR_MESSAGE);
+
+  const existingFriendship = await findActiveFriendshipById(
+    event.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) throw new Error("Friendship not established.");
+
+  return existingFriendship.friend.id;
+};
+
+export const handleCommunityProblemDeletedEvent = async (
+  userId: string,
+  event: NotificationPayloadEvent<"community_problem_deleted">,
+) => {
+  const existingFriendship = await findActiveFriendshipById(
+    event.friendshipId,
+    userId,
+  );
+  if (!existingFriendship)
+    throw new Error("Failed to find existing active friendship.");
 
   return existingFriendship.friend.id;
 };

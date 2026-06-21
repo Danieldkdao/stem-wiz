@@ -1,13 +1,18 @@
 "use client";
 
-import { CommunityProblemTable, ProblemTable } from "@/db/schema";
+import { NotFound } from "@/components/not-found";
+import {
+  CommunityProblemInvitationTable,
+  CommunityProblemTable,
+  ProblemTable,
+} from "@/db/schema";
 import { User } from "@/lib/auth/auth";
-import { CommunityProblemCard } from "./community-problem-card";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { useCommunityProblemParams } from "../hooks/use-community-problem-params";
 import { DEFAULT_PAGE } from "@/lib/constants";
-import { getCommunityProblemsAction } from "../actions/actions";
 import { Loader2Icon } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { getCommunityProblemsAction } from "../actions/actions";
+import { useCommunityProblemParams } from "../hooks/use-community-problem-params";
+import { CommunityProblemCard } from "./community-problem-card";
 
 export const CommunityProblemInfiniteCardGrid = ({
   userId,
@@ -17,7 +22,9 @@ export const CommunityProblemInfiniteCardGrid = ({
   userId: string;
   initialProblems: (typeof CommunityProblemTable.$inferSelect & {
     problem: typeof ProblemTable.$inferSelect;
+    invitations: (typeof CommunityProblemInvitationTable.$inferSelect)[];
     author: User;
+    isCurrentUserAuthor: boolean;
   })[];
   initialHasNextPage: boolean;
 }) => {
@@ -50,7 +57,10 @@ export const CommunityProblemInfiniteCardGrid = ({
               ...filters,
               page: nextPage,
             });
-          setProblems(problems);
+          setProblems((currentProblems) => [
+            ...currentProblems,
+            ...communityProblems,
+          ]);
           setPage(nextPage);
           setHasNextPage(metadata.hasNextPage);
         });
@@ -63,11 +73,12 @@ export const CommunityProblemInfiniteCardGrid = ({
     return () => observer.disconnect();
   }, [filters, page, hasNextPage, isPending]);
 
-  return (
+  return problems.length ? (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {problems.map((problem) => (
         <CommunityProblemCard key={problem.id} communityProblem={problem} />
       ))}
+
       <div ref={sentinelRef} className="w-full h-1 bg-transparent" />
       {isPending && (
         <div className="flex items-center justify-center w-full">
@@ -75,5 +86,10 @@ export const CommunityProblemInfiniteCardGrid = ({
         </div>
       )}
     </div>
+  ) : (
+    <NotFound
+      title="Problems not found"
+      description="We were unable find any problems that match the selected filters. Try adjusting your filters or refresh the page."
+    />
   );
 };

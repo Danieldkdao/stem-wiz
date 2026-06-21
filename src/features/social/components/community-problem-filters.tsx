@@ -12,6 +12,7 @@ import {
 import { SortByType } from "@/lib/types";
 import { SORT_BY_OPTIONS } from "@/lib/constants";
 import {
+  formatCommunityProblemStatus,
   formatCommunitySortByOptions,
   formatProgrammingLanguage,
 } from "../lib/formatters";
@@ -23,6 +24,7 @@ import {
   MultiSelectValue,
 } from "@/components/ui/multi-select";
 import {
+  communityProblemStatuses,
   CommunityProblemStatusType,
   difficultyLevels,
   DifficultyLevelType,
@@ -43,7 +45,7 @@ export const CommunityProblemFilters = () => {
           placeholder="Search by title, description, author name, or concepts..."
         />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="bg-card rounded-md">
           <Select
             value={filters.sortBy}
@@ -120,6 +122,13 @@ export const CommunityProblemFilters = () => {
             <MultiSelectTrigger>
               <MultiSelectValue placeholder="Filter by status..." />
             </MultiSelectTrigger>
+            <MultiSelectContent>
+              {communityProblemStatuses.map((status) => (
+                <MultiSelectItem key={status} value={status}>
+                  {formatCommunityProblemStatus(status).label}
+                </MultiSelectItem>
+              ))}
+            </MultiSelectContent>
           </MultiSelect>
         </div>
       </div>

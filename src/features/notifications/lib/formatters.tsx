@@ -10,30 +10,13 @@ export const getNotificationListItem = (
   const payloadType = notification.payload.type;
   switch (payloadType) {
     case "friend_request_accepted":
-      return {
-        ...notification,
-        title: notification.payload.title,
-        message: notification.payload.message,
-      };
     case "friend_request_rejected":
-      return {
-        ...notification,
-        title: notification.payload.title,
-        message: notification.payload.message,
-      };
     case "friend_request_sent":
-      return {
-        ...notification,
-        title: notification.payload.title,
-        message: notification.payload.message,
-      };
     case "new_chat":
-      return {
-        ...notification,
-        title: notification.payload.title,
-        message: notification.payload.message,
-      };
     case "chat_deleted":
+    case "community_problem_shared_with_you":
+    case "community_problem_access_revoked":
+    case "community_problem_deleted":
       return {
         ...notification,
         title: notification.payload.title,
@@ -84,6 +67,16 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
           <Link href={`/community/chats/${payload.chatId}`}>View chat</Link>
         </Button>
       );
+    case "community_problem_shared_with_you":
+      return (
+        <Button className="w-full" asChild>
+          <Link href={`/community/problems/${payload.communityProblemId}`}>
+            View problem
+          </Link>
+        </Button>
+      );
+    case "community_problem_deleted":
+    case "community_problem_access_revoked":
     case "chat_deleted":
     case "friend_request_accepted":
     case "friend_request_rejected":

@@ -1,13 +1,13 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
-import { UserMatchTable } from "./user-match";
-import { UserProfileTable } from "./user-profile";
+import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { ChatMessageTable } from "./chat-message";
+import { CommunityProblemTable } from "./community-problem";
 import { FriendRequestTable } from "./friend-request";
+import { FriendshipTable } from "./friendship";
 import { NotificationTable } from "./notification";
 import { OracleSessionTable } from "./oracle-session";
-import { FriendshipTable } from "./friendship";
-import { CommunityProblemTable } from "./community-problem";
+import { UserMatchTable } from "./user-match";
+import { UserProfileTable } from "./user-profile";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),

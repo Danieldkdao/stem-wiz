@@ -2,11 +2,13 @@
 
 import { db } from "@/db/db";
 import {
+  CommunityProblemInvitationTable,
   CommunityProblemStatusType,
   CommunityProblemTable,
   DifficultyLevelType,
   FriendRequestTable,
   FriendshipTable,
+  NotificationPayload,
   ProblemTable,
   ProgrammingLanguageType,
   user,
@@ -15,6 +17,11 @@ import {
   UserMatchTable,
   UserProfileTable,
 } from "@/db/schema";
+import {
+  findActiveFriendshipByUsers,
+  findActiveFriendshipsByIds,
+} from "@/features/friends/server/friendships";
+import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
@@ -23,6 +30,9 @@ import {
   PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
+import { SortByType } from "@/lib/types";
+import { areValidIds } from "@/lib/utils";
+import { discoverUsers } from "@/services/ai/discover-users";
 import {
   and,
   arrayOverlaps,
@@ -30,6 +40,7 @@ import {
   count,
   desc,
   eq,
+  exists,
   getTableColumns,
   gte,
   ilike,
@@ -50,6 +61,11 @@ import {
   HasLinkedinUrlFilterOptionType,
   HasPortfolioUrlFilterOptionType,
 } from "../lib/params";
+import {
+  getCommunityProblemGlobalTag,
+  getCommunityProblemIdTag,
+  revalidateCommunityProblemCache,
+} from "../server/cache/community-problems";
 import { getUserProfileTag } from "../server/cache/user-profiles";
 import { getUserGlobalTag, getUserIdTag } from "../server/cache/users";
 import { upsertUserProfile } from "../server/user-profiles";
@@ -61,14 +77,6 @@ import {
   userProfileSchema,
   UserProfileSchemaType,
 } from "./schemas";
-import { discoverUsers } from "@/services/ai/discover-users";
-import {
-  getCommunityProblemGlobalTag,
-  getCommunityProblemIdTag,
-  revalidateCommunityProblemCache,
-} from "../server/cache/community-problems";
-import { areValidIds } from "@/lib/utils";
-import { SortByType } from "@/lib/types";
 
 export const upsertUserProfileAction = async (
   unsafeData: UserProfileSchemaType,
@@ -452,8 +460,8 @@ export const aiDiscoverUsersAction = async (
 export const createCommunityProblemAction = async (
   unsafeData: CommunityProblemSchemaType,
 ) => {
-  const { userId } = await getCurrentUser();
-  if (!userId) {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
     return {
       error: true,
       message: UNAUTHED_ERROR_MESSAGE,
@@ -468,35 +476,94 @@ export const createCommunityProblemAction = async (
     };
   }
 
-  const { status, ...otherData } = data;
+  const { status, sharedWithUserIds, ...otherData } = data;
 
   try {
-    const insertedCommunityProblem = await db.transaction(async (tx) => {
-      const [insertedProblem] = await tx
-        .insert(ProblemTable)
-        .values(otherData)
-        .returning();
-      if (!insertedProblem) throw new Error("Failed to create problem.");
+    const { insertedCommunityProblem, notificationEvents } =
+      await db.transaction(async (tx) => {
+        const [insertedProblem] = await tx
+          .insert(ProblemTable)
+          .values(otherData)
+          .returning();
+        if (!insertedProblem) throw new Error("Failed to create problem.");
 
-      const [insertedCommunityProblem] = await tx
-        .insert(CommunityProblemTable)
-        .values({
-          status,
-          problemId: insertedProblem.id,
-          authorUserId: userId,
-        })
-        .returning();
-      if (!insertedCommunityProblem)
-        throw new Error("Failed to create problem.");
+        const [insertedCommunityProblem] = await tx
+          .insert(CommunityProblemTable)
+          .values({
+            status,
+            problemId: insertedProblem.id,
+            authorUserId: userId,
+          })
+          .returning();
+        if (!insertedCommunityProblem)
+          throw new Error("Failed to create problem.");
 
-      return insertedCommunityProblem;
-    });
+        const notificationEvents: {
+          id: string;
+          type:
+            | "community_problem_shared_with_you"
+            | "community_problem_access_revoked";
+        }[] = [];
+        if (
+          insertedCommunityProblem.status === "private" &&
+          sharedWithUserIds.length
+        ) {
+          const existingFriends = await findActiveFriendshipsByIds(
+            sharedWithUserIds,
+            tx,
+          );
+          if (existingFriends.length !== sharedWithUserIds.length)
+            throw new Error("Invalid friends.");
+
+          const insertedInvitations = await tx
+            .insert(CommunityProblemInvitationTable)
+            .values(
+              sharedWithUserIds.map((friendshipId) => ({
+                friendshipId,
+                communityProblemId: insertedCommunityProblem.id,
+              })),
+            )
+            .returning();
+
+          if (insertedInvitations.length !== sharedWithUserIds.length)
+            throw new Error("Failed to send friend invitations.");
+
+          const insertedNotifications = await Promise.all(
+            existingFriends.map((friend) =>
+              insertNotificationDb(
+                {
+                  userId: friend.friend.id,
+                  payload: {
+                    type: "community_problem_shared_with_you",
+                    communityProblemId: insertedCommunityProblem.id,
+                    friendshipId: friend.id,
+                    title: "New community problem",
+                    message: `${userInfo.name} shared a community problem with you: ${insertedProblem.title}`,
+                  },
+                },
+                tx,
+              ),
+            ),
+          );
+
+          notificationEvents.push(
+            ...insertedNotifications.map((notification) => ({
+              id: notification.id,
+              type: "community_problem_shared_with_you" as const,
+            })),
+          );
+        }
+
+        return { insertedCommunityProblem, notificationEvents };
+      });
 
     revalidateCommunityProblemCache(insertedCommunityProblem.id);
 
     return {
       error: false,
       message: "Community problem created successfully!",
+      notificationEvents,
+      problemId: insertedCommunityProblem.id,
     };
   } catch (error) {
     console.error(error);
@@ -517,8 +584,8 @@ export const updateCommunityProblemAction = async (
       message: NOT_FOUND_ERROR_MESSAGE,
     };
   }
-  const { userId } = await getCurrentUser();
-  if (!userId) {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
     return {
       error: true,
       message: UNAUTHED_ERROR_MESSAGE,
@@ -533,35 +600,178 @@ export const updateCommunityProblemAction = async (
     };
   }
 
-  const { status, ...otherData } = data;
+  const { status, sharedWithUserIds, ...otherData } = data;
 
   try {
-    const updatedCommunityProblem = await db.transaction(async (tx) => {
-      const [updatedCommunityProblem] = await tx
-        .update(CommunityProblemTable)
-        .set({
-          status,
-        })
-        .where(eq(CommunityProblemTable.id, problemId))
-        .returning();
-      if (!updatedCommunityProblem)
-        throw new Error("Failed to create problem.");
+    const { updatedCommunityProblem, notificationEvents } =
+      await db.transaction(async (tx) => {
+        const [updatedCommunityProblem] = await tx
+          .update(CommunityProblemTable)
+          .set({
+            status,
+          })
+          .where(eq(CommunityProblemTable.id, problemId))
+          .returning();
+        if (!updatedCommunityProblem)
+          throw new Error("Failed to create problem.");
 
-      const [updatedProblem] = await tx
-        .update(ProblemTable)
-        .set(otherData)
-        .where(eq(ProblemTable.id, updatedCommunityProblem.problemId))
-        .returning();
-      if (!updatedProblem) throw new Error("Failed to create problem.");
+        const [updatedProblem] = await tx
+          .update(ProblemTable)
+          .set(otherData)
+          .where(eq(ProblemTable.id, updatedCommunityProblem.problemId))
+          .returning();
+        if (!updatedProblem) throw new Error("Failed to create problem.");
 
-      return updatedCommunityProblem;
-    });
+        const existingInvitations = await tx
+          .select({ id: CommunityProblemInvitationTable.friendshipId })
+          .from(CommunityProblemInvitationTable)
+          .where(
+            eq(
+              CommunityProblemInvitationTable.communityProblemId,
+              updatedCommunityProblem.id,
+            ),
+          );
+
+        const existingInvitationFriendshipIds = existingInvitations.map(
+          (invitation) => invitation.id,
+        );
+
+        const existingFriends = await findActiveFriendshipsByIds(
+          sharedWithUserIds,
+          tx,
+        );
+        if (existingFriends.length !== sharedWithUserIds.length)
+          throw new Error("Invalid friends.");
+
+        const sharedWithFriendIds = existingFriends.map((friend) => friend.id);
+
+        const notificationEvents: {
+          id: string;
+          type:
+            | "community_problem_shared_with_you"
+            | "community_problem_access_revoked";
+        }[] = [];
+
+        if (updatedCommunityProblem.status === "private") {
+          const friendIdsToAdd = [
+            ...new Set(
+              sharedWithFriendIds.filter(
+                (friendId) =>
+                  !existingInvitationFriendshipIds.includes(friendId),
+              ),
+            ),
+          ];
+          const friendIdsToRemove = [
+            ...new Set(
+              existingInvitationFriendshipIds.filter(
+                (friendshipId) => !sharedWithFriendIds.includes(friendshipId),
+              ),
+            ),
+          ];
+
+          const [addedInvitations, removedInvitations] = await Promise.all([
+            friendIdsToAdd.length
+              ? tx
+                  .insert(CommunityProblemInvitationTable)
+                  .values(
+                    friendIdsToAdd.map((friendshipId) => ({
+                      friendshipId,
+                      communityProblemId: updatedCommunityProblem.id,
+                    })),
+                  )
+                  .returning()
+              : undefined,
+            friendIdsToRemove.length
+              ? tx
+                  .delete(CommunityProblemInvitationTable)
+                  .where(
+                    and(
+                      eq(
+                        CommunityProblemInvitationTable.communityProblemId,
+                        updatedCommunityProblem.id,
+                      ),
+                      inArray(
+                        CommunityProblemInvitationTable.friendshipId,
+                        friendIdsToRemove,
+                      ),
+                    ),
+                  )
+                  .returning()
+              : undefined,
+          ]);
+
+          if (
+            (friendIdsToAdd.length &&
+              friendIdsToAdd.length !== addedInvitations?.length) ||
+            (friendIdsToRemove.length &&
+              friendIdsToRemove.length !== removedInvitations?.length)
+          )
+            throw new Error("Failed to update friend invitations.");
+
+          const friendsToNotifyIds = [
+            ...new Set([...friendIdsToAdd, ...friendIdsToRemove]),
+          ];
+          const friendsToNotify = friendsToNotifyIds.length
+            ? await findActiveFriendshipsByIds(friendsToNotifyIds, tx)
+            : [];
+
+          if (friendsToNotify.length !== friendsToNotifyIds.length) {
+            throw new Error("Failed to find friends to notify.");
+          }
+
+          const insertedNotifications = await Promise.all(
+            friendsToNotify.map((friend) => {
+              let payload: NotificationPayload | null = null;
+              let type:
+                | "community_problem_shared_with_you"
+                | "community_problem_access_revoked"
+                | null = null;
+
+              if (friendIdsToAdd.includes(friend.id)) {
+                payload = {
+                  type: "community_problem_shared_with_you",
+                  communityProblemId: updatedCommunityProblem.id,
+                  friendshipId: friend.id,
+                  title: "New community problem",
+                  message: `${userInfo.name} shared a community problem with you: ${updatedProblem.title}`,
+                };
+                type = "community_problem_shared_with_you";
+              } else if (friendIdsToRemove.includes(friend.id)) {
+                payload = {
+                  type: "community_problem_access_revoked",
+                  communityProblemId: updatedCommunityProblem.id,
+                  friendshipId: friend.id,
+                  title: "Community problem removed",
+                  message: `${userInfo.name} revoked your access to the community problem: ${updatedProblem.title}`,
+                };
+                type = "community_problem_access_revoked";
+              } else {
+                throw new Error("Failed to send notifications.");
+              }
+
+              if (!type) throw new Error("Failed to send notifications.");
+              return insertNotificationDb(
+                {
+                  userId: friend.friend.id,
+                  payload,
+                },
+                tx,
+              ).then((notification) => ({ id: notification.id, type }));
+            }),
+          );
+
+          notificationEvents.push(...insertedNotifications);
+        }
+
+        return { updatedCommunityProblem, notificationEvents };
+      });
 
     revalidateCommunityProblemCache(updatedCommunityProblem.id);
 
     return {
       error: false,
       message: "Community problem updated successfully!",
+      notificationEvents,
     };
   } catch (error) {
     console.error(error);
@@ -614,6 +824,34 @@ export const getCommunityProblemsAction = async (
       )
     : undefined;
 
+  const hasPrivateProblemAccess = exists(
+    db
+      .select()
+      .from(CommunityProblemInvitationTable)
+      .innerJoin(
+        FriendshipTable,
+        eq(FriendshipTable.id, CommunityProblemInvitationTable.friendshipId),
+      )
+      .where(
+        and(
+          eq(
+            CommunityProblemInvitationTable.communityProblemId,
+            CommunityProblemTable.id,
+          ),
+          or(
+            and(
+              eq(FriendshipTable.userOneId, userId),
+              eq(FriendshipTable.userTwoId, CommunityProblemTable.authorUserId),
+            ),
+            and(
+              eq(FriendshipTable.userOneId, CommunityProblemTable.authorUserId),
+              eq(FriendshipTable.userTwoId, userId),
+            ),
+          ),
+        ),
+      ),
+  );
+
   const statusMap: Record<
     CommunityProblemStatusType,
     SQL<unknown> | undefined
@@ -622,8 +860,13 @@ export const getCommunityProblemsAction = async (
       eq(user.id, userId),
       eq(CommunityProblemTable.status, "archived"),
     ),
-    // todo: add private sharing support
-    private: undefined,
+    private: and(
+      eq(CommunityProblemTable.status, "private"),
+      or(
+        eq(CommunityProblemTable.authorUserId, userId),
+        hasPrivateProblemAccess,
+      ),
+    ),
     public: eq(CommunityProblemTable.status, "public"),
   };
 
@@ -637,14 +880,37 @@ export const getCommunityProblemsAction = async (
       : undefined,
     statuses.length
       ? or(...statuses.map((status) => statusMap[status]))
-      : eq(CommunityProblemTable.status, "public"),
+      : or(
+          eq(CommunityProblemTable.status, "public"),
+          eq(CommunityProblemTable.authorUserId, userId),
+          hasPrivateProblemAccess,
+        ),
   );
 
   const communityProblems = await db
     .select({
       ...getTableColumns(CommunityProblemTable),
       problem: getTableColumns(ProblemTable),
+      invitations: sql<
+        (typeof CommunityProblemInvitationTable.$inferSelect)[]
+      >`(
+        SELECT COALESCE(
+          jsonb_agg(
+            jsonb_build_object(
+              'id', cpit.id,
+              'friendshipId', cpit.friendship_id,
+              'communityProblemId', cpit.community_problem_id,
+              'createdAt', cpit.created_at,
+              'updatedAt', cpit.updated_at
+            )
+          ),
+          '[]'::jsonb
+        )
+        FROM ${CommunityProblemInvitationTable} cpit
+        WHERE cpit.community_problem_id = ${CommunityProblemTable.id}
+      )`,
       author: getTableColumns(user),
+      isCurrentUserAuthor: sql<boolean>`${user.id} = ${userId}`,
     })
     .from(CommunityProblemTable)
     .innerJoin(
@@ -700,4 +966,187 @@ export const getCommunityProblemAction = async (problemId: string) => {
   });
 
   return communityProblem ?? null;
+};
+
+export const hasPermissionToViewCommunityProblemAction = async (
+  communityProblemId: string,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return false;
+
+  const existingCommunityProblem =
+    await db.query.CommunityProblemTable.findFirst({
+      where: eq(CommunityProblemTable.id, communityProblemId),
+    });
+  if (!existingCommunityProblem) return false;
+
+  switch (existingCommunityProblem.status) {
+    case "public":
+      return true;
+    case "archived":
+      return existingCommunityProblem.authorUserId === userId;
+    case "private":
+      if (existingCommunityProblem.authorUserId === userId) return true;
+      const existingFriendship = await findActiveFriendshipByUsers(
+        existingCommunityProblem.authorUserId,
+        userId,
+      );
+      if (!existingFriendship) return false;
+      const existingCommunityProblemInvitation =
+        await db.query.CommunityProblemInvitationTable.findFirst({
+          where: and(
+            eq(
+              CommunityProblemInvitationTable.communityProblemId,
+              existingCommunityProblem.id,
+            ),
+            eq(
+              CommunityProblemInvitationTable.friendshipId,
+              existingFriendship.id,
+            ),
+          ),
+        });
+      return !!existingCommunityProblemInvitation;
+  }
+};
+
+export const deleteCommunityProblemAction = async (
+  communityProblemId: string,
+) => {
+  if (!areValidIds([communityProblemId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  try {
+    const notificationIds: string[] = [];
+    const deletedCommunityProblem = await db.transaction(async (tx) => {
+      const [existingCommunityProblem] = await tx
+        .select()
+        .from(CommunityProblemTable)
+        .where(
+          and(
+            eq(CommunityProblemTable.id, communityProblemId),
+            eq(CommunityProblemTable.authorUserId, userId),
+          ),
+        );
+      if (!existingCommunityProblem) throw new Error(NOT_FOUND_ERROR_MESSAGE);
+      const [existingProblem] = await tx
+        .select()
+        .from(ProblemTable)
+        .where(eq(ProblemTable.id, existingCommunityProblem.problemId));
+      if (!existingProblem) throw new Error(NOT_FOUND_ERROR_MESSAGE);
+      const existingProblemInvitations = await tx
+        .select({
+          ...getTableColumns(CommunityProblemInvitationTable),
+          otherUserId: user.id,
+        })
+        .from(CommunityProblemInvitationTable)
+        .innerJoin(
+          FriendshipTable,
+          eq(FriendshipTable.id, CommunityProblemInvitationTable.friendshipId),
+        )
+        .innerJoin(
+          user,
+          or(
+            and(
+              eq(FriendshipTable.userOneId, userId),
+              eq(FriendshipTable.userTwoId, user.id),
+            ),
+            and(
+              eq(FriendshipTable.userOneId, user.id),
+              eq(FriendshipTable.userTwoId, userId),
+            ),
+          ),
+        )
+        .where(
+          eq(
+            CommunityProblemInvitationTable.communityProblemId,
+            communityProblemId,
+          ),
+        );
+      const deletedCommunityProblemInvitations = await tx
+        .delete(CommunityProblemInvitationTable)
+        .where(
+          and(
+            inArray(
+              CommunityProblemInvitationTable.id,
+              existingProblemInvitations.map((invitation) => invitation.id),
+            ),
+            eq(
+              CommunityProblemInvitationTable.communityProblemId,
+              communityProblemId,
+            ),
+          ),
+        )
+        .returning();
+      if (
+        deletedCommunityProblemInvitations.length !==
+        existingProblemInvitations.length
+      )
+        throw new Error("Failed to delete invitations.");
+      if (existingProblemInvitations.length) {
+        const insertedNotifications = await Promise.all(
+          existingProblemInvitations.map((invitation) => {
+            return insertNotificationDb(
+              {
+                userId: invitation.otherUserId,
+                payload: {
+                  type: "community_problem_deleted",
+                  friendshipId: invitation.friendshipId,
+                  title: "Community problem deleted",
+                  message: `${userInfo.name} deleted the community problem "${existingProblem.title}".`,
+                },
+              },
+              tx,
+            ).then((notification) => notificationIds.push(notification.id));
+          }),
+        );
+        if (insertedNotifications.length !== existingProblemInvitations.length)
+          throw new Error("Failed to create notifications.");
+      }
+
+      const [deletedCommunityProblem] = await tx
+        .delete(CommunityProblemTable)
+        .where(
+          and(
+            eq(CommunityProblemTable.id, existingCommunityProblem.id),
+            eq(CommunityProblemTable.authorUserId, userId),
+          ),
+        )
+        .returning();
+      if (!deletedCommunityProblem)
+        throw new Error("Failed to delete community problem.");
+
+      const [deletedProblem] = await tx
+        .delete(ProblemTable)
+        .where(eq(ProblemTable.id, existingProblem.id))
+        .returning();
+      if (!deletedProblem) throw new Error("Failed to delete problem.");
+
+      return deletedCommunityProblem;
+    });
+
+    revalidateCommunityProblemCache(deletedCommunityProblem.id);
+
+    return {
+      error: false,
+      message: "Problem deleted successfully.",
+      notificationIds,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
 };

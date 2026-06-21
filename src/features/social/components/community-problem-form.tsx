@@ -1,11 +1,10 @@
 "use client";
 
-import { Controller, useForm } from "react-hook-form";
-import {
-  communityProblemSchema,
-  CommunityProblemSchemaType,
-} from "../actions/schemas";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { ControlledInput } from "@/components/controlled-input";
+import { MarkdownEditor } from "@/components/markdown/markdown-editor";
+import { TooltipWrapper } from "@/components/tooltip-wrapper";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldContent,
@@ -14,7 +13,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { cn, getInputErrorStyle } from "@/lib/utils";
+import { LoadingSwap } from "@/components/ui/loading-swap";
 import {
   Select,
   SelectContent,
@@ -23,29 +22,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  CommunityProblemInvitationTable,
+  CommunityProblemTable,
+  ProblemTable,
+} from "@/db/schema";
+import {
   communityProblemStatuses,
   difficultyLevels,
   programmingLanguages,
 } from "@/db/shared";
-import {
-  formatCommunityProblemStatus,
-  formatProgrammingLanguage,
-} from "../lib/formatters";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
-import { MarkdownEditor } from "@/components/markdown/markdown-editor";
-import { ControlledInput } from "@/components/controlled-input";
-import { Badge } from "@/components/ui/badge";
-import { CommunityProblemTable, ProblemTable } from "@/db/schema";
-import { Button } from "@/components/ui/button";
-import { LoadingSwap } from "@/components/ui/loading-swap";
+import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
+import { cn, getInputErrorStyle } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { XIcon } from "lucide-react";
-import { TooltipWrapper } from "@/components/tooltip-wrapper";
+import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import {
   createCommunityProblemAction,
   updateCommunityProblemAction,
 } from "../actions/actions";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import {
+  communityProblemSchema,
+  CommunityProblemSchemaType,
+} from "../actions/schemas";
+import {
+  formatCommunityProblemStatus,
+  formatProgrammingLanguage,
+} from "../lib/formatters";
+import { FriendsMultiSelect } from "./friends-multi-select";
 
 export const CommunityProblemForm = ({
   existingProblem,
@@ -53,10 +59,12 @@ export const CommunityProblemForm = ({
 }: {
   existingProblem?: typeof CommunityProblemTable.$inferSelect & {
     problem: typeof ProblemTable.$inferSelect;
+    invitations: (typeof CommunityProblemInvitationTable.$inferSelect)[];
   };
   afterAction?: () => void;
 }) => {
   const router = useRouter();
+  const { notifyCommunityProblemFriends } = useNotificationsSocket();
   const form = useForm<CommunityProblemSchemaType>({
     resolver: zodResolver(communityProblemSchema),
     defaultValues: existingProblem
@@ -68,8 +76,9 @@ export const CommunityProblemForm = ({
           solution: existingProblem.problem.solution,
           concepts: existingProblem.problem.concepts,
           status: existingProblem.status,
-          // todo: implement shared with user ids when you have the table
-          sharedWithUserIds: [],
+          sharedWithUserIds: existingProblem.invitations.map(
+            (invitation) => invitation.friendshipId,
+          ),
         }
       : {
           title: "",
@@ -90,15 +99,21 @@ export const CommunityProblemForm = ({
       ? updateCommunityProblemAction(existingProblem.id, data)
       : createCommunityProblemAction(data);
     const response = await action;
-    if (response.error) {
+    if (response.error || !response.notificationEvents) {
       toast.error(response.message);
     } else {
+      notifyCommunityProblemFriends(response.notificationEvents);
       toast.success(response.message);
       afterAction?.();
       form.reset();
+      if (existingProblem) router.refresh();
+      // @ts-expect-error This will always be valid because no existing problem = create problem which if no error is thrown will return the problem id
+      else router.push(`/community/problems/${response.problemId}`);
       router.refresh();
     }
   };
+
+  const communityProblemStatus = form.watch("status");
 
   return (
     <form
@@ -219,6 +234,7 @@ export const CommunityProblemForm = ({
                 onKeyDown={(e, value, setValue) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
+                    if (!value.trim()) return;
                     if (values.length >= 5) return;
                     onChange([...values, value]);
                     setValue("");
@@ -290,6 +306,30 @@ export const CommunityProblemForm = ({
           </Field>
         )}
       />
+      {communityProblemStatus === "private" && (
+        <Controller
+          control={form.control}
+          name="sharedWithUserIds"
+          render={({ field: { value: values, onChange }, fieldState }) => (
+            <Field>
+              <FieldLabel>Share with</FieldLabel>
+              <FieldContent>
+                <FriendsMultiSelect
+                  values={values}
+                  onValuesChange={onChange}
+                  triggerClassName={getInputErrorStyle(fieldState.error)}
+                />
+              </FieldContent>
+              <FieldDescription>
+                Choose which friends to share this problem with. Only you and
+                the friends you select will be able to read this problem.
+              </FieldDescription>
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+      )}
+
       <Button
         className="w-full"
         disabled={form.formState.isSubmitting}

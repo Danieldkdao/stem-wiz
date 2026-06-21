@@ -126,28 +126,12 @@ export const userGoals = [
 export type UserGoalType = (typeof userGoals)[number];
 export const userGoalEnum = pgEnum("user_goals", userGoals);
 
-export const friendRequestStatuses = [
-  "pending",
-  "accepted",
-  "rejected",
-] as const;
-export type FriendRequestStatusType = (typeof friendRequestStatuses)[number];
-export const friendRequestStatusEnum = pgEnum(
+export const invitationStatuses = ["pending", "accepted", "rejected"] as const;
+export type InvitationStatusType = (typeof invitationStatuses)[number];
+export const invitationStatusEnum = pgEnum(
   "friend_request_statuses",
-  friendRequestStatuses,
+  invitationStatuses,
 );
-
-export const notificationEventTypes = [
-  "friend_request_sent",
-  "friend_request_accepted",
-  "friend_request_rejected",
-  "new_chat",
-  "chat_deleted",
-  "match_invite",
-  "match_finished",
-  "system",
-] as const;
-export type NotificationEventTypeType = (typeof notificationEventTypes)[number];
 
 export type NotificationPayload =
   | {
@@ -190,11 +174,46 @@ export type NotificationPayload =
       title: string;
       message: string;
     }
+  | {
+      type: "community_problem_shared_with_you";
+      communityProblemId: string;
+      friendshipId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "community_problem_access_revoked";
+      communityProblemId: string;
+      friendshipId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "community_problem_deleted";
+      friendshipId: string;
+      title: string;
+      message: string;
+    }
   | { type: "match_invite"; matchId: string; fromUserId: string }
   | { type: "match_finished"; matchId: string; winnerId?: string }
   | { type: "system"; title: string; message: string };
 export type NotificationPayloadEvent<T extends NotificationPayload["type"]> =
   Extract<NotificationPayload, { type: T }>;
+
+export const notificationEventTypes: NotificationPayload["type"][] = [
+  "friend_request_sent",
+  "friend_request_accepted",
+  "friend_request_rejected",
+  "community_problem_access_revoked",
+  "community_problem_shared_with_you",
+  "community_problem_deleted",
+  "new_chat",
+  "chat_deleted",
+  "match_invite",
+  "match_finished",
+  "system",
+] as const;
+export type NotificationEventTypeType = (typeof notificationEventTypes)[number];
 
 export const oracleSessionStatuses = [
   "upcoming",

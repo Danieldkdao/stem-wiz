@@ -11,6 +11,7 @@ import { createdAt, id } from "../helpers";
 import { ChatTable } from "./chat";
 import { FriendRequestTable } from "./friend-request";
 import { user } from "./user";
+import { CommunityProblemInvitationTable } from "./community-problem-invitation";
 
 export const FriendshipTable = pgTable(
   "friendships",
@@ -58,5 +59,6 @@ export const friendshipRelations = relations(
       references: [FriendRequestTable.id],
     }),
     chats: many(ChatTable),
+    communityProblemInvitations: many(CommunityProblemInvitationTable),
   }),
 );
