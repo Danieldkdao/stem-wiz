@@ -1,53 +1,145 @@
+import { CurrentUserAvatar } from "@/components/current-user-avatar";
+import { LinkButton } from "@/components/link-button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SwordsIcon, ViewIcon } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ChevronRightIcon,
+  EyeIcon,
+  HistoryIcon,
+  SwordsIcon,
+} from "lucide-react";
 import Link from "next/link";
+import { FaQuestion } from "react-icons/fa6";
 
-const options = [
+// const options = [
+//   {
+//     title: "Compete",
+//     description:
+//       "Enter matchmaking and face another developer in a timed coding challenge.",
+//     icon: SwordsIcon,
+//     href: "/arena/waiting",
+//     features: ["1v1 live match", "Timed problem", "Submit code to finish"],
+//     buttonText: "Find a match",
+//     buttonVariant: "default" as const,
+//     iconBgColor: "bg-accent",
+//     checkIconColor: "text-accent",
+//   },
+//   {
+//     title: "Observe",
+//     description:
+//       "Browse active battles, watch code evolve, and learn from other developers.",
+//     icon: EyeIcon,
+//     href: "/arena/observe",
+//     features: ["Live match list", "Observer view", "Learn from submissions"],
+//     buttonText: "Watch matches",
+//     buttonVariant: "outline" as const,
+//     iconBgColor: "bg-muted",
+//     checkIconColor: "text-muted-foreground",
+//   },
+// ];
+
+const tabs = [
   {
-    title: "Compete",
-    description: "We'll match you in a one-to-one battle to test your skills!",
-    icon: SwordsIcon,
-    href: "/arena/waiting",
+    value: "random-pairing" as const,
+    children: () => (
+      <div className="flex flex-col gap-2">
+        <p className="text-lg font-medium text-muted-foreground">
+          We’ll pair you with a developer who matches your XP level and primary
+          programming language from your profile.
+        </p>
+        <div className="bg-muted rounded-md p-5 flex items-center gap-6 justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <CurrentUserAvatar className="size-20" textClassName="text-lg" />
+            <span className="text-xl font-medium text-center">You</span>
+          </div>
+
+          <SwordsIcon className="text-primary size-14" />
+          <div className="flex flex-col items-center gap-2">
+            <div className="size-20 bg-muted-foreground rounded-full flex items-center justify-center border-2 border-dashed border-border">
+              <FaQuestion strokeWidth={5} className="size-10" />
+            </div>
+            <span className="text-xl font-medium text-center">Opponent</span>
+          </div>
+        </div>
+        <LinkButton href="/arena/waiting">Find a match</LinkButton>
+      </div>
+    ),
   },
   {
-    title: "Observe",
-    description: "Watch others' matches to learn and see the action unfold!",
-    icon: ViewIcon,
-    href: "/arena/observe",
+    value: "friend-challenge" as const,
+    children: () => (
+      <div className="flex flex-col gap-2">
+        <p className="text-lg font-medium text-muted-foreground">
+          Choose a friend to challenge. Once they accept, both of you will enter
+          the match room together.
+        </p>
+      </div>
+    ),
   },
 ];
 
 const ArenaPage = () => {
   return (
-    <div className="w-full h-full pt-10 px-6 flex items-center justify-center overflow-y-auto">
-      <div className="w-full max-w-250 flex flex-col items-center gap-4">
-        <div className="flex flex-col items-center gap-1">
-          <h1 className="text-3xl font-bold text-center">
-            Welcome to the arena!
-          </h1>
-          <p className="text-base text-muted-foreground text-center">
-            What do you want to do?
-          </p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center w-full">
-          {options.map((option) => (
-            <Link href={option.href} key={option.href} className="h-full">
-              <Card className="h-full">
-                <CardContent className="flex flex-col items-center gap-2">
-                  <option.icon
-                    className="text-primary size-20"
-                    strokeWidth={3}
-                  />
-                  <h2 className="text-2xl mt-2 font-semibold text-center">
-                    {option.title}
-                  </h2>
-                  <p className="text-muted-foreground text-base text-center">
-                    {option.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+    <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 items-center py-10 px-6">
+      <h1 className="text-4xl font-semibold">Arena</h1>
+      <div className="w-full grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
+        <Card className="border-t-4 border-t-primary">
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-2xl font-semibold">Start a match</h2>
+              <p className="text-lg text-muted-foreground">
+                Choose how you want to find your opponent.
+              </p>
+            </div>
+            <Tabs defaultValue="random-pairing">
+              <TabsList variant="line">
+                <TabsTrigger value="random-pairing">Random Pairing</TabsTrigger>
+                <TabsTrigger value="friend-challenge">
+                  Friend Challenge
+                </TabsTrigger>
+              </TabsList>
+              {tabs.map((tab) => (
+                <TabsContent key={tab.value} value={tab.value}>
+                  {<tab.children />}
+                </TabsContent>
+              ))}
+            </Tabs>
+          </CardContent>
+        </Card>
+        <div className="flex flex-col gap-4">
+          <Card className="border-t-4 border-t-primary">
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-2xl font-semibold">Observe Live Matches</h2>
+                <p className="text-lg text-muted-foreground">
+                  Watch active matches, track live code changes, and learn from
+                  other submissions.
+                </p>
+              </div>
+              <LinkButton href="/arena/matches">
+                <EyeIcon />
+                Watch matches
+              </LinkButton>
+            </CardContent>
+          </Card>
+          <Link href="/matches">
+            <Card className="border-t-4 border-t-primary">
+              <CardContent className="flex items-center gap-4">
+                <div className="bg-muted rounded-md flex items-center justify-center size-14 shrink-0">
+                  <HistoryIcon className="size-10" />
+                </div>
+                <div className="flex-1 w-full flex items-center gap-2">
+                  <div className="flex flex-col gap-0.5 flex-1">
+                    <span className="text-xl font-semibold">Your matches</span>
+                    <span className="text-base text-muted-foreground">
+                      View past performance
+                    </span>
+                  </div>
+                  <ChevronRightIcon className="text-muted-foreground size-6 shrink-0" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </div>
     </div>
