@@ -7,6 +7,9 @@ import { ChatTable } from "./chat";
 import { MatchResultTable } from "./match-result";
 import { MatchSubmissionTable } from "./match-submission";
 import { UserMatchTable } from "./user-match";
+import { FriendMatchRequestTable } from "./friend-match-request";
+import { MatchObserverInvitationTable } from "./match-observer-invitation";
+import { MatchObserverTable } from "./match-observer";
 
 export const MatchTable = pgTable("matches", {
   id,
@@ -28,4 +31,7 @@ export const matchRelations = relations(MatchTable, ({ one, many }) => ({
   users: many(UserMatchTable),
   submissions: many(MatchSubmissionTable),
   chats: many(ChatTable),
+  friendMatchRequests: many(FriendMatchRequestTable),
+  matchObserverInvitations: many(MatchObserverInvitationTable),
+  matchObservers: many(MatchObserverTable),
 }));

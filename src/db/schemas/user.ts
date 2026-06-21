@@ -8,6 +8,9 @@ import { NotificationTable } from "./notification";
 import { OracleSessionTable } from "./oracle-session";
 import { UserMatchTable } from "./user-match";
 import { UserProfileTable } from "./user-profile";
+import { FriendMatchRequestTable } from "./friend-match-request";
+import { MatchObserverInvitationTable } from "./match-observer-invitation";
+import { MatchObserverTable } from "./match-observer";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -98,6 +101,24 @@ export const userRelations = relations(user, ({ one, many }) => ({
   }),
   oracleSessions: many(OracleSessionTable),
   communityProblems: many(CommunityProblemTable),
+  friendMatchRequesters: many(FriendMatchRequestTable, {
+    relationName: "friend_match_request_requester_user",
+  }),
+  friendMatchRecipients: many(FriendMatchRequestTable, {
+    relationName: "friend_match_request_recipient_user",
+  }),
+  matchObserverInviters: many(MatchObserverInvitationTable, {
+    relationName: "match_observer_invitation_inviter_user",
+  }),
+  matchObserverInvited: many(MatchObserverInvitationTable, {
+    relationName: "match_observer_invitation_invited_user",
+  }),
+  matchObserverUsers: many(MatchObserverTable, {
+    relationName: "match_observer_user",
+  }),
+  matchObserverInvitedByUsers: many(MatchObserverTable, {
+    relationName: "match_observer_invited_by_user",
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({

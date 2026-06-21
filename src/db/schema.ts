@@ -16,3 +16,6 @@ export * from "./schemas/friendship";
 export * from "./schemas/problem";
 export * from "./schemas/community-problem";
 export * from "./schemas/community-problem-invitation";
+export * from "./schemas/friend-match-request";
+export * from "./schemas/match-observer-invitation";
+export * from "./schemas/match-observer";

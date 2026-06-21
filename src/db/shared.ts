@@ -133,6 +133,30 @@ export const invitationStatusEnum = pgEnum(
   invitationStatuses,
 );
 
+export const friendMatchRequestStatuses = [
+  ...invitationStatuses,
+  "cancelled",
+  "expired",
+] as const;
+export type FriendMatchRequestStatusType =
+  (typeof friendMatchRequestStatuses)[number];
+export const friendMatchRequestStatusEnum = pgEnum(
+  "friend_match_request_statuses",
+  friendMatchRequestStatuses,
+);
+
+export const matchObserverInvitationStatuses = [
+  ...invitationStatuses,
+  "expired",
+  "revoked",
+] as const;
+export type MatchObserverInvitationStatusType =
+  (typeof matchObserverInvitationStatuses)[number];
+export const matchObserverInvitationStatusEnum = pgEnum(
+  "match_observer_invitation_statuses",
+  matchObserverInvitationStatuses,
+);
+
 export type NotificationPayload =
   | {
       type: "friend_request_sent";

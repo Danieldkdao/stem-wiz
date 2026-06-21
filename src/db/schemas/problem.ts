@@ -9,6 +9,7 @@ import { relations } from "drizzle-orm";
 import { ArenaProblemConfigTable } from "./arena-problem-config";
 import { OracleSessionProblemTable } from "./oracle-problem";
 import { CommunityProblemTable } from "./community-problem";
+import { FriendMatchRequestTable } from "./friend-match-request";
 
 export const ProblemTable = pgTable("problems", {
   id,
@@ -30,4 +31,5 @@ export const problemRelations = relations(ProblemTable, ({ many }) => ({
   arenaProblems: many(ArenaProblemConfigTable),
   oracleProblems: many(OracleSessionProblemTable),
   communityProblems: many(CommunityProblemTable),
+  friendMatchRequests: many(FriendMatchRequestTable),
 }));
