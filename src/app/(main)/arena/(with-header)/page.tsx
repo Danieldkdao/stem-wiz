@@ -2,10 +2,12 @@ import { CurrentUserAvatar } from "@/components/current-user-avatar";
 import { LinkButton } from "@/components/link-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FriendMatchRequestForm } from "@/features/matches/components/friend-match-request-form";
 import {
   ChevronRightIcon,
   EyeIcon,
   HistoryIcon,
+  MailIcon,
   SwordsIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -73,6 +75,7 @@ const tabs = [
           Choose a friend to challenge. Once they accept, both of you will enter
           the match room together.
         </p>
+        <FriendMatchRequestForm />
       </div>
     ),
   },
@@ -133,6 +136,26 @@ const ArenaPage = () => {
                     <span className="text-xl font-semibold">Your matches</span>
                     <span className="text-base text-muted-foreground">
                       View past performance
+                    </span>
+                  </div>
+                  <ChevronRightIcon className="text-muted-foreground size-6 shrink-0" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/match-invitations/requests-sent">
+            <Card className="border-t-4 border-t-primary">
+              <CardContent className="flex items-center gap-4">
+                <div className="bg-muted rounded-md flex items-center justify-center size-14 shrink-0">
+                  <MailIcon className="size-10" />
+                </div>
+                <div className="flex-1 w-full flex items-center gap-2">
+                  <div className="flex flex-col gap-0.5 flex-1">
+                    <span className="text-xl font-semibold">
+                      Match Invitations
+                    </span>
+                    <span className="text-base text-muted-foreground">
+                      Your match requests and match observer invitations.
                     </span>
                   </div>
                   <ChevronRightIcon className="text-muted-foreground size-6 shrink-0" />

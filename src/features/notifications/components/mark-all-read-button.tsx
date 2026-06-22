@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { ComponentProps, ReactNode, useTransition } from "react";
 import { toast } from "sonner";
 import { markUserNotificationsReadAction } from "../actions/actions";
-import { useRouter } from "next/navigation";
-import { LoadingSwap } from "@/components/ui/loading-swap";
 
 export const MarkNotificationsReadButton = ({
   children,
@@ -41,7 +40,7 @@ export const MarkNotificationsReadButton = ({
       onClick={handleMarkNotificationsAsRead}
       {...props}
     >
-      <LoadingSwap isLoading={isPending}>{children}</LoadingSwap>
+      {children}
     </Button>
   );
 };

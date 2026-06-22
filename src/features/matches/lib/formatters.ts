@@ -1,5 +1,5 @@
 import { ArenaProblemConfigTable, ProblemTable } from "@/db/schema";
-import { MatchResultReasonType } from "@/db/shared";
+import { MatchResultReasonType, ProblemSourceType } from "@/db/shared";
 import {
   UserMatchesFilterByOptionType,
   UserMatchesResultOptionType,
@@ -89,4 +89,29 @@ export const mapProblemToArenaProblem = <
       problem,
     },
   };
+};
+
+export const formatProblemSource = (source: ProblemSourceType) => {
+  switch (source) {
+    case "ai":
+      return {
+        label: "AI",
+        description:
+          "An AI will generate a problem for this match based on you and your friend's stats.",
+      };
+    case "system":
+      return {
+        label: "System",
+        description:
+          "A problem that was preloaded into our system will be used.",
+      };
+    case "user":
+      return {
+        label: "User",
+        description:
+          "You can select a problem from the list created by the community.",
+      };
+    default:
+      throw new Error(`Unknown problem source: ${source satisfies never}`);
+  }
 };

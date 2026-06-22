@@ -3,6 +3,8 @@
 import { db } from "@/db/db";
 import {
   ArenaProblemConfigTable,
+  CommunityProblemTable,
+  FriendMatchRequestTable,
   MatchResultReasonType,
   MatchResultTable,
   MatchSubmissionTable,
@@ -13,6 +15,8 @@ import {
   UserMatchTable,
 } from "@/db/schema";
 import { finalizeMatch } from "@/features/arena/server/finalize-match";
+import { findActiveFriendshipById } from "@/features/friends/server/friendships";
+import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
 import { auth, User } from "@/lib/auth/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
@@ -25,6 +29,7 @@ import {
 } from "@/lib/constants";
 import { areValidIds } from "@/lib/utils";
 import { generateMatchResults } from "@/services/ai/matches";
+import { aiGenerateProblem } from "@/services/ai/problems";
 import {
   and,
   asc,
@@ -52,6 +57,10 @@ import {
   UserMatchesSortByOptionType,
 } from "../lib/params";
 import { upsertMatchSubmission } from "../server/match-results";
+import {
+  friendMatchRequestSchema,
+  FriendMatchRequestSchemaType,
+} from "./schemas";
 
 const hasMatchFinished = async (matchId: string) => {
   if (!areValidIds([matchId])) return false;
@@ -893,6 +902,140 @@ export const saveUserMatchCode = async (matchId: string, newCode: string) => {
     return {
       error: false,
       message: "Code saved successfully!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const createMatchRequestAction = async (
+  unsafeData: FriendMatchRequestSchemaType,
+) => {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const { data, success } = friendMatchRequestSchema.safeParse(unsafeData);
+  if (!success) {
+    return {
+      error: true,
+      message: INVALID_DATA_ERROR_MESSAGE,
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipById(
+    data.recipientFriendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
+    return {
+      error: true,
+      message: "You are not friends with this user.",
+    };
+  }
+
+  let problemIdToUse: string | null = null;
+  if (data.problemSource === "user") {
+    if (!data.problemId) {
+      return {
+        error: true,
+        message: "You must select a community problem.",
+      };
+    }
+
+    const [existingCommunityProblem] = await db
+      .select()
+      .from(CommunityProblemTable)
+      .where(eq(CommunityProblemTable.id, data.problemId));
+    if (!existingCommunityProblem) {
+      return {
+        error: true,
+        message: "Community problem not found.",
+      };
+    }
+
+    problemIdToUse = existingCommunityProblem.problemId;
+  } else {
+    if (!data.programmingLanguage) {
+      return {
+        error: true,
+        message: "You must select a programming language.",
+      };
+    }
+    const generatedProblem = await aiGenerateProblem(
+      data.programmingLanguage,
+      existingFriendship.id,
+      data.prompt,
+    );
+    if (!generatedProblem) {
+      return {
+        error: true,
+        message: "Failed to generate problem for match. Please try again.",
+      };
+    }
+    problemIdToUse = generatedProblem.id;
+  }
+
+  if (!problemIdToUse) {
+    return {
+      error: true,
+      message: "Failed to load problem for match. Please try again.",
+    };
+  }
+
+  try {
+    const { matchRequest, notification } = await db.transaction(async (tx) => {
+      const [insertedMatchRequest] = await tx
+        .insert(FriendMatchRequestTable)
+        .values({
+          friendshipId: existingFriendship.id,
+          recipientUserId: existingFriendship.friend.id,
+          problemId: problemIdToUse,
+          requesterUserId: userId,
+          timeLimit: data.timeLimit,
+          expiresAt: data.expiresAt,
+        })
+        .returning();
+      if (!insertedMatchRequest) {
+        throw new Error("Failed to create match request.");
+      }
+
+      const insertedNotification = await insertNotificationDb(
+        {
+          userId: existingFriendship.friend.id,
+          payload: {
+            type: "new_match_request",
+            friendshipId: existingFriendship.id,
+            matchRequestId: insertedMatchRequest.id,
+            title: "New match request",
+            message: `${userInfo.name} sent you a new match request.`,
+          },
+        },
+        tx,
+      );
+
+      if (!insertedNotification)
+        throw new Error("Failed to send notification.");
+
+      return {
+        matchRequest: insertedMatchRequest,
+        notification: insertedNotification,
+      };
+    });
+
+    return {
+      error: false,
+      message: "Match request sent successfully!",
+      matchRequestId: matchRequest.id,
+      notificationId: notification.id,
     };
   } catch (error) {
     console.error(error);

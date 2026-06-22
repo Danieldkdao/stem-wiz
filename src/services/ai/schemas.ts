@@ -1,7 +1,7 @@
 import { difficultyLevels } from "@/db/shared";
 import z from "zod";
 
-export const oracleProblemSchema = z.object({
+export const problemSchema = z.object({
   title: z
     .string()
     .min(1)

@@ -16,6 +16,10 @@ export const getNotificationListItem = (
     case "community_problem_shared_with_you":
     case "community_problem_access_revoked":
     case "community_problem_deleted":
+    case "new_match_request":
+    case "match_request_updated":
+    case "match_request_accepted":
+    case "match_request_rejected":
       return {
         ...notification,
         title: notification.payload.title,
@@ -76,6 +80,15 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
           href={`/community/problems/${payload.communityProblemId}`}
         >
           View problem
+        </LinkButton>
+      );
+    case "new_match_request":
+      return (
+        <LinkButton
+          className="w-full"
+          href={`/match-invitations/requests-received/${payload.matchRequestId}`}
+        >
+          View details
         </LinkButton>
       );
     case "community_problem_deleted":

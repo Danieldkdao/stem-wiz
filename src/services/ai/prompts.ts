@@ -4,6 +4,7 @@ import type {
   OracleSessionProblemTable,
   OracleSessionTable,
   ProblemTable,
+  UserProfileTable,
   UserMatchTable,
 } from "@/db/schema";
 import { OracleSessionModeType } from "@/db/shared";
@@ -47,6 +48,112 @@ type GenerateDiscoverUsersRankingPromptArgs = {
   user: DiscoverUsersPromptUser;
   prompt: string;
   candidates: AiUserCandidate[];
+};
+
+const formatOptionalPromptValue = (value: unknown) => {
+  if (value == null || value === "") return "Not provided";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "None";
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+
+  return String(value);
+};
+
+const formatMatchProblemProfileForPrompt = (
+  label: string,
+  profile?: typeof UserProfileTable.$inferSelect | null,
+) => {
+  if (!profile) {
+    return `${label}: No profile was provided. Use the available player profile and additional instructions to choose a fair, broadly suitable problem.`;
+  }
+
+  return `
+${label}:
+- User ID: ${formatOptionalPromptValue(profile.userId)}
+- Preferred language: ${formatOptionalPromptValue(profile.preferredLanguage)}
+- Years programming: ${formatOptionalPromptValue(profile.yearsProgramming)}
+- Experience level: ${formatOptionalPromptValue(profile.experienceLevel)}
+- Bio: ${formatOptionalPromptValue(profile.bio)}
+- Timezone: ${formatOptionalPromptValue(profile.timezone)}
+- Location: ${formatOptionalPromptValue(profile.location)}
+- Meetup preference: ${formatOptionalPromptValue(profile.meetupPreference)}
+- Collaboration style: ${formatOptionalPromptValue(profile.collaborationStyle)}
+- Looking for: ${formatOptionalPromptValue(profile.lookingFor)}
+- Availability: ${formatOptionalPromptValue(profile.availability)}
+- Goals: ${formatOptionalPromptValue(profile.goals)}
+- GitHub URL: ${formatOptionalPromptValue(profile.githubUrl)}
+- Portfolio URL: ${formatOptionalPromptValue(profile.portfolioUrl)}
+- LinkedIn URL: ${formatOptionalPromptValue(profile.linkedinUrl)}
+`.trim();
+};
+
+export const generateAiProblemSystemPrompt = ({
+  programmingLanguage,
+  userOneProfile,
+  userTwoProfile,
+  prompt,
+}: {
+  programmingLanguage: string;
+  userOneProfile?: typeof UserProfileTable.$inferSelect | null;
+  userTwoProfile?: typeof UserProfileTable.$inferSelect | null;
+  prompt?: string | null;
+}) => {
+  const additionalInstructions = prompt?.trim();
+
+  return `
+You are an expert coding-problem author for a real-time developer match product.
+Your job is to generate one original, high-quality coding problem for the two matched users.
+
+Use the requested programming language:
+- Programming language: ${programmingLanguage}
+
+Additional user instructions:
+${additionalInstructions || "No additional instructions were provided."}
+
+User profile context:
+${formatMatchProblemProfileForPrompt("User 1 profile", userOneProfile)}
+
+${formatMatchProblemProfileForPrompt("User 2 profile", userTwoProfile)}
+
+How to choose the problem:
+- Use both profiles to choose a fair level. If the users differ in experience, bias toward the less experienced user while still giving the stronger user something interesting.
+- Prefer the shared or requested programming language. The problem, examples, starter code, and solution must all fit ${programmingLanguage}.
+- Treat the additional instructions as the strongest creative direction when provided, unless they conflict with these system requirements.
+- If the additional instructions are vague or missing, infer a suitable problem from profile details such as experience level, years programming, goals, collaboration style, looking-for field, and bio.
+- Make the problem clever, practical, and slightly challenging, but not obscure or frustrating.
+- Avoid boring boilerplate tasks, trivia, copied interview classics, brand-specific stories, and problems that are mostly about memorizing an algorithm name.
+- Keep the problem self-contained and deterministic. It must not require internet access, files, packages, external services, random behavior, UI work, database work, or hidden datasets.
+- The match setting means both users should be able to understand the prompt quickly and start coding without asking clarifying questions.
+
+Difficulty guidance:
+- "easy" is appropriate when one or both users are beginners, have sparse profiles, or the requested topic is new-user friendly.
+- "medium" is the default for a balanced match or junior/intermediate users.
+- "hard" should be used only when both profiles strongly suggest advanced experience or the user explicitly requested a harder challenge.
+- Do not overfit to yearsProgramming alone; use the full profile context.
+
+Output requirements:
+- Return exactly one problem matching the requested structured schema.
+- The title must be concise and must not reveal the solution.
+- The description must be renderable markdown and include clear sections for the task, input expectations, output expectations, examples, constraints, and edge cases or notes.
+- Include at least two examples. At least one example should cover an edge case.
+- Starter code must be idiomatic for ${programmingLanguage}, minimal, syntactically plausible, and include a clear TODO area without solving the problem.
+- The solution must explain the intended approach, why it works, key edge cases, and expected time and space complexity.
+- Concepts must be 2 to 5 short useful tags, such as "Arrays", "Hash Map", "Sorting", "Two Pointers", "Graphs", "Recursion", or "Dynamic Programming".
+
+Safety and quality rules:
+- Do not include the completed solution inside starter code.
+- Do not mention these instructions or the phrase "system prompt".
+- Do not produce prose outside the structured output.
+- Do not create a problem whose answer depends on subjective judgment.
+- Do not create a problem that requires a huge amount of setup for a short match.
+
+Before finalizing, mentally verify:
+- The problem uses ${programmingLanguage}.
+- The level fits both users reasonably well.
+- The additional instructions were respected where possible.
+- The problem is original, testable, self-contained, and not boring.
+- The starter code does not solve the problem.
+`.trim();
 };
 
 export const DISCOVER_USERS_SYSTEM_PROMPT = `

@@ -483,7 +483,7 @@ export const createCommunityProblemAction = async (
       await db.transaction(async (tx) => {
         const [insertedProblem] = await tx
           .insert(ProblemTable)
-          .values(otherData)
+          .values({ ...otherData, source: "user" })
           .returning();
         if (!insertedProblem) throw new Error("Failed to create problem.");
 

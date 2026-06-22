@@ -17,10 +17,21 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
   NOT_FOUND_ERROR_MESSAGE,
+  PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
 import { areValidIds } from "@/lib/utils";
-import { and, eq, getTableColumns, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   insertFriendRequestDb,
   updateFriendRequestDb,
@@ -296,9 +307,32 @@ export const respondFriendRequestAction = async (
   }
 };
 
-export const getUserFriendsAction = async () => {
+export const getUserFriendsAction = async (filterOptions: {
+  search: string;
+  page: number;
+}) => {
   const { userId } = await getCurrentUser();
-  if (!userId) return [];
+  if (!userId) return null;
+
+  const { search, page } = filterOptions;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const searchQuery = search.trim()
+    ? or(
+        ilike(user.name, `%${search.trim()}%`),
+        ilike(user.email, `%${search.trim()}%`),
+      )
+    : undefined;
+
+  const whereQuery = and(
+    isNull(FriendshipTable.deletedAt),
+    or(
+      eq(FriendshipTable.userOneId, userId),
+      eq(FriendshipTable.userTwoId, userId),
+    ),
+    searchQuery,
+  );
 
   const friends = await db
     .select({
@@ -319,15 +353,39 @@ export const getUserFriendsAction = async () => {
         ),
       ),
     )
-    .where(
-      and(
-        isNull(FriendshipTable.deletedAt),
-        or(
+    .where(whereQuery)
+    .orderBy(desc(FriendshipTable.createdAt))
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalFriends] = await db
+    .select({
+      count: count(),
+    })
+    .from(FriendshipTable)
+    .innerJoin(
+      user,
+      or(
+        and(
           eq(FriendshipTable.userOneId, userId),
+          eq(user.id, FriendshipTable.userTwoId),
+        ),
+        and(
           eq(FriendshipTable.userTwoId, userId),
+          eq(user.id, FriendshipTable.userOneId),
         ),
       ),
-    );
+    )
+    .where(whereQuery);
 
-  return friends;
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalFriends.count;
+
+  return {
+    friends,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };

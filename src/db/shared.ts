@@ -213,6 +213,27 @@ export type NotificationPayload =
       message: string;
     }
   | {
+      type: "new_match_request";
+      matchRequestId: string;
+      friendshipId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "match_request_accepted";
+      matchRequestId: string;
+      friendshipId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "match_request_rejected";
+      matchRequestId: string;
+      friendshipId: string;
+      title: string;
+      message: string;
+    }
+  | {
       type: "community_problem_deleted";
       friendshipId: string;
       title: string;
@@ -231,6 +252,9 @@ export const notificationEventTypes: NotificationPayload["type"][] = [
   "community_problem_access_revoked",
   "community_problem_shared_with_you",
   "community_problem_deleted",
+  "new_match_request",
+  "match_request_accepted",
+  "match_request_rejected",
   "new_chat",
   "chat_deleted",
   "match_invite",

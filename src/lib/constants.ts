@@ -230,5 +230,6 @@ export const CODE_EDITOR_LIGHT_THEME = {
 };
 
 export const NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS = 2;
+export const MAX_CONCEPTS_BEFORE_SHORTENING = 3;
 
 export const SORT_BY_OPTIONS = ["most_recent", "oldest"] as const;

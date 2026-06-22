@@ -19,7 +19,7 @@ import {
   generateOracleProblemFeedbackPrompt,
   generateOracleProblemsPrompt,
 } from "./prompts";
-import { oracleProblemFeedbackSchema, oracleProblemSchema } from "./schemas";
+import { oracleProblemFeedbackSchema, problemSchema } from "./schemas";
 
 export const generateOracleSessionProblems = async (sessionId: string) => {
   const { userId } = await getCurrentUser();
@@ -52,7 +52,7 @@ export const generateOracleSessionProblems = async (sessionId: string) => {
       model: mistral("mistral-large-latest"),
       system: GENERATE_ORACLE_PROBLEMS_SYSTEM,
       output: Output.array({
-        element: oracleProblemSchema,
+        element: problemSchema,
       }),
       prompt: generateOracleProblemsPrompt(existingOracleSession),
     });

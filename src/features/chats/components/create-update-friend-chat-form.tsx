@@ -11,10 +11,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { ChatTable } from "@/db/schema";
-import { FriendsSelect } from "@/features/social/components/friends-select";
+import { FriendCommandSelect } from "@/features/friends/components/friend-command-select";
+import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
 import { getInputErrorStyle } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -23,8 +25,6 @@ import {
 } from "../actions/actions";
 import { friendChatSchema, FriendChatSchemaType } from "../actions/schemas";
 import { useFriendChatSocket } from "../hooks/use-friend-chat-socket";
-import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
-import { useTransition } from "react";
 
 export const CreateUpdateFriendChatForm = ({
   existingChat,
@@ -110,15 +110,14 @@ export const CreateUpdateFriendChatForm = ({
       <Controller
         control={form.control}
         name="friendshipId"
-        render={({ field: { value, onChange, ...props }, fieldState }) => (
+        render={({ field, fieldState }) => (
           <Field>
             <FieldLabel>Friend</FieldLabel>
             <FieldContent>
-              <FriendsSelect
-                value={value}
-                onValueChange={onChange}
-                {...props}
-                triggerClassName={getInputErrorStyle(fieldState.error)}
+              <FriendCommandSelect
+                value={field.value}
+                onValueChange={field.onChange}
+                className={getInputErrorStyle(fieldState.error)}
                 disabled={!!existingChat}
               />
             </FieldContent>

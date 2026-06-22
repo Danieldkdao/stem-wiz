@@ -12,6 +12,7 @@ import {
   handleCommunityProblemEvent,
   handleFriendChatEvent,
   handleFriendRequestSentEvent,
+  handleNewMatchRequest,
   handleRespondFriendRequestEvent,
 } from "./notification-events";
 import { getNotificationListItem } from "../lib/formatters";
@@ -64,6 +65,9 @@ export const handleNewNotification = async (
           ws.user.id,
           payload,
         );
+        break;
+      case "new_match_request":
+        recipientUserId = await handleNewMatchRequest(ws.user.id, payload);
         break;
       case "match_finished":
       case "match_invite":

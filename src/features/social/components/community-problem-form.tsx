@@ -234,9 +234,14 @@ export const CommunityProblemForm = ({
                 onKeyDown={(e, value, setValue) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    if (!value.trim()) return;
-                    if (values.length >= 5) return;
-                    onChange([...values, value]);
+                    const trimmedValue = value.trim();
+                    if (
+                      !trimmedValue ||
+                      values.length >= 5 ||
+                      values.includes(trimmedValue)
+                    )
+                      return;
+                    onChange([...values, trimmedValue]);
                     setValue("");
                   }
                 }}

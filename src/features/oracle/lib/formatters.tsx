@@ -3,7 +3,7 @@ import {
   OracleSessionModeType,
   OracleSessionStatusType,
 } from "@/db/shared";
-import { getDuration } from "@/lib/utils";
+import { cn, getDuration } from "@/lib/utils";
 import { OracleSessionsSortByOptionsType } from "./params";
 import { OracleSession } from "./types";
 import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
@@ -87,13 +87,16 @@ export const formatOracleSessionSortByOptions = (
   }
 };
 
-export const getDifficultyBadge = (difficulty: DifficultyLevelType) => {
+export const getDifficultyBadge = (
+  difficulty: DifficultyLevelType,
+  className?: string,
+) => {
   switch (difficulty) {
     case "easy":
       return (
         <Badge
           variant="outline"
-          className="text-accent border-accent bg-accent/30"
+          className={cn("text-accent border-accent bg-accent/20", className)}
         >
           {formatDifficultyLevel(difficulty)}
         </Badge>
@@ -102,7 +105,7 @@ export const getDifficultyBadge = (difficulty: DifficultyLevelType) => {
       return (
         <Badge
           variant="outline"
-          className="text-warning border-warning bg-warning/30"
+          className={cn("text-warning border-warning bg-warning/20", className)}
         >
           {formatDifficultyLevel(difficulty)}
         </Badge>
@@ -111,7 +114,10 @@ export const getDifficultyBadge = (difficulty: DifficultyLevelType) => {
       return (
         <Badge
           variant="outline"
-          className="text-destructive border-destructive bg-destructive/30"
+          className={cn(
+            "text-destructive border-destructive bg-destructive/20",
+            className,
+          )}
         >
           {formatDifficultyLevel(difficulty)}
         </Badge>

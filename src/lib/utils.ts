@@ -3,6 +3,7 @@ import { FieldError } from "react-hook-form";
 import { twMerge } from "tailwind-merge";
 import { DeepKeys } from "./types";
 import z from "zod";
+import { MAX_CONCEPTS_BEFORE_SHORTENING } from "./constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -44,16 +45,24 @@ export const formatTime = (
 export const getDuration = (
   start?: Date | null | undefined | string | number,
   end?: Date | null | undefined | string | number,
+  initialTotalSeconds?: number | null,
 ) => {
-  if (!start || !end) return "Unknown";
+  let totalSeconds: number | null = null;
+  if (initialTotalSeconds) {
+    totalSeconds = initialTotalSeconds;
+  } else {
+    if (!start || !end) return "Unknown";
+    const startDate = new Date(start);
+    const endDate = new Date(end);
 
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+    totalSeconds = Math.max(
+      1,
+      Math.round((endDate.getTime() - startDate.getTime()) / 1000),
+    );
+  }
 
-  const totalSeconds = Math.max(
-    1,
-    Math.round((endDate.getTime() - startDate.getTime()) / 1000),
-  );
+  if (!totalSeconds) return "Unknown";
+
   const { hours, minutes, seconds } = getTimeValues(totalSeconds);
 
   if (hours === 0 && minutes === 0) return `${seconds} sec`;
@@ -112,4 +121,24 @@ export const areValidIds = (ids: string[]) => {
   });
 
   return results.every(Boolean);
+};
+
+export const getShortenedConcepts = (
+  concepts: string[],
+): { concept: string; variant: "outline" | "secondary" }[] => {
+  const difference = concepts.length - MAX_CONCEPTS_BEFORE_SHORTENING;
+  if (difference <= 0)
+    return concepts.map((concept) => ({
+      concept,
+      variant: "outline" as const,
+    }));
+  const mappedArray: { concept: string; variant: "outline" | "secondary" }[] =
+    concepts
+      .slice(0, MAX_CONCEPTS_BEFORE_SHORTENING)
+      .map((concept) => ({ concept, variant: "outline" as const }));
+  mappedArray.push({
+    concept: `+${difference}`,
+    variant: "secondary" as const,
+  });
+  return mappedArray;
 };

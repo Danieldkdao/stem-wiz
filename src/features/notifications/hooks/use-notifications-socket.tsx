@@ -49,6 +49,7 @@ type NotificationSocketContextType = {
     }[],
   ) => boolean;
   notifyFriendsCommunityProblemDeletion: (notificationIds: string[]) => boolean;
+  notifyNewFriendMatchRequest: (notificationId: string) => boolean;
 };
 
 export type NotificationEventListener<T extends NotificationServerMessageType> =
@@ -247,6 +248,13 @@ export const NotificationSocketProvider = ({
     return results.every(Boolean);
   };
 
+  const notifyNewFriendMatchRequest = (notificationId: string) => {
+    return send({
+      type: "new_notification",
+      event: { type: "new_match_request", notificationId },
+    });
+  };
+
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -264,6 +272,7 @@ export const NotificationSocketProvider = ({
     notifyFriendRequestSent,
     notifyCommunityProblemFriends,
     notifyFriendsCommunityProblemDeletion,
+    notifyNewFriendMatchRequest,
   };
 
   return (

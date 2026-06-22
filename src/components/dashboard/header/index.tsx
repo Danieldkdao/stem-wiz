@@ -50,10 +50,10 @@ export const Header = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Suspense fallback={<HeaderLoading />}>
             <HeaderSuspense />
           </Suspense>
-          <ThemeToggle />
           <UserProfileDropdown />
           <HeaderLinksMobileDropdown headerLinks={headerLinks} />
         </div>

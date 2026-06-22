@@ -2,13 +2,13 @@ import { db } from "@/db/db";
 import {
   ChatTable,
   CommunityProblemTable,
+  FriendMatchRequestTable,
   FriendRequestTable,
-  FriendshipTable,
 } from "@/db/schema";
 import { NotificationPayloadEvent } from "@/db/shared";
 import { findActiveFriendshipById } from "@/features/friends/server/friendships";
 import { NOT_FOUND_ERROR_MESSAGE } from "@/lib/constants";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 
 export const handleRespondFriendRequestEvent = async (
   event: NotificationPayloadEvent<
@@ -132,6 +132,40 @@ export const handleCommunityProblemDeletedEvent = async (
   );
   if (!existingFriendship)
     throw new Error("Failed to find existing active friendship.");
+
+  return existingFriendship.friend.id;
+};
+
+export const handleNewMatchRequest = async (
+  userId: string,
+  payload: NotificationPayloadEvent<"new_match_request">,
+) => {
+  const existingFriendship = await findActiveFriendshipById(
+    payload.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) throw new Error("No active friendship found.");
+
+  const [existingMatchRequest] = await db
+    .select()
+    .from(FriendMatchRequestTable)
+    .where(
+      and(
+        eq(FriendMatchRequestTable.id, payload.matchRequestId),
+        eq(FriendMatchRequestTable.friendshipId, existingFriendship.id),
+        eq(FriendMatchRequestTable.requesterUserId, userId),
+        eq(
+          FriendMatchRequestTable.recipientUserId,
+          existingFriendship.friend.id,
+        ),
+        or(
+          isNull(FriendMatchRequestTable.expiresAt),
+          gt(FriendMatchRequestTable.expiresAt, new Date()),
+        ),
+      ),
+    );
+  if (!existingMatchRequest)
+    throw new Error("Failed to find existing match request.");
 
   return existingFriendship.friend.id;
 };
