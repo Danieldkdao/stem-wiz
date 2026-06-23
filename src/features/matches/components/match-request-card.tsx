@@ -31,6 +31,7 @@ export const MatchRequestCard = ({
       className={cn(
         "border-t-4 w-full min-w-0 h-full",
         isSent ? "border-t-chart-2" : "border-primary",
+        matchRequestStatus === "expired" && "opacity-75",
       )}
     >
       <CardContent className="w-full h-full min-w-0 flex flex-col gap-4">

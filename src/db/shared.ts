@@ -223,6 +223,7 @@ export type NotificationPayload =
       type: "match_request_accepted";
       matchRequestId: string;
       friendshipId: string;
+      matchId: string;
       title: string;
       message: string;
     }
@@ -234,13 +235,18 @@ export type NotificationPayload =
       message: string;
     }
   | {
+      type: "match_request_cancelled";
+      matchRequestId: string;
+      friendshipId: string;
+      title: string;
+      message: string;
+    }
+  | {
       type: "community_problem_deleted";
       friendshipId: string;
       title: string;
       message: string;
     }
-  | { type: "match_invite"; matchId: string; fromUserId: string }
-  | { type: "match_finished"; matchId: string; winnerId?: string }
   | { type: "system"; title: string; message: string };
 export type NotificationPayloadEvent<T extends NotificationPayload["type"]> =
   Extract<NotificationPayload, { type: T }>;
@@ -255,10 +261,9 @@ export const notificationEventTypes: NotificationPayload["type"][] = [
   "new_match_request",
   "match_request_accepted",
   "match_request_rejected",
+  "match_request_cancelled",
   "new_chat",
   "chat_deleted",
-  "match_invite",
-  "match_finished",
   "system",
 ] as const;
 export type NotificationEventTypeType = (typeof notificationEventTypes)[number];

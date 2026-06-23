@@ -12,6 +12,8 @@ import {
   handleCommunityProblemEvent,
   handleFriendChatEvent,
   handleFriendRequestSentEvent,
+  handleMatchRequestCancelled,
+  handleMatchRequestResponse,
   handleNewMatchRequest,
   handleRespondFriendRequestEvent,
 } from "./notification-events";
@@ -69,8 +71,16 @@ export const handleNewNotification = async (
       case "new_match_request":
         recipientUserId = await handleNewMatchRequest(ws.user.id, payload);
         break;
-      case "match_finished":
-      case "match_invite":
+      case "match_request_cancelled":
+        recipientUserId = await handleMatchRequestCancelled(
+          ws.user.id,
+          payload,
+        );
+        break;
+      case "match_request_accepted":
+      case "match_request_rejected":
+        recipientUserId = await handleMatchRequestResponse(ws.user.id, payload);
+        break;
       case "system":
         break;
       default:

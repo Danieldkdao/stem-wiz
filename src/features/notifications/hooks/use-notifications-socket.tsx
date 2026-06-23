@@ -1,6 +1,9 @@
 "use client";
 
-import { InvitationStatusType } from "@/db/shared";
+import {
+  FriendMatchRequestStatusType,
+  InvitationStatusType,
+} from "@/db/shared";
 import { SocketStatus } from "@/lib/types";
 import {
   createContext,
@@ -50,10 +53,15 @@ type NotificationSocketContextType = {
   ) => boolean;
   notifyFriendsCommunityProblemDeletion: (notificationIds: string[]) => boolean;
   notifyNewFriendMatchRequest: (notificationId: string) => boolean;
+  notifyFriendMatchRequestAction: (
+    notificationId: string,
+    action: Exclude<FriendMatchRequestStatusType, "pending" | "expired">,
+  ) => void;
 };
 
-export type NotificationEventListener<T extends NotificationServerMessageType> =
-  (event: Extract<NotificationServerMessage, { type: T }>) => void;
+type NotificationEventListener<T extends NotificationServerMessageType> = (
+  event: Extract<NotificationServerMessage, { type: T }>,
+) => void;
 
 const NotificationSocketContext =
   createContext<NotificationSocketContextType | null>(null);
@@ -255,6 +263,16 @@ export const NotificationSocketProvider = ({
     });
   };
 
+  const notifyFriendMatchRequestAction = (
+    notificationId: string,
+    action: Exclude<FriendMatchRequestStatusType, "pending" | "expired">,
+  ) => {
+    return send({
+      type: "new_notification",
+      event: { type: `match_request_${action}` as const, notificationId },
+    });
+  };
+
   useEffect(() => {
     return () => {
       socketRef.current?.close();
@@ -273,6 +291,7 @@ export const NotificationSocketProvider = ({
     notifyCommunityProblemFriends,
     notifyFriendsCommunityProblemDeletion,
     notifyNewFriendMatchRequest,
+    notifyFriendMatchRequestAction,
   };
 
   return (

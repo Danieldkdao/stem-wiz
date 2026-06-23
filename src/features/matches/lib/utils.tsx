@@ -1,8 +1,8 @@
 import { LinkButton } from "@/components/link-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn, formatShortDate, getDuration, getTimeValues } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { cn, formatShortDate, getTimeValues } from "@/lib/utils";
+import { formatDistance, formatDistanceToNow } from "date-fns";
 import {
   BanIcon,
   CheckCircleIcon,
@@ -23,12 +23,19 @@ import {
   TrophyIcon,
   XIcon,
 } from "lucide-react";
-import { MatchRequest, MatchRequestDisplayStatus } from "./types";
+import { UpdateMatchRequestStatusButton } from "../components/update-match-request-status-button";
 import { formatDateStringWithAgo } from "./formatters";
+import { MatchRequest, MatchRequestDisplayStatus } from "./types";
+import { DeleteMatchRequestButton } from "../components/delete-match-request-button";
+import { TooltipWrapper } from "@/components/tooltip-wrapper";
 
 export const getMatchRequestStatus = (matchRequest: MatchRequest) => {
   const matchRequestStatus = matchRequest.status;
-  if (matchRequest.expiresAt && matchRequest.expiresAt <= new Date())
+  if (
+    matchRequest.expiresAt &&
+    matchRequest.expiresAt <= new Date() &&
+    !matchRequest.matchId
+  )
     return "expired" as const;
   switch (matchRequestStatus) {
     case "pending":
@@ -174,10 +181,19 @@ export const getMatchRequestStatusContent = (
       return {
         information: () => null,
         cta: () => (
-          <div className="w-full flex items-center justify-start">
-            <span className="text-base font-medium text-muted-foreground">
+          <div className="w-full flex items-center gap-2 min-w-0">
+            <span className="text-base font-medium text-muted-foreground flex-1 min-w-0 truncate">
               Cancelled on {formatShortDate(matchRequest.updatedAt)}
             </span>
+            <TooltipWrapper content="Delete match request">
+              <DeleteMatchRequestButton
+                matchRequestId={matchRequest.id}
+                variant="outline"
+                size="icon"
+              >
+                <Trash2Icon />
+              </DeleteMatchRequestButton>
+            </TooltipWrapper>
           </div>
         ),
         badge: () => (
@@ -194,17 +210,23 @@ export const getMatchRequestStatusContent = (
       return {
         information: () => null,
         cta: () => (
-          <div className="flex items-center gap-2 justify-between">
-            <span className="text-base font-medium text-muted-foreground">
+          <div className="flex items-center gap-2 w-full min-w-0">
+            <span className="text-base font-medium text-destructive flex-1 min-w-0 truncate">
               Expired{" "}
               {matchRequest.expiresAt &&
                 formatDateStringWithAgo(
                   formatDistanceToNow(matchRequest.expiresAt),
                 )}
             </span>
-            <Button variant="outline" size="icon">
-              <Trash2Icon />
-            </Button>
+            <TooltipWrapper content="Delete match request">
+              <DeleteMatchRequestButton
+                matchRequestId={matchRequest.id}
+                variant="outline"
+                size="icon"
+              >
+                <Trash2Icon />
+              </DeleteMatchRequestButton>
+            </TooltipWrapper>
           </div>
         ),
         badge: () => (
@@ -221,10 +243,19 @@ export const getMatchRequestStatusContent = (
       return {
         information: () => null,
         cta: () => (
-          <div className="w-full flex items-center justify-start">
-            <span className="text-base font-medium text-muted-foreground">
+          <div className="w-full flex items-center gap min-w-0">
+            <span className="text-base font-medium text-muted-foreground flex-1 min-w-0 truncate">
               Responded on {formatShortDate(matchRequest.respondedAt)}
             </span>
+            <TooltipWrapper content="Delete match request">
+              <DeleteMatchRequestButton
+                matchRequestId={matchRequest.id}
+                variant="outline"
+                size="icon"
+              >
+                <Trash2Icon />
+              </DeleteMatchRequestButton>
+            </TooltipWrapper>
           </div>
         ),
         badge: () => (
@@ -257,7 +288,7 @@ export const getMatchRequestStatusContent = (
               </span>
               <span className="text-lg">
                 {matchRequest.expiresAt
-                  ? `in ${getDuration(new Date(), matchRequest.expiresAt)}`
+                  ? `in ${formatDistance(matchRequest.expiresAt, new Date())}`
                   : "Never"}
               </span>
             </div>
@@ -268,10 +299,14 @@ export const getMatchRequestStatusContent = (
             <span className="text-muted-foreground text-base font-medium">
               Awaiting response...
             </span>
-            <Button variant="outline">
+            <UpdateMatchRequestStatusButton
+              matchRequestId={matchRequest.id}
+              newStatus="cancelled"
+              variant="outline"
+            >
               <BanIcon />
               Cancel
-            </Button>
+            </UpdateMatchRequestStatusButton>
           </div>
         ),
         badge: () => (
@@ -304,7 +339,7 @@ export const getMatchRequestStatusContent = (
               </span>
               <span className="text-lg">
                 {matchRequest.expiresAt
-                  ? `in ${getDuration(new Date(), matchRequest.expiresAt)}`
+                  ? `in ${formatDistance(matchRequest.expiresAt, new Date())}`
                   : "Never"}
               </span>
             </div>
@@ -316,10 +351,15 @@ export const getMatchRequestStatusContent = (
               <CheckIcon />
               Accept
             </Button>
-            <Button variant="destructive" className="w-full">
+            <UpdateMatchRequestStatusButton
+              matchRequestId={matchRequest.id}
+              newStatus="rejected"
+              variant="destructive"
+              className="w-full"
+            >
               <XIcon />
               Reject
-            </Button>
+            </UpdateMatchRequestStatusButton>
           </div>
         ),
         badge: () => (

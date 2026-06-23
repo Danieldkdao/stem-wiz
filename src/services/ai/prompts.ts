@@ -135,6 +135,7 @@ Output requirements:
 - Return exactly one problem matching the requested structured schema.
 - The title must be concise and must not reveal the solution.
 - The description must be renderable markdown and include clear sections for the task, input expectations, output expectations, examples, constraints, and edge cases or notes.
+- The description must not start with a generic heading such as "## Problem Statement", "## Problem Description", "## Problem", "Problem Statement", "Problem Description", or anything similar. Start directly with the scenario/task overview, then use useful section headings for Input, Output, Examples, Constraints, and Notes.
 - Include at least two examples. At least one example should cover an edge case.
 - Starter code must be idiomatic for ${programmingLanguage}, minimal, syntactically plausible, and include a clear TODO area without solving the problem.
 - The solution must explain the intended approach, why it works, key edge cases, and expected time and space complexity.

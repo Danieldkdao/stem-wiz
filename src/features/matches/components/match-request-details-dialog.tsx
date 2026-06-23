@@ -111,6 +111,7 @@ export const MatchRequestDetailsDialog = ({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_350px] gap-4">
           <div className="flex flex-col gap-4 w-full min-w-0">
+            <h2 className="text-2xl font-semibold">Problem Description</h2>
             <MarkdownRenderer>{problem.description}</MarkdownRenderer>
           </div>
           <div className="flex flex-col gap-4">

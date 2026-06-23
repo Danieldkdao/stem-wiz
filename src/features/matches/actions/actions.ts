@@ -29,6 +29,7 @@ import {
   PAGE_SIZE,
   UNAUTHED_ERROR_MESSAGE,
 } from "@/lib/constants";
+import { SortByType } from "@/lib/types";
 import { areValidIds } from "@/lib/utils";
 import { generateMatchResults } from "@/services/ai/matches";
 import { aiGenerateProblem } from "@/services/ai/problems";
@@ -45,6 +46,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  lte,
   not,
   or,
   SQL,
@@ -53,18 +55,18 @@ import {
 import { alias } from "drizzle-orm/pg-core";
 import { headers } from "next/headers";
 import { mapProblemToArenaProblem } from "../lib/formatters";
+import { MatchRequestFilterByOptionType } from "../lib/match-request-params";
 import {
   UserMatchesFilterByOptionType,
   UserMatchesResultOptionType,
   UserMatchesSortByOptionType,
 } from "../lib/params";
+import { updateMatchRequestDb } from "../server/match-requests";
 import { upsertMatchSubmission } from "../server/match-results";
 import {
   friendMatchRequestSchema,
   FriendMatchRequestSchemaType,
 } from "./schemas";
-import { SortByType } from "@/lib/types";
-import { MatchRequestFilterByOptionType } from "../lib/match-request-params";
 
 const hasMatchFinished = async (matchId: string) => {
   if (!areValidIds([matchId])) return false;
@@ -1186,4 +1188,214 @@ export const getUserMatchRequestsAction = async (filterOptions: {
       hasNextPage,
     },
   };
+};
+
+export const updateMatchRequestStatusAction = async (
+  matchRequestId: string,
+  status: Extract<FriendMatchRequestStatusType, "cancelled" | "rejected">,
+) => {
+  if (!areValidIds([matchRequestId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const ownerStatusQueryMap: Record<
+    Extract<FriendMatchRequestStatusType, "cancelled" | "rejected">,
+    (SQL<unknown> | undefined)[]
+  > = {
+    // accepted: [
+    //   eq(FriendMatchRequestTable.recipientUserId, userId),
+    //   isNull(FriendMatchRequestTable.matchId),
+    //   or(
+    //     isNull(FriendMatchRequestTable.expiresAt),
+    //     gt(FriendMatchRequestTable.expiresAt, new Date()),
+    //   ),
+    // ],
+    cancelled: [
+      eq(FriendMatchRequestTable.requesterUserId, userId),
+      isNull(FriendMatchRequestTable.matchId),
+      or(
+        isNull(FriendMatchRequestTable.expiresAt),
+        gt(FriendMatchRequestTable.expiresAt, new Date()),
+      ),
+    ],
+    // expired: [
+    //   or(
+    //     eq(FriendMatchRequestTable.recipientUserId, userId),
+    //     eq(FriendMatchRequestTable.requesterUserId, userId),
+    //   ),
+    //   isNull(FriendMatchRequestTable.matchId),
+    //   and(
+    //     isNotNull(FriendMatchRequestTable.expiresAt),
+    //     lte(FriendMatchRequestTable.expiresAt, new Date()),
+    //   ),
+    // ],
+    rejected: [
+      eq(FriendMatchRequestTable.recipientUserId, userId),
+      isNull(FriendMatchRequestTable.matchId),
+      or(
+        isNull(FriendMatchRequestTable.expiresAt),
+        gt(FriendMatchRequestTable.expiresAt, new Date()),
+      ),
+    ],
+  };
+
+  const whereQuery = and(
+    eq(FriendMatchRequestTable.id, matchRequestId),
+    eq(FriendMatchRequestTable.status, "pending"),
+    ...ownerStatusQueryMap[status],
+  );
+
+  const [existingMatchRequest] = await db
+    .select({
+      ...getTableColumns(FriendMatchRequestTable),
+      problem: getTableColumns(ProblemTable),
+    })
+    .from(FriendMatchRequestTable)
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, FriendMatchRequestTable.problemId),
+    )
+    .where(whereQuery);
+  if (!existingMatchRequest) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipById(
+    existingMatchRequest.friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
+    return {
+      error: true,
+      message: "Friendship not found.",
+    };
+  }
+
+  try {
+    // todo: add notifications
+    const { updatedMatchRequest, notificationId } = await db.transaction(
+      async (tx) => {
+        const updatedMatchRequest = await updateMatchRequestDb(
+          existingMatchRequest.id,
+          { status, respondedAt: new Date() },
+          tx,
+        );
+        if (!updatedMatchRequest)
+          throw new Error("Failed to update match request.");
+
+        const createdNotification = await insertNotificationDb(
+          {
+            userId: existingFriendship.friend.id,
+            payload: {
+              type: `match_request_${status}` as const,
+              matchRequestId: updatedMatchRequest.id,
+              friendshipId: updatedMatchRequest.friendshipId,
+              title: `Match request ${status}`,
+              message: `${userInfo.name} ${status} ${status === "cancelled" ? "their" : status === "rejected" ? "your" : "the"} match request "${existingMatchRequest.problem.title}".`,
+            },
+          },
+          tx,
+        );
+        if (!createdNotification)
+          throw new Error("Failed to create notification.");
+
+        return {
+          updatedMatchRequest,
+          notificationId: createdNotification.id,
+        };
+      },
+    );
+
+    return {
+      error: false,
+      message: `Match request ${status} successfully!`,
+      matchRequestId: updatedMatchRequest.id,
+      notificationId,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const deleteMatchRequestAction = async (matchRequestId: string) => {
+  if (!areValidIds([matchRequestId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+  const { userId } = await getCurrentUser();
+  if (!userId) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingMatchRequest] = await db
+    .select()
+    .from(FriendMatchRequestTable)
+    .where(
+      and(
+        eq(FriendMatchRequestTable.id, matchRequestId),
+        or(
+          and(
+            or(
+              eq(FriendMatchRequestTable.status, "cancelled"),
+              eq(FriendMatchRequestTable.status, "rejected"),
+            ),
+            eq(FriendMatchRequestTable.requesterUserId, userId),
+          ),
+          and(
+            eq(FriendMatchRequestTable.status, "expired"),
+            eq(FriendMatchRequestTable.requesterUserId, userId),
+            lte(FriendMatchRequestTable.expiresAt, new Date()),
+            isNull(FriendMatchRequestTable.matchId),
+          ),
+        ),
+      ),
+    );
+  if (!existingMatchRequest) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  try {
+    const [deletedMatchRequest] = await db
+      .delete(FriendMatchRequestTable)
+      .where(eq(FriendMatchRequestTable.id, existingMatchRequest.id))
+      .returning();
+    if (!deletedMatchRequest)
+      throw new Error("Failed to delete match request.");
+
+    return {
+      error: false,
+      message: "Match request deleted successfully!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
 };

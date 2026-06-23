@@ -5,7 +5,10 @@ import {
   FriendMatchRequestTable,
   FriendRequestTable,
 } from "@/db/schema";
-import { NotificationPayloadEvent } from "@/db/shared";
+import {
+  FriendMatchRequestStatusType,
+  NotificationPayloadEvent,
+} from "@/db/shared";
 import { findActiveFriendshipById } from "@/features/friends/server/friendships";
 import { NOT_FOUND_ERROR_MESSAGE } from "@/lib/constants";
 import { and, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
@@ -168,4 +171,59 @@ export const handleNewMatchRequest = async (
     throw new Error("Failed to find existing match request.");
 
   return existingFriendship.friend.id;
+};
+
+export const handleMatchRequestCancelled = async (
+  userId: string,
+  payload: NotificationPayloadEvent<"match_request_cancelled">,
+) => {
+  const { matchRequestId, friendshipId } = payload;
+
+  const [existingMatchRequest] = await db
+    .select()
+    .from(FriendMatchRequestTable)
+    .where(
+      and(
+        eq(FriendMatchRequestTable.id, matchRequestId),
+        eq(FriendMatchRequestTable.friendshipId, friendshipId),
+        eq(FriendMatchRequestTable.requesterUserId, userId),
+        eq(FriendMatchRequestTable.status, "cancelled"),
+      ),
+    );
+  if (!existingMatchRequest) throw new Error("Match request not found.");
+
+  return existingMatchRequest.recipientUserId;
+};
+
+export const handleMatchRequestResponse = async (
+  userId: string,
+  payload: NotificationPayloadEvent<
+    "match_request_accepted" | "match_request_rejected"
+  >,
+) => {
+  const { matchRequestId, friendshipId } = payload;
+
+  const [existingMatchRequest] = await db
+    .select()
+    .from(FriendMatchRequestTable)
+    .where(
+      and(
+        eq(FriendMatchRequestTable.id, matchRequestId),
+        payload.type === "match_request_accepted"
+          ? isNotNull(FriendMatchRequestTable.matchId)
+          : undefined,
+        eq(FriendMatchRequestTable.friendshipId, friendshipId),
+        eq(FriendMatchRequestTable.recipientUserId, userId),
+        eq(
+          FriendMatchRequestTable.status,
+          payload.type.replace(
+            "match_request_",
+            "",
+          ) as FriendMatchRequestStatusType,
+        ),
+      ),
+    );
+  if (!existingMatchRequest) throw new Error("Match request not found.");
+
+  return existingMatchRequest.requesterUserId;
 };

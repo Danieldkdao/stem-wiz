@@ -17,16 +17,14 @@ export const getNotificationListItem = (
     case "community_problem_access_revoked":
     case "community_problem_deleted":
     case "new_match_request":
-    case "match_request_updated":
     case "match_request_accepted":
     case "match_request_rejected":
+    case "match_request_cancelled":
       return {
         ...notification,
         title: notification.payload.title,
         message: notification.payload.message,
       };
-    case "match_finished":
-    case "match_invite":
     case "system":
       // todo: placeholder
       return {
@@ -88,13 +86,22 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
           View details
         </LinkButton>
       );
+    case "match_request_accepted":
+      return (
+        <LinkButton
+          className="w-full"
+          href={`/arena/matches/${payload.matchId}`}
+        >
+          Start Match
+        </LinkButton>
+      );
     case "community_problem_deleted":
     case "community_problem_access_revoked":
     case "chat_deleted":
     case "friend_request_accepted":
+    case "match_request_rejected":
+    case "match_request_cancelled":
     case "friend_request_rejected":
-    case "match_finished":
-    case "match_invite":
     case "system":
       return null;
     default:
