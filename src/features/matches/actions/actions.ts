@@ -79,13 +79,16 @@ const hasMatchFinished = async (matchId: string) => {
   return match?.status === "finished";
 };
 
+const activeMatchExpirationQuery = () =>
+  or(isNull(MatchTable.expiresAt), gt(MatchTable.expiresAt, new Date()));
+
 const finalizeMatchIfAllUsersSubmitted = async (matchId: string) => {
   if (!areValidIds([matchId])) return { finished: false, error: true };
   const latestMatch = await db.query.MatchTable.findFirst({
     where: and(
       eq(MatchTable.id, matchId),
       eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
+      activeMatchExpirationQuery(),
     ),
     with: {
       users: true,
@@ -139,7 +142,7 @@ export const confirmExistingMatch = async (matchId: string) => {
       and(
         eq(MatchTable.id, matchId),
         eq(MatchTable.status, "in-progress"),
-        gt(MatchTable.expiresAt, new Date()),
+        activeMatchExpirationQuery(),
       ),
     );
 
@@ -160,7 +163,7 @@ export const checkExistingMatchAction = async ({
   const existingMatch = await db.query.MatchTable.findFirst({
     where: and(
       eq(MatchTable.id, id),
-      forResults ? undefined : gt(MatchTable.expiresAt, new Date()),
+      forResults ? undefined : activeMatchExpirationQuery(),
     ),
     with: {
       submissions: true,
@@ -206,10 +209,13 @@ export const timeoutExpiredMatch = async (matchId: string) => {
   if (
     existingMatch.status === "finished" ||
     (existingMatch.users.length !== existingMatch.submissions.length &&
-      existingMatch.expiresAt > new Date() &&
+      (existingMatch.expiresAt === null ||
+        existingMatch.expiresAt > new Date()) &&
       existingMatch.status === "in-progress")
   )
     return existingMatch;
+
+  if (existingMatch.expiresAt === null) return existingMatch;
 
   let winnerId: string | null = null;
   if (existingMatch.submissions.length > 0) {
@@ -283,7 +289,7 @@ export const quitMatchAction = async (matchId: string) => {
 
   if (
     existingMatch.status === "finished" ||
-    existingMatch.expiresAt <= new Date()
+    (existingMatch.expiresAt !== null && existingMatch.expiresAt <= new Date())
   ) {
     return {
       error: false,
@@ -366,6 +372,13 @@ export const handleMatchTimeoutAction = async (matchId: string) => {
     return {
       error: false,
       message: "This match has already ended.",
+    };
+  }
+
+  if (existingMatch.expiresAt === null) {
+    return {
+      error: true,
+      message: "This match does not have a time limit.",
     };
   }
 
@@ -459,7 +472,7 @@ export const handleUserMatchWinAction = async (matchId: string) => {
 
   if (
     existingMatch.status === "finished" ||
-    existingMatch.expiresAt <= new Date()
+    (existingMatch.expiresAt !== null && existingMatch.expiresAt <= new Date())
   ) {
     return {
       error: false,
@@ -524,7 +537,7 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
         eq(UserMatchTable.userId, userId),
         eq(UserMatchTable.matchId, matchId),
         eq(MatchTable.status, "in-progress"),
-        gt(MatchTable.expiresAt, new Date()),
+        activeMatchExpirationQuery(),
       ),
     );
 
@@ -603,7 +616,7 @@ export const getObservableMatchesAction = async (filterOptions: {
   const sortByMap: Record<UserMatchesSortByOptionType, SQL<unknown>> = {
     most_recent: desc(MatchTable.createdAt),
     oldest: asc(MatchTable.createdAt),
-    expires_soon: asc(MatchTable.expiresAt),
+    expires_soon: sql`${MatchTable.expiresAt} asc nulls last`,
   };
 
   const searchQuery = search.trim()
@@ -636,7 +649,7 @@ export const getObservableMatchesAction = async (filterOptions: {
           ),
       ),
     ),
-    gt(MatchTable.expiresAt, new Date()),
+    activeMatchExpirationQuery(),
     languages.length
       ? inArray(ProblemTable.programmingLanguage, languages)
       : undefined,
@@ -733,7 +746,7 @@ export const getUserMatchesAction = async (filterOptions: {
   const sortByMap: Record<UserMatchesSortByOptionType, SQL<unknown>> = {
     most_recent: desc(MatchTable.createdAt),
     oldest: asc(MatchTable.createdAt),
-    expires_soon: asc(MatchTable.expiresAt),
+    expires_soon: sql`${MatchTable.expiresAt} asc nulls last`,
   };
 
   const filterByMap: Record<
@@ -1390,6 +1403,134 @@ export const deleteMatchRequestAction = async (matchRequestId: string) => {
     return {
       error: false,
       message: "Match request deleted successfully!",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const acceptMatchRequestAction = async (matchRequestId: string) => {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingMatchRequest] = await db
+    .select({
+      ...getTableColumns(FriendMatchRequestTable),
+      problem: getTableColumns(ProblemTable),
+    })
+    .from(FriendMatchRequestTable)
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, FriendMatchRequestTable.problemId),
+    )
+    .where(
+      and(
+        eq(FriendMatchRequestTable.id, matchRequestId),
+        eq(FriendMatchRequestTable.recipientUserId, userId),
+        eq(FriendMatchRequestTable.status, "pending"),
+        or(
+          gt(FriendMatchRequestTable.expiresAt, new Date()),
+          isNull(FriendMatchRequestTable.expiresAt),
+        ),
+        isNull(FriendMatchRequestTable.matchId),
+      ),
+    );
+  if (!existingMatchRequest) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  try {
+    const { updatedMatchRequest, notificationId, createdMatch } =
+      await db.transaction(async (tx) => {
+        const [createdArenaProblem] = await tx
+          .insert(ArenaProblemConfigTable)
+          .values({
+            problemId: existingMatchRequest.problemId,
+            timeLimit: existingMatchRequest.timeLimit ?? 0,
+          })
+          .returning();
+        if (!createdArenaProblem)
+          throw new Error("Failed to create arena problem.");
+
+        const [createdMatch] = await tx
+          .insert(MatchTable)
+          .values({
+            problemId: createdArenaProblem.id,
+            status: "in-progress",
+            expiresAt: existingMatchRequest.timeLimit
+              ? new Date(
+                  new Date().getTime() + existingMatchRequest.timeLimit * 1000,
+                )
+              : null,
+          })
+          .returning();
+        if (!createdMatch) throw new Error("Failed to create match.");
+
+        await tx.insert(UserMatchTable).values([
+          {
+            userId: existingMatchRequest.requesterUserId,
+            matchId: createdMatch.id,
+          },
+          {
+            userId: existingMatchRequest.recipientUserId,
+            matchId: createdMatch.id,
+          },
+        ]);
+
+        const updatedMatchRequest = await updateMatchRequestDb(
+          existingMatchRequest.id,
+          {
+            status: "accepted",
+            respondedAt: new Date(),
+            matchId: createdMatch.id,
+          },
+          tx,
+        );
+        if (!updatedMatchRequest)
+          throw new Error("Failed to update match request.");
+
+        const createdNotification = await insertNotificationDb(
+          {
+            userId: existingMatchRequest.requesterUserId,
+            payload: {
+              type: "match_request_accepted",
+              matchRequestId: updatedMatchRequest.id,
+              friendshipId: updatedMatchRequest.friendshipId,
+              matchId: createdMatch.id,
+              title: "Match request accepted",
+              message: `${userInfo.name} accepted your match request "${existingMatchRequest.problem.title}".`,
+            },
+          },
+          tx,
+        );
+        if (!createdNotification)
+          throw new Error("Failed to create notification.");
+
+        return {
+          updatedMatchRequest,
+          notificationId: createdNotification.id,
+          createdMatch,
+        };
+      });
+
+    return {
+      error: false,
+      message: "Match request accepted successfully!",
+      matchRequestId: updatedMatchRequest.id,
+      notificationId,
+      matchId: createdMatch.id,
     };
   } catch (error) {
     console.error(error);

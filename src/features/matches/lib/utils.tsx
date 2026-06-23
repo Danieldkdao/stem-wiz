@@ -28,6 +28,7 @@ import { formatDateStringWithAgo } from "./formatters";
 import { MatchRequest, MatchRequestDisplayStatus } from "./types";
 import { DeleteMatchRequestButton } from "../components/delete-match-request-button";
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
+import { AcceptMatchRequestButton } from "../components/accept-match-request-button";
 
 export const getMatchRequestStatus = (matchRequest: MatchRequest) => {
   const matchRequestStatus = matchRequest.status;
@@ -49,7 +50,8 @@ export const getMatchRequestStatus = (matchRequest: MatchRequest) => {
     case "accepted":
       if (!matchRequest.match) return "accepted_preparing" as const;
       if (
-        matchRequest.match.expiresAt <= new Date() ||
+        (matchRequest.match.expiresAt !== null &&
+          matchRequest.match.expiresAt <= new Date()) ||
         matchRequest.match.status === "finished"
       )
         return "accepted_finished" as const;
@@ -65,21 +67,34 @@ export const getMatchRequestStatusContent = (
     case "accepted_active":
       return {
         information: () => {
-          const { hours, minutes, seconds } = getTimeValues(
-            (matchRequest.match?.expiresAt.getTime() ?? 0) -
-              new Date().getTime(),
-          );
+          const secondsRemaining = matchRequest.match?.expiresAt
+            ? Math.max(
+                0,
+                Math.ceil(
+                  (matchRequest.match.expiresAt.getTime() -
+                    new Date().getTime()) /
+                    1000,
+                ),
+              )
+            : null;
+          const timeValues =
+            secondsRemaining === null ? null : getTimeValues(secondsRemaining);
 
           return (
             <div className="flex items-center gap-2 justify-between">
               <div className="flex flex-col gap-0.5">
                 <span className="text-base font-medium">Time Remaining</span>
                 <span className="text-2xl font-semibold text-primary tracking-widest">
-                  {matchRequest.match ? (
+                  {timeValues ? (
                     <>
-                      <span className="tracking-wide">{hours}</span>:
-                      <span className="tracking-wide">{minutes}</span>:
-                      <span className="tracking-wide">{seconds}</span>
+                      <span className="tracking-wide">{timeValues.hours}</span>:
+                      <span className="tracking-wide">
+                        {timeValues.minutes}
+                      </span>
+                      :
+                      <span className="tracking-wide">
+                        {timeValues.seconds}
+                      </span>
                     </>
                   ) : (
                     "No time limit"
@@ -347,10 +362,13 @@ export const getMatchRequestStatusContent = (
         ),
         cta: () => (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <Button className="w-full">
+            <AcceptMatchRequestButton
+              matchRequestId={matchRequest.id}
+              className="w-full"
+            >
               <CheckIcon />
               Accept
-            </Button>
+            </AcceptMatchRequestButton>
             <UpdateMatchRequestStatusButton
               matchRequestId={matchRequest.id}
               newStatus="rejected"

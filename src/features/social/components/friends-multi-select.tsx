@@ -27,14 +27,14 @@ export const FriendsMultiSelect = ({
     error,
   } = useQuery({
     queryKey: ["friendships"],
-    queryFn: getUserFriendsAction,
+    queryFn: () => getUserFriendsAction({ search: "", page: 1 }),
   });
 
   if (isPending)
     return <Skeleton className={cn("h-9 w-full", triggerClassName)} />;
 
   if (error) return <div>error</div>;
-  if (!friends || !friends.length) return <div>no data</div>;
+  if (!friends || !friends.friends.length) return <div>no data</div>;
 
   return (
     <MultiSelect {...props}>
@@ -42,7 +42,7 @@ export const FriendsMultiSelect = ({
         <MultiSelectValue placeholder="Select friends" />
       </MultiSelectTrigger>
       <MultiSelectContent>
-        {friends.map((friend) => (
+        {friends.friends.map((friend) => (
           <MultiSelectItem
             key={friend.id}
             value={friend.id}

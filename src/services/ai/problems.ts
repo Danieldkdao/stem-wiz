@@ -1,5 +1,4 @@
 import { generateText, Output } from "ai";
-import { hackclub } from "./models/hackclub";
 import { problemSchema } from "./schemas";
 import { db } from "@/db/db";
 import {

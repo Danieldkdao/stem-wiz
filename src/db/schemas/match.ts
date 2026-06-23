@@ -19,7 +19,7 @@ export const MatchTable = pgTable("matches", {
     .notNull(),
   createdAt,
   updatedAt,
-  expiresAt: timestamp("expires_at").notNull(),
+  expiresAt: timestamp("expires_at"),
 });
 
 export const matchRelations = relations(MatchTable, ({ one, many }) => ({

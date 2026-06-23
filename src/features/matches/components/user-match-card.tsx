@@ -37,7 +37,8 @@ export const UserMatchCard = ({
   };
 }) => {
   const isFinished =
-    match.status === "finished" || match.expiresAt <= new Date();
+    match.status === "finished" ||
+    (match.expiresAt !== null && match.expiresAt <= new Date());
 
   const data = [
     {
@@ -50,21 +51,16 @@ export const UserMatchCard = ({
         ? match.result
           ? formatMatchResultReason(match.result.reason)
           : "Timeout"
-        : formatDistance(match.expiresAt, new Date()),
+        : match.expiresAt
+          ? formatDistance(match.expiresAt, new Date())
+          : "No time limit",
     },
     {
       label: isFinished ? "Duration" : "Started",
       data: isFinished
-        ? (match.result?.createdAt.getTime() ?? 0) -
-            match.createdAt.getTime() <=
-          match.arenaProblem.timeLimit
+        ? match.result || match.expiresAt === null
           ? getDuration(match.createdAt, match.result?.createdAt)
-          : getDuration(
-              match.createdAt,
-              new Date(
-                match.createdAt.getTime() + match.arenaProblem.timeLimit,
-              ),
-            )
+          : getDuration(match.createdAt, match.expiresAt)
         : formatDateStringWithAgo(formatDistanceToNow(match.createdAt)),
     },
   ];

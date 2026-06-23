@@ -126,7 +126,8 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
     if (
       completedMatch &&
       (completedMatch.status === "finished" ||
-        completedMatch.expiresAt <= new Date())
+        (completedMatch.expiresAt !== null &&
+          completedMatch.expiresAt <= new Date()))
     ) {
       return redirect(`/arena/matches/${matchId}/results`);
     }

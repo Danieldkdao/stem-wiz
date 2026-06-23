@@ -8,7 +8,7 @@ import {
   UserMatchTable,
   UserProfileTable,
 } from "@/db/schema";
-import { and, eq, getTableColumns, gt } from "drizzle-orm";
+import { and, eq, getTableColumns, gt, isNull, or } from "drizzle-orm";
 import {
   sendToUser,
   sendToClient,
@@ -37,7 +37,7 @@ export const joinWaitingRoom = async (ws: RealtimeWebSocket) => {
       where: and(
         eq(MatchTable.id, activeUser.matchId),
         eq(MatchTable.status, "in-progress"),
-        gt(MatchTable.expiresAt, new Date()),
+        or(isNull(MatchTable.expiresAt), gt(MatchTable.expiresAt, new Date())),
       ),
     });
 

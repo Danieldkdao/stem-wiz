@@ -15,7 +15,7 @@ import { cn, getTimeValues } from "@/lib/utils";
 import { useMatchStore } from "@/store/use-match-store";
 import { TimerIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   handleMatchTimeoutAction,
@@ -37,9 +37,10 @@ export const MatchHeader = ({
   const isEnding = useMatchStore((state) => state.isEnding);
   const setIsEnding = useMatchStore((state) => state.setIsEnding);
   const router = useRouter();
-  const expiresAtMs = match.expiresAt.getTime();
+  const expiresAtMs = match.expiresAt?.getTime() ?? null;
   const [now, setNow] = useState(() => Date.now());
-  const secondsRemaining = Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
+  const secondsRemaining =
+    expiresAtMs === null ? null : Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
   const [disconnectSecondsRemaining, setDisconnectSecondsRemaining] =
     useState(30);
   const {
@@ -60,6 +61,48 @@ export const MatchHeader = ({
     !!(match.result && match.status === "finished");
   const hasSubmittedCode = match.submissions.length > 0;
 
+  const handleMatchQuit = async () => {
+    const confirmation = await confirm();
+    if (!confirmation) return;
+
+    setIsEnding(true);
+
+    const response = await quitMatchAction(match.id);
+    if (response.error) {
+      toast.error(response.message);
+      setIsEnding(false);
+    } else {
+      toast.success(response.message);
+      router.push("/dashboard");
+    }
+  };
+
+  const handleMatchTimeout = useCallback(async () => {
+    setIsEnding(true);
+
+    const response = await handleMatchTimeoutAction(match.id);
+    if (response.error) {
+      toast.error(response.message);
+      setIsEnding(false);
+    } else {
+      toast.success(response.message);
+      router.push("/dashboard");
+    }
+  }, [match.id, router, setIsEnding]);
+
+  const handleUserMatchWin = useCallback(async () => {
+    setIsEnding(true);
+
+    const response = await handleUserMatchWinAction(match.id);
+    if (response.error) {
+      toast.error(response.message);
+      setIsEnding(false);
+    } else {
+      toast.success(response.message);
+      router.push("/dashboard");
+    }
+  }, [match.id, router, setIsEnding]);
+
   useEffect(() => {
     const shouldConnect =
       status !== "connecting" && status !== "open" && !isMatchFinished;
@@ -79,39 +122,43 @@ export const MatchHeader = ({
     return () => {
       disconnectFromMatch(match.id);
     };
-  }, [connectToMatch, match.id, status, isMatchFinished]);
+  }, [connectToMatch, disconnectFromMatch, match.id, status, isMatchFinished]);
 
   useEffect(() => {
-    if (isMatchFinished) return;
-    if (secondsRemaining <= 0 && match.status === "in-progress") {
-      handleMatchTimeout();
-      return;
-    }
-    setNow(Date.now());
-    const interval = setInterval(async () => {
-      if (secondsRemaining <= 0 && match.status === "in-progress") {
-        await handleMatchTimeout();
-        return;
-      }
+    if (isMatchFinished || secondsRemaining === null) return;
+
+    const interval = setInterval(() => {
       setNow(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [secondsRemaining, match.status, isMatchFinished]);
+  }, [secondsRemaining, isMatchFinished]);
+
+  useEffect(() => {
+    if (
+      isMatchFinished ||
+      secondsRemaining === null ||
+      secondsRemaining > 0 ||
+      match.status !== "in-progress"
+    )
+      return;
+
+    void handleMatchTimeout();
+  }, [handleMatchTimeout, isMatchFinished, match.status, secondsRemaining]);
 
   useEffect(() => {
     if (isMatchFinished) return;
     if (opponentStatus === "active" && match.status === "in-progress") {
-      setDisconnectSecondsRemaining(30);
-      return;
+      const timeout = setTimeout(() => setDisconnectSecondsRemaining(30), 0);
+      return () => clearTimeout(timeout);
     }
     if (disconnectSecondsRemaining <= 0 && match.status === "in-progress") {
-      handleUserMatchWin();
+      void handleUserMatchWin();
       return;
     }
-    const interval = setInterval(async () => {
+    const interval = setInterval(() => {
       if (disconnectSecondsRemaining <= 0 && match.status === "in-progress") {
-        await handleUserMatchWin();
+        void handleUserMatchWin();
         return;
       }
       setDisconnectSecondsRemaining((prev) => prev - 1);
@@ -123,6 +170,7 @@ export const MatchHeader = ({
     disconnectSecondsRemaining,
     match.status,
     isMatchFinished,
+    handleUserMatchWin,
   ]);
 
   useEffect(() => {
@@ -144,49 +192,8 @@ export const MatchHeader = ({
     };
   }, [subscribeMatchEvent, isMatchFinished, hasSubmittedCode, router]);
 
-  const timeValues = getTimeValues(secondsRemaining);
-
-  const handleMatchQuit = async () => {
-    const confirmation = await confirm();
-    if (!confirmation) return;
-
-    setIsEnding(true);
-
-    const response = await quitMatchAction(match.id);
-    if (response.error) {
-      toast.error(response.message);
-      setIsEnding(false);
-    } else {
-      toast.success(response.message);
-      router.push("/dashboard");
-    }
-  };
-
-  const handleMatchTimeout = async () => {
-    setIsEnding(true);
-
-    const response = await handleMatchTimeoutAction(match.id);
-    if (response.error) {
-      toast.error(response.message);
-      setIsEnding(false);
-    } else {
-      toast.success(response.message);
-      router.push("/dashboard");
-    }
-  };
-
-  const handleUserMatchWin = async () => {
-    setIsEnding(true);
-
-    const response = await handleUserMatchWinAction(match.id);
-    if (response.error) {
-      toast.error(response.message);
-      setIsEnding(false);
-    } else {
-      toast.success(response.message);
-      router.push("/dashboard");
-    }
-  };
+  const timeValues =
+    secondsRemaining === null ? null : getTimeValues(secondsRemaining);
 
   const handleLeaveMatch = async () => {
     setIsEnding(true);
@@ -260,12 +267,18 @@ export const MatchHeader = ({
               <span
                 className={cn(
                   "tabular-nums font-semibold text-lg",
-                  secondsRemaining <= 10 && "text-destructive",
+                  secondsRemaining !== null &&
+                    secondsRemaining <= 10 &&
+                    "text-destructive",
                 )}
               >
-                {timeValues.hours.toString().padStart(2, "0")}:
-                {timeValues.minutes.toString().padStart(2, "0")}:
-                {timeValues.seconds.toString().padStart(2, "0")}
+                {timeValues
+                  ? `${timeValues.hours.toString().padStart(2, "0")}:${timeValues.minutes
+                      .toString()
+                      .padStart(2, "0")}:${timeValues.seconds
+                      .toString()
+                      .padStart(2, "0")}`
+                  : "No time limit"}
               </span>
             </div>
           </div>

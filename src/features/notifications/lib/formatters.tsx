@@ -2,6 +2,8 @@ import { NotificationPayload, NotificationTable } from "@/db/schema";
 import { NotificationListItem } from "./types";
 import { RespondFriendRequestButton } from "@/features/friends/components/respond-friend-request-button";
 import { LinkButton } from "@/components/link-button";
+import { AcceptMatchRequestButton } from "@/features/matches/components/accept-match-request-button";
+import { CheckIcon } from "lucide-react";
 
 export const getNotificationListItem = (
   notification: typeof NotificationTable.$inferSelect,
@@ -82,9 +84,22 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
       );
     case "new_match_request":
       return (
-        <LinkButton className="w-full" href={`/match-invitations/requests`}>
-          View details
-        </LinkButton>
+        <div className="grid grid-cols-2 gap-2">
+          <AcceptMatchRequestButton
+            matchRequestId={payload.matchRequestId}
+            className="w-full"
+          >
+            <CheckIcon />
+            Accept
+          </AcceptMatchRequestButton>
+          <LinkButton
+            className="w-full"
+            variant="outline"
+            href={`/match-invitations/requests`}
+          >
+            View details
+          </LinkButton>
+        </div>
       );
     case "match_request_accepted":
       return (

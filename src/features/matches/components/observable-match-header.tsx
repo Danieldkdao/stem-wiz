@@ -53,11 +53,12 @@ export const ObservableMatchHeader = ({
     leaveObserverMatch,
     lastEvent,
   } = useMatchObserverSocket();
-  const expiresAtMs = match.expiresAt.getTime();
+  const expiresAtMs = match.expiresAt?.getTime() ?? null;
   const [now, setNow] = useState(() => Date.now());
   const [isPending, startTransition] = useTransition();
 
-  const secondsRemaining = Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
+  const secondsRemaining =
+    expiresAtMs === null ? null : Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
   const isMatchFinished =
     lastEvent?.type === "match_finished" ||
     !!(match.result && match.status === "finished");
@@ -96,14 +97,14 @@ export const ObservableMatchHeader = ({
   }, [isMatchFinished, match.users, subscribeObserverEvent, router]);
 
   useEffect(() => {
-    if (isMatchFinished) return;
+    if (isMatchFinished || secondsRemaining === null) return;
 
     const interval = setInterval(() => {
       setNow(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isMatchFinished]);
+  }, [isMatchFinished, secondsRemaining]);
 
   const handleLeaveMatch = async () => {
     startTransition(async () => {
@@ -118,7 +119,8 @@ export const ObservableMatchHeader = ({
     });
   };
 
-  const timeValues = getTimeValues(secondsRemaining);
+  const timeValues =
+    secondsRemaining === null ? null : getTimeValues(secondsRemaining);
   const matchObserverCount = matchesObserverCount.get(match.id) ?? 0;
   const matchCompletionReason = matchesCompletionReason.get(match.id) ?? null;
 
@@ -160,12 +162,18 @@ export const ObservableMatchHeader = ({
             <span
               className={cn(
                 "tabular-nums font-semibold text-lg",
-                secondsRemaining <= 10 && "text-destructive",
+                secondsRemaining !== null &&
+                  secondsRemaining <= 10 &&
+                  "text-destructive",
               )}
             >
-              {timeValues.hours.toString().padStart(2, "0")}:
-              {timeValues.minutes.toString().padStart(2, "0")}:
-              {timeValues.seconds.toString().padStart(2, "0")}
+              {timeValues
+                ? `${timeValues.hours.toString().padStart(2, "0")}:${timeValues.minutes
+                    .toString()
+                    .padStart(2, "0")}:${timeValues.seconds
+                    .toString()
+                    .padStart(2, "0")}`
+                : "No time limit"}
             </span>
           </div>
         </div>

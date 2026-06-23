@@ -6,7 +6,7 @@ import {
   sendToUser,
 } from "@/features/realtime/server/connection-state";
 import { generateMatchResults } from "@/services/ai/matches";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
 import {
   cleanupUserConnection,
   getArenaWsState,
@@ -14,6 +14,9 @@ import {
 } from "./connection-state";
 import { finalizeMatch } from "./finalize-match";
 import { broadcastToMatchObservers } from "./match-observers";
+
+const activeMatchExpirationQuery = () =>
+  or(isNull(MatchTable.expiresAt), gt(MatchTable.expiresAt, new Date()));
 
 export const connectToMatch = async (
   ws: RealtimeWebSocket,
@@ -32,7 +35,7 @@ export const connectToMatch = async (
     where: and(
       eq(MatchTable.id, matchId),
       eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
+      activeMatchExpirationQuery(),
     ),
     with: {
       users: true,
@@ -105,7 +108,7 @@ export const disconnectFromMatch = async (
     where: and(
       eq(MatchTable.id, matchId),
       eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
+      activeMatchExpirationQuery(),
     ),
     with: {
       users: true,
@@ -165,7 +168,7 @@ export const broadcastCodeSubmission = async (
     where: and(
       eq(MatchTable.id, matchId),
       eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
+      activeMatchExpirationQuery(),
     ),
     with: {
       users: true,
@@ -214,7 +217,7 @@ export const broadcastCodeSubmission = async (
     where: and(
       eq(MatchTable.id, matchId),
       eq(MatchTable.status, "in-progress"),
-      gt(MatchTable.expiresAt, new Date()),
+      activeMatchExpirationQuery(),
     ),
     with: {
       users: true,
@@ -315,7 +318,8 @@ export const finishMatchFromSocket = async (
     return;
   }
 
-  const isExpired = existingMatch.expiresAt <= new Date();
+  const isExpired =
+    existingMatch.expiresAt !== null && existingMatch.expiresAt <= new Date();
   if (reason === "timeout" && !isExpired) {
     sendToConnection(connectionId, {
       type: "error",
