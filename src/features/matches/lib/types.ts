@@ -7,6 +7,8 @@ import {
 } from "@/db/schema";
 import { MatchResultReasonType } from "@/db/shared";
 import { User } from "@/lib/auth/auth";
+import { getUserMatchRequestsAction } from "../actions/actions";
+import { getMatchRequestStatus } from "./utils";
 
 export type MatchServerMessage =
   | {
@@ -70,3 +72,10 @@ export type MatchObserverServerMessage =
   | { type: "user_submitted_code"; userId: string }
   | { type: "match_finished"; matchId: string; reason: MatchResultReasonType };
 export type MatchObserverServerMessageType = MatchObserverServerMessage["type"];
+
+export type MatchRequest = NonNullable<
+  Awaited<ReturnType<typeof getUserMatchRequestsAction>>
+>["matchRequests"][number];
+export type MatchRequestDisplayStatus = ReturnType<
+  typeof getMatchRequestStatus
+>;

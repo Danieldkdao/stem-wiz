@@ -1,10 +1,15 @@
 import { ArenaProblemConfigTable, ProblemTable } from "@/db/schema";
-import { MatchResultReasonType, ProblemSourceType } from "@/db/shared";
+import {
+  FriendMatchRequestStatusType,
+  MatchResultReasonType,
+  ProblemSourceType,
+} from "@/db/shared";
 import {
   UserMatchesFilterByOptionType,
   UserMatchesResultOptionType,
   UserMatchesSortByOptionType,
 } from "./params";
+import { MatchRequestFilterByOptionType } from "./match-request-params";
 
 export const formatMatchResultReason = (reason: MatchResultReasonType) => {
   switch (reason) {
@@ -114,4 +119,49 @@ export const formatProblemSource = (source: ProblemSourceType) => {
     default:
       throw new Error(`Unknown problem source: ${source satisfies never}`);
   }
+};
+
+export const formatMatchRequestFilterByOptions = (
+  option: MatchRequestFilterByOptionType,
+) => {
+  switch (option) {
+    case "all":
+      return "All";
+    case "received":
+      return "Received";
+    case "sent":
+      return "Sent";
+    default:
+      throw new Error(
+        `Unknown match request filter by option: ${option satisfies never}`,
+      );
+  }
+};
+
+export const formatMatchRequestStatus = (
+  status: FriendMatchRequestStatusType,
+) => {
+  switch (status) {
+    case "accepted":
+      return "Accepted";
+    case "cancelled":
+      return "Cancelled";
+    case "expired":
+      return "Expired";
+    case "pending":
+      return "Pending";
+    case "rejected":
+      return "Rejected";
+    default:
+      throw new Error(
+        `Unknown match request status: ${status satisfies never}`,
+      );
+  }
+};
+
+export const formatDateStringWithAgo = (dateString: string) => {
+  return dateString
+    .split(" ")
+    .filter((word) => word !== "ago")
+    .join(" ") + " ago";
 };

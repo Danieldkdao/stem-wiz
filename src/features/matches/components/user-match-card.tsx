@@ -11,7 +11,10 @@ import {
 import { formatDate } from "@/features/oracle/lib/formatters";
 import { User } from "@/lib/auth/auth";
 import { formatDistance, formatDistanceToNow } from "date-fns";
-import { formatMatchResultReason } from "../lib/formatters";
+import {
+  formatDateStringWithAgo,
+  formatMatchResultReason,
+} from "../lib/formatters";
 import { cn, getDuration } from "@/lib/utils";
 import {
   CircleXIcon,
@@ -62,10 +65,7 @@ export const UserMatchCard = ({
                 match.createdAt.getTime() + match.arenaProblem.timeLimit,
               ),
             )
-        : formatDistanceToNow(match.createdAt)
-            .split(" ")
-            .filter((word) => word !== "ago")
-            .join(" ") + " ago",
+        : formatDateStringWithAgo(formatDistanceToNow(match.createdAt)),
     },
   ];
 

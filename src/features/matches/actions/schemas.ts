@@ -61,6 +61,13 @@ export const friendMatchRequestSchema = z
         message: "Please select a programming language.",
       });
     }
+    if (data.expiresAt && data.expiresAt <= new Date()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiresAt"],
+        message: "Please select an expiration date in the future.",
+      });
+    }
   });
 export type FriendMatchRequestSchemaType = z.infer<
   typeof friendMatchRequestSchema

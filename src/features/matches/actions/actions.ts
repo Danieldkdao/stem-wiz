@@ -4,7 +4,9 @@ import { db } from "@/db/db";
 import {
   ArenaProblemConfigTable,
   CommunityProblemTable,
+  FriendMatchRequestStatusType,
   FriendMatchRequestTable,
+  FriendshipTable,
   MatchResultReasonType,
   MatchResultTable,
   MatchSubmissionTable,
@@ -61,6 +63,8 @@ import {
   friendMatchRequestSchema,
   FriendMatchRequestSchemaType,
 } from "./schemas";
+import { SortByType } from "@/lib/types";
+import { MatchRequestFilterByOptionType } from "../lib/match-request-params";
 
 const hasMatchFinished = async (matchId: string) => {
   if (!areValidIds([matchId])) return false;
@@ -1044,4 +1048,142 @@ export const createMatchRequestAction = async (
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const getUserMatchRequestsAction = async (filterOptions: {
+  search: string;
+  sortBy: SortByType;
+  filterBy: MatchRequestFilterByOptionType;
+  statuses: FriendMatchRequestStatusType[];
+  page: number;
+}) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+
+  const { search, sortBy, filterBy, statuses, page } = filterOptions;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const sortByMap: Record<SortByType, SQL<unknown>> = {
+    most_recent: desc(FriendMatchRequestTable.createdAt),
+    oldest: asc(FriendMatchRequestTable.createdAt),
+  };
+
+  const filterByMap: Record<
+    MatchRequestFilterByOptionType,
+    SQL<unknown> | undefined
+  > = {
+    all: or(
+      eq(FriendMatchRequestTable.recipientUserId, userId),
+      eq(FriendMatchRequestTable.requesterUserId, userId),
+    ),
+    received: eq(FriendMatchRequestTable.recipientUserId, userId),
+    sent: eq(FriendMatchRequestTable.requesterUserId, userId),
+  };
+
+  const searchPattern = `%${search.trim()}%`;
+
+  const problemConceptsSearch = sql`
+      EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(${ProblemTable.concepts}) AS concept(value)
+        WHERE concept.value ILIKE ${searchPattern}
+      )
+    `;
+
+  const searchQuery = search.trim()
+    ? or(
+        ilike(user.name, searchPattern),
+        ilike(ProblemTable.title, searchPattern),
+        ilike(ProblemTable.description, searchPattern),
+        problemConceptsSearch,
+      )
+    : undefined;
+
+  const whereQuery = and(
+    filterByMap[filterBy],
+    statuses.length
+      ? inArray(FriendMatchRequestTable.status, statuses)
+      : undefined,
+    searchQuery,
+  );
+
+  const matchRequests = await db
+    .select({
+      ...getTableColumns(FriendMatchRequestTable),
+      problem: getTableColumns(ProblemTable),
+      friend: getTableColumns(user),
+      match: getTableColumns(MatchTable),
+      matchResult: getTableColumns(MatchResultTable),
+      isSent: sql<boolean>`${FriendMatchRequestTable.requesterUserId} = ${userId}`,
+    })
+    .from(FriendMatchRequestTable)
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, FriendMatchRequestTable.problemId),
+    )
+    .innerJoin(
+      FriendshipTable,
+      eq(FriendshipTable.id, FriendMatchRequestTable.friendshipId),
+    )
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
+        ),
+        and(
+          eq(FriendshipTable.userOneId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+        ),
+      ),
+    )
+    .leftJoin(MatchTable, eq(MatchTable.id, FriendMatchRequestTable.matchId))
+    .leftJoin(MatchResultTable, eq(MatchResultTable.matchId, MatchTable.id))
+    .where(whereQuery)
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalMatchRequests] = await db
+    .select({
+      count: count(),
+    })
+    .from(FriendMatchRequestTable)
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, FriendMatchRequestTable.problemId),
+    )
+    .innerJoin(
+      FriendshipTable,
+      eq(FriendshipTable.id, FriendMatchRequestTable.friendshipId),
+    )
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
+        ),
+        and(
+          eq(FriendshipTable.userOneId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+        ),
+      ),
+    )
+    .leftJoin(MatchTable, eq(MatchTable.id, FriendMatchRequestTable.matchId))
+    .leftJoin(MatchResultTable, eq(MatchResultTable.matchId, MatchTable.id))
+    .where(whereQuery);
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalMatchRequests.count;
+
+  return {
+    matchRequests,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };

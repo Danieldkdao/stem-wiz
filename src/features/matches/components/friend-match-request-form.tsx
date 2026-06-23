@@ -67,9 +67,7 @@ export const FriendMatchRequestForm = () => {
       notifyNewFriendMatchRequest(response.notificationId);
       toast.success(response.message);
       form.reset();
-      router.push(
-        `/match-invitations/requests-sent/${response.matchRequestId}`,
-      );
+      router.push(`/match-invitations/requests`);
     }
   };
 

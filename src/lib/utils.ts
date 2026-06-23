@@ -77,12 +77,14 @@ export const getDuration = (
 };
 
 // returns => Oct 20, 2026
-export const formatShortDate = (date: Date | string | number) =>
-  new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(date));
+export const formatShortDate = (date?: Date | string | number | null) =>
+  date
+    ? new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(date))
+    : "Unknown";
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value != null && !Array.isArray(value);

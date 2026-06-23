@@ -84,10 +84,7 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
       );
     case "new_match_request":
       return (
-        <LinkButton
-          className="w-full"
-          href={`/match-invitations/requests-received/${payload.matchRequestId}`}
-        >
+        <LinkButton className="w-full" href={`/match-invitations/requests`}>
           View details
         </LinkButton>
       );

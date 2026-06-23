@@ -143,7 +143,7 @@ const ArenaPage = () => {
               </CardContent>
             </Card>
           </Link>
-          <Link href="/match-invitations/requests-sent">
+          <Link href="/match-invitations/requests">
             <Card className="border-t-4 border-t-primary">
               <CardContent className="flex items-center gap-4">
                 <div className="bg-muted rounded-md flex items-center justify-center size-14 shrink-0">

@@ -26,6 +26,7 @@ import { ComponentProps, useEffect, useState, useTransition } from "react";
 import { getCommunityProblemsAction } from "../actions/actions";
 import { formatProgrammingLanguage } from "../lib/formatters";
 import { NotFound } from "@/components/not-found";
+import { formatDateStringWithAgo } from "@/features/matches/lib/formatters";
 
 type CommunityProblems = Awaited<
   ReturnType<typeof getCommunityProblemsAction>
@@ -223,12 +224,11 @@ export const CommunityProblemCommandSelect = ({
                               <div className="flex items-center gap-1">
                                 <HistoryIcon className="size-4 text-muted-foreground!" />
                                 <span className="text-muted-foreground font-medium group-hover:text-muted-foreground!">
-                                  {formatDistanceToNow(
-                                    communityProblem.updatedAt,
-                                  )
-                                    .split(" ")
-                                    .filter((word) => word !== "ago")
-                                    .join(" ") + " ago"}
+                                  {formatDateStringWithAgo(
+                                    formatDistanceToNow(
+                                      communityProblem.updatedAt,
+                                    ),
+                                  )}
                                 </span>
                               </div>
                             </div>
