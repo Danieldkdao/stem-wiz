@@ -9,7 +9,6 @@ import { getUserNotificationsAction } from "@/features/notifications/actions/act
 import { MarkNotificationsReadButton } from "@/features/notifications/components/mark-all-read-button";
 import { Notification } from "@/features/notifications/components/notification";
 import { useNotifications } from "@/features/notifications/hooks/use-notifications";
-import { useNotificationsSocket } from "@/features/notifications/hooks/use-notifications-socket";
 import { NotificationListItem } from "@/features/notifications/lib/types";
 import { DEFAULT_PAGE } from "@/lib/constants";
 import { BellIcon, BellOffIcon, Loader2Icon } from "lucide-react";
@@ -30,7 +29,6 @@ export const HeaderClient = ({
   initialNotifications: NotificationListItem[];
   initialHasNextPage: boolean;
 }) => {
-  const { connect, status } = useNotificationsSocket();
   const { notifications, setNotifications } =
     useNotifications(initialNotifications);
   const [optimisticNotifications, markOptismisticRead] = useOptimistic(
@@ -86,12 +84,6 @@ export const HeaderClient = ({
 
     return () => observer.disconnect();
   }, [isPending, hasNextPage, sentinelRef.current]);
-
-  useEffect(() => {
-    if (status === "open" || status === "connecting") return;
-
-    connect();
-  }, [status]);
 
   const unreadCount = optimisticNotifications.filter(
     (notification) => !notification.readAt,

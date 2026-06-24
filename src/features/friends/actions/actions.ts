@@ -2,12 +2,14 @@
 
 import { db } from "@/db/db";
 import {
-  InvitationStatusType,
   FriendRequestTable,
   FriendshipTable,
+  InvitationStatusType,
+  MatchObserverInvitationTable,
   NotificationEventTypeType,
   NotificationTable,
   user,
+  UserMatchTable,
 } from "@/db/schema";
 import {
   insertNotificationDb,
@@ -26,9 +28,11 @@ import {
   count,
   desc,
   eq,
+  exists,
   getTableColumns,
   ilike,
   isNull,
+  not,
   or,
   sql,
 } from "drizzle-orm";
@@ -373,6 +377,117 @@ export const getUserFriendsAction = async (filterOptions: {
         and(
           eq(FriendshipTable.userTwoId, userId),
           eq(user.id, FriendshipTable.userOneId),
+        ),
+      ),
+    )
+    .where(whereQuery);
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalFriends.count;
+
+  return {
+    friends,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
+};
+
+export const getEligibleObserverMatchFriendsAction = async (
+  matchId: string,
+  search: string,
+  page: number,
+) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const whereQuery = and(
+    or(
+      eq(FriendshipTable.userOneId, userId),
+      eq(FriendshipTable.userTwoId, userId),
+    ),
+    isNull(FriendshipTable.deletedAt),
+    search.trim()
+      ? or(
+          ilike(user.name, `%${search.trim()}%`),
+          ilike(user.email, `%${search.trim()}%`),
+        )
+      : undefined,
+    not(
+      exists(
+        db
+          .select()
+          .from(UserMatchTable)
+          .where(
+            and(
+              eq(UserMatchTable.matchId, matchId),
+              eq(UserMatchTable.userId, user.id),
+            ),
+          ),
+      ),
+    ),
+    not(
+      exists(
+        db
+          .select()
+          .from(MatchObserverInvitationTable)
+          .where(
+            and(
+              eq(MatchObserverInvitationTable.matchId, matchId),
+              eq(MatchObserverInvitationTable.inviterUserId, userId),
+              eq(MatchObserverInvitationTable.friendshipId, FriendshipTable.id),
+              or(
+                eq(MatchObserverInvitationTable.status, "pending"),
+                eq(MatchObserverInvitationTable.status, "accepted"),
+              ),
+            ),
+          ),
+      ),
+    ),
+  );
+
+  const friends = await db
+    .select({
+      ...getTableColumns(FriendshipTable),
+      user: getTableColumns(user),
+    })
+    .from(FriendshipTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendshipTable.userOneId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+        ),
+        and(
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
+        ),
+      ),
+    )
+    .where(whereQuery)
+    .orderBy(desc(FriendshipTable.createdAt))
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalFriends] = await db
+    .select({
+      count: count(),
+    })
+    .from(FriendshipTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendshipTable.userOneId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+        ),
+        and(
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
         ),
       ),
     )

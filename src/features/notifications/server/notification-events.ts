@@ -4,6 +4,9 @@ import {
   CommunityProblemTable,
   FriendMatchRequestTable,
   FriendRequestTable,
+  MatchObserverInvitationTable,
+  MatchTable,
+  UserMatchTable,
 } from "@/db/schema";
 import {
   FriendMatchRequestStatusType,
@@ -11,7 +14,15 @@ import {
 } from "@/db/shared";
 import { findActiveFriendshipById } from "@/features/friends/server/friendships";
 import { NOT_FOUND_ERROR_MESSAGE } from "@/lib/constants";
-import { and, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
+import {
+  and,
+  eq,
+  getTableColumns,
+  gt,
+  isNotNull,
+  isNull,
+  or,
+} from "drizzle-orm";
 
 export const handleRespondFriendRequestEvent = async (
   event: NotificationPayloadEvent<
@@ -226,4 +237,42 @@ export const handleMatchRequestResponse = async (
   if (!existingMatchRequest) throw new Error("Match request not found.");
 
   return existingMatchRequest.requesterUserId;
+};
+
+export const handleNewMatchObserverInvitation = async (
+  userId: string,
+  payload: NotificationPayloadEvent<"new_match_observer_invitation">,
+) => {
+  const { matchId, matchObserverInvitationId } = payload;
+  const [existingUserMatch] = await db
+    .select({
+      ...getTableColumns(UserMatchTable),
+      match: getTableColumns(MatchTable),
+    })
+    .from(UserMatchTable)
+    .innerJoin(MatchTable, eq(MatchTable.id, UserMatchTable.matchId))
+    .where(
+      and(
+        eq(UserMatchTable.matchId, matchId),
+        eq(UserMatchTable.userId, userId),
+        eq(MatchTable.status, "in-progress"),
+        eq(MatchTable.kind, "friend_challenge"),
+        or(isNull(MatchTable.expiresAt), gt(MatchTable.expiresAt, new Date())),
+      ),
+    );
+  if (!existingUserMatch) throw new Error("User match not found.");
+
+  const [existingInvitation] = await db
+    .select()
+    .from(MatchObserverInvitationTable)
+    .where(
+      and(
+        eq(MatchObserverInvitationTable.id, matchObserverInvitationId),
+        eq(MatchObserverInvitationTable.matchId, existingUserMatch.matchId),
+        eq(MatchObserverInvitationTable.inviterUserId, userId),
+      ),
+    );
+  if (!existingInvitation) throw new Error("Invitation not found.");
+
+  return existingInvitation.invitedUserId;
 };

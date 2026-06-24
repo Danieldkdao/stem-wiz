@@ -24,6 +24,10 @@ export const matchStatuses = ["in-progress", "finished"] as const;
 export type MatchStatusType = (typeof matchStatuses)[number];
 export const matchStatusEnum = pgEnum("match_statuses", matchStatuses);
 
+export const matchKinds = ["arena", "friend_challenge"] as const;
+export type MatchKindType = (typeof matchKinds)[number];
+export const matchKindEnum = pgEnum("match_kinds", matchKinds);
+
 export const matchResults = ["completed", "tie"] as const;
 export type MatchResultType = (typeof matchResults)[number];
 export const matchResultEnum = pgEnum("match_result_results", matchResults);
@@ -147,7 +151,6 @@ export const friendMatchRequestStatusEnum = pgEnum(
 
 export const matchObserverInvitationStatuses = [
   ...invitationStatuses,
-  "expired",
   "revoked",
 ] as const;
 export type MatchObserverInvitationStatusType =
@@ -242,6 +245,13 @@ export type NotificationPayload =
       message: string;
     }
   | {
+      type: "new_match_observer_invitation";
+      matchObserverInvitationId: string;
+      matchId: string;
+      title: string;
+      message: string;
+    }
+  | {
       type: "community_problem_deleted";
       friendshipId: string;
       title: string;
@@ -262,6 +272,7 @@ export const notificationEventTypes: NotificationPayload["type"][] = [
   "match_request_accepted",
   "match_request_rejected",
   "match_request_cancelled",
+  "new_match_observer_invitation",
   "new_chat",
   "chat_deleted",
   "system",

@@ -1,4 +1,7 @@
-import { programmingLanguages } from "@/db/shared";
+import {
+  matchObserverInvitationStatuses,
+  programmingLanguages,
+} from "@/db/shared";
 import z from "zod";
 
 export const problemSources = ["ai", "user"] as const;
@@ -71,4 +74,19 @@ export const friendMatchRequestSchema = z
   });
 export type FriendMatchRequestSchemaType = z.infer<
   typeof friendMatchRequestSchema
+>;
+
+export const matchObserverInvitationSchema = z.object({
+  friends: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        name: z.string().min(1),
+        image: z.string().nullish(),
+      }),
+    )
+    .min(1, { error: "Please select at least one friend." }),
+});
+export type MatchObserverInvitationSchemaType = z.infer<
+  typeof matchObserverInvitationSchema
 >;

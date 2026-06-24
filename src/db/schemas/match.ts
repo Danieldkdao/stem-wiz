@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, updatedAt } from "../helpers";
-import { matchStatusEnum } from "../shared";
+import { matchKindEnum, matchStatusEnum } from "../shared";
 import { ArenaProblemConfigTable } from "./arena-problem-config";
 import { ChatTable } from "./chat";
 import { MatchResultTable } from "./match-result";
@@ -14,6 +14,7 @@ import { MatchObserverTable } from "./match-observer";
 export const MatchTable = pgTable("matches", {
   id,
   status: matchStatusEnum("status").notNull(),
+  kind: matchKindEnum("kind").notNull(),
   problemId: uuid("problem_id")
     .references(() => ArenaProblemConfigTable.id, { onDelete: "no action" })
     .notNull(),

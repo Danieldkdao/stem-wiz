@@ -13,6 +13,7 @@ const tabLinks = [
     name: "Explore",
     icon: UsersIcon,
     href: "/community",
+    exact: true,
   },
   {
     name: "Problems",

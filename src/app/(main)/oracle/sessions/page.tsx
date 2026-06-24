@@ -21,7 +21,7 @@ const OracleSessionsListPage = (props: OracleSessionsListParams) => {
     <div className="w-full h-full flex flex-col">
       <Header />
       <div className="w-full flex-1 overflow-y-auto">
-        <div className="w-full h-full pt-10 px-6 overflow-y-auto">
+        <div className="w-full h-full py-10 px-6 overflow-y-auto">
           <div className="w-full max-w-7xl mx-auto flex flex-col gap-4">
             <div className="flex items-center gap-2 justify-between">
               <div className="flex flex-col gap-0.5">

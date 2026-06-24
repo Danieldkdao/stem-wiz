@@ -15,11 +15,13 @@ type UserMatchesSearchParams = {
 
 const UserMatchesPage = (props: UserMatchesSearchParams) => {
   return (
-    <div className="flex flex-col gap-4 w-full max-w-7xl mx-auto py-10 px-6 h-full">
-      <h1 className="text-3xl font-semibold">My Matches</h1>
-      <Suspense fallback={<UserMatchesLoading />}>
-        <UserMatchesSuspense {...props} />
-      </Suspense>
+    <div className="w-full max-w-7xl mx-auto h-full">
+      <div className="flex flex-col gap-4 w-full py-10 px-6">
+        <h1 className="text-3xl font-semibold">My Matches</h1>
+        <Suspense fallback={<UserMatchesLoading />}>
+          <UserMatchesSuspense {...props} />
+        </Suspense>
+      </div>
     </div>
   );
 };

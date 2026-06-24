@@ -40,7 +40,9 @@ export const MatchHeader = ({
   const expiresAtMs = match.expiresAt?.getTime() ?? null;
   const [now, setNow] = useState(() => Date.now());
   const secondsRemaining =
-    expiresAtMs === null ? null : Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
+    expiresAtMs === null
+      ? null
+      : Math.max(0, Math.ceil((expiresAtMs - now) / 1000));
   const [disconnectSecondsRemaining, setDisconnectSecondsRemaining] =
     useState(30);
   const {
@@ -147,7 +149,7 @@ export const MatchHeader = ({
   }, [handleMatchTimeout, isMatchFinished, match.status, secondsRemaining]);
 
   useEffect(() => {
-    if (isMatchFinished) return;
+    if (isMatchFinished || match.kind === "friend_challenge") return;
     if (opponentStatus === "active" && match.status === "in-progress") {
       const timeout = setTimeout(() => setDisconnectSecondsRemaining(30), 0);
       return () => clearTimeout(timeout);
@@ -169,6 +171,7 @@ export const MatchHeader = ({
     opponentStatus,
     disconnectSecondsRemaining,
     match.status,
+    match.kind,
     isMatchFinished,
     handleUserMatchWin,
   ]);
@@ -219,7 +222,7 @@ export const MatchHeader = ({
         reason={match.result?.reason}
       />
       <div className="flex flex-col w-full">
-        {opponentStatus === "disconnected" && (
+        {opponentStatus === "disconnected" && match.kind === "arena" && (
           <div className="w-full p-2 flex items-center justify-center">
             <span className="font-medium text-center">
               Your opponent is disconnected. You will automatically win in{" "}

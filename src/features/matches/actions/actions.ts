@@ -7,6 +7,7 @@ import {
   FriendMatchRequestStatusType,
   FriendMatchRequestTable,
   FriendshipTable,
+  MatchObserverInvitationTable,
   MatchResultReasonType,
   MatchResultTable,
   MatchSubmissionTable,
@@ -66,6 +67,8 @@ import { upsertMatchSubmission } from "../server/match-results";
 import {
   friendMatchRequestSchema,
   FriendMatchRequestSchemaType,
+  matchObserverInvitationSchema,
+  MatchObserverInvitationSchemaType,
 } from "./schemas";
 
 const hasMatchFinished = async (matchId: string) => {
@@ -1474,6 +1477,7 @@ export const acceptMatchRequestAction = async (matchRequestId: string) => {
                   new Date().getTime() + existingMatchRequest.timeLimit * 1000,
                 )
               : null,
+            kind: "friend_challenge",
           })
           .returning();
         if (!createdMatch) throw new Error("Failed to create match.");
@@ -1531,6 +1535,138 @@ export const acceptMatchRequestAction = async (matchRequestId: string) => {
       matchRequestId: updatedMatchRequest.id,
       notificationId,
       matchId: createdMatch.id,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const sendMatchObserverInvitationsAction = async (
+  matchId: string,
+  unsafeData: MatchObserverInvitationSchemaType,
+) => {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const { data, success } = matchObserverInvitationSchema.safeParse(unsafeData);
+  if (!success) {
+    return {
+      error: true,
+      message: INVALID_DATA_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingUserMatch] = await db
+    .select({
+      ...getTableColumns(UserMatchTable),
+      match: getTableColumns(MatchTable),
+    })
+    .from(UserMatchTable)
+    .innerJoin(MatchTable, eq(MatchTable.id, UserMatchTable.matchId))
+    .where(
+      and(
+        eq(UserMatchTable.matchId, matchId),
+        eq(UserMatchTable.userId, userId),
+        eq(MatchTable.status, "in-progress"),
+        eq(MatchTable.kind, "friend_challenge"),
+        or(isNull(MatchTable.expiresAt), gt(MatchTable.expiresAt, new Date())),
+      ),
+    );
+
+  const existingFriends = await db
+    .select({
+      ...getTableColumns(FriendshipTable),
+      user: getTableColumns(user),
+    })
+    .from(FriendshipTable)
+    .innerJoin(
+      user,
+      or(
+        and(
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, user.id),
+        ),
+        and(
+          eq(FriendshipTable.userOneId, user.id),
+          eq(FriendshipTable.userTwoId, userId),
+        ),
+      ),
+    )
+    .where(
+      and(
+        or(
+          eq(FriendshipTable.userOneId, userId),
+          eq(FriendshipTable.userTwoId, userId),
+        ),
+        isNull(FriendshipTable.deletedAt),
+        inArray(
+          FriendshipTable.id,
+          data.friends.map((friend) => friend.id),
+        ),
+      ),
+    );
+  if (existingFriends.length !== data.friends.length) {
+    return {
+      error: true,
+      message: "All users must be your friends. Please check and try again.",
+    };
+  }
+
+  try {
+    const notificationIds = await db.transaction(async (tx) => {
+      const createdMatchObserverInvitations = await tx
+        .insert(MatchObserverInvitationTable)
+        .values(
+          existingFriends.map((friend) => ({
+            matchId: existingUserMatch.matchId,
+            inviterUserId: userId,
+            invitedUserId: friend.user.id,
+            friendshipId: friend.id,
+          })),
+        )
+        .returning();
+
+      if (createdMatchObserverInvitations.length !== existingFriends.length)
+        throw new Error("Failed to send invitations.");
+
+      const createdNotifications = await Promise.all(
+        createdMatchObserverInvitations.map((invitation) =>
+          insertNotificationDb(
+            {
+              userId: invitation.invitedUserId,
+              payload: {
+                type: "new_match_observer_invitation",
+                matchId: existingUserMatch.matchId,
+                matchObserverInvitationId: invitation.id,
+                title: "New match invitation",
+                message: `${userInfo.name} sent you an invitation to observe their match.`,
+              },
+            },
+            tx,
+          ),
+        ),
+      );
+      if (
+        createdNotifications.length !== createdMatchObserverInvitations.length
+      )
+        throw new Error("Failed to create notifications.");
+
+      return createdNotifications.map((notification) => notification.id);
+    });
+
+    return {
+      error: false,
+      message: "Match observer invitations sent successfully!",
+      notificationIds,
     };
   } catch (error) {
     console.error(error);

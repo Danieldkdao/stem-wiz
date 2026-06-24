@@ -57,6 +57,7 @@ type NotificationSocketContextType = {
     notificationId: string,
     action: Exclude<FriendMatchRequestStatusType, "pending" | "expired">,
   ) => void;
+  notifyNewMatchObserverInvitations: (notificationIds: string[]) => boolean;
 };
 
 type NotificationEventListener<T extends NotificationServerMessageType> = (
@@ -273,12 +274,29 @@ export const NotificationSocketProvider = ({
     });
   };
 
+  const notifyNewMatchObserverInvitations = (notificationIds: string[]) => {
+    const results: boolean[] = [];
+
+    notificationIds.forEach((notificationId) => {
+      const result = send({
+        type: "new_notification",
+        event: { type: "new_match_observer_invitation", notificationId },
+      });
+      results.push(result);
+    });
+
+    return results.every(Boolean);
+  };
+
   useEffect(() => {
+    void connect().catch((error) => {
+      console.error("[notifications:socket] failed to connect", error);
+    });
     return () => {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, []);
+  }, [connect]);
 
   const values: NotificationSocketContextType = {
     status,
@@ -292,6 +310,7 @@ export const NotificationSocketProvider = ({
     notifyFriendsCommunityProblemDeletion,
     notifyNewFriendMatchRequest,
     notifyFriendMatchRequestAction,
+    notifyNewMatchObserverInvitations,
   };
 
   return (

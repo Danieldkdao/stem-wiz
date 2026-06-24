@@ -119,7 +119,7 @@ const ArenaPage = () => {
                   other submissions.
                 </p>
               </div>
-              <LinkButton href="/arena/matches">
+              <LinkButton href="/arena/observe">
                 <EyeIcon />
                 Watch matches
               </LinkButton>

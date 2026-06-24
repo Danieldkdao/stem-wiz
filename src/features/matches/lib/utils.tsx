@@ -35,7 +35,8 @@ export const getMatchRequestStatus = (matchRequest: MatchRequest) => {
   if (
     matchRequest.expiresAt &&
     matchRequest.expiresAt <= new Date() &&
-    !matchRequest.matchId
+    !matchRequest.matchId &&
+    (matchRequest.status === "pending" || matchRequest.status === "expired")
   )
     return "expired" as const;
   switch (matchRequestStatus) {
@@ -84,7 +85,7 @@ export const getMatchRequestStatusContent = (
             <div className="flex items-center gap-2 justify-between">
               <div className="flex flex-col gap-0.5">
                 <span className="text-base font-medium">Time Remaining</span>
-                <span className="text-2xl font-semibold text-primary tracking-widest">
+                <span className="text-2xl font-semibold text-primary">
                   {timeValues ? (
                     <>
                       <span className="tracking-wide">{timeValues.hours}</span>:

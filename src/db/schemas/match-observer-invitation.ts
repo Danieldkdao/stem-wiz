@@ -32,7 +32,6 @@ export const MatchObserverInvitationTable = pgTable(
     status: matchObserverInvitationStatusEnum("status")
       .notNull()
       .default("pending"),
-    expiresAt: timestamp("expires_at", { withTimezone: true }),
     respondedAt: timestamp("responded_at", { withTimezone: true }),
     createdAt,
     updatedAt,

@@ -4,6 +4,7 @@ import { RespondFriendRequestButton } from "@/features/friends/components/respon
 import { LinkButton } from "@/components/link-button";
 import { AcceptMatchRequestButton } from "@/features/matches/components/accept-match-request-button";
 import { CheckIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const getNotificationListItem = (
   notification: typeof NotificationTable.$inferSelect,
@@ -22,6 +23,7 @@ export const getNotificationListItem = (
     case "match_request_accepted":
     case "match_request_rejected":
     case "match_request_cancelled":
+    case "new_match_observer_invitation":
       return {
         ...notification,
         title: notification.payload.title,
@@ -109,6 +111,21 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
         >
           Start Match
         </LinkButton>
+      );
+    case "new_match_observer_invitation":
+      return (
+        <div className="w-full grid grid-cols-2 gap-2">
+          <Button className="w-full">
+            <CheckIcon />
+            Accept
+          </Button>
+          <LinkButton
+            variant="outline"
+            href="/match-invitations/observer-invitations"
+          >
+            View details
+          </LinkButton>
+        </div>
       );
     case "community_problem_deleted":
     case "community_problem_access_revoked":

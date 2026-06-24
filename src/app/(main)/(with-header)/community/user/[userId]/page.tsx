@@ -140,297 +140,291 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
   const goals = profile?.goals ?? [];
 
   return (
-    <div className="w-full h-full overflow-y-auto">
-      <div className="mx-auto flex w-full flex-col gap-4">
-        <Card>
-          <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-center">
-            <UserAvatar
-              {...user}
-              className="size-28 shrink-0"
-              textClassName="text-4xl font-semibold"
-            />
-            <div className="flex min-w-0 flex-1 flex-col gap-3">
-              <div className="min-w-0">
-                <h1 className="truncate text-4xl font-bold">{user.name}</h1>
-                <p className="text-muted-foreground">
-                  {profile ? (
-                    <>
-                      {profile.experienceLevel
-                        ? formatUserExperienceLevel(profile.experienceLevel)
-                        : "Developer"}{" "}
-                      Developer •{" "}
-                      {formatProgrammingLanguage(profile.preferredLanguage)}
-                    </>
-                  ) : (
-                    "Community Developer"
-                  )}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {profile?.location && (
-                  <Badge variant="secondary">
-                    <MapPinIcon />
-                    {profile.location}
-                  </Badge>
-                )}
-                {profile?.timezone && (
-                  <Badge variant="secondary">
-                    <GlobeIcon />
-                    {profile.timezone}
-                  </Badge>
-                )}
-                {profile?.lookingFor && (
-                  <Badge>
-                    <UsersIcon />
-                    {formatUserLookingFor(profile.lookingFor)}
-                  </Badge>
-                )}
-                {!profile && (
-                  <Badge variant="outline">Profile not completed yet</Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              <LinkButton variant="outline" href={`mailto:${user.email}`}>
-                <MailIcon />
-                Email
-              </LinkButton>
-              <ProfileLink
-                href={profile?.githubUrl}
-                label="GitHub"
-                icon="github"
-              />
-              <ProfileLink
-                href={profile?.portfolioUrl}
-                label="Portfolio"
-                icon="external"
-              />
-              <ProfileLink
-                href={profile?.linkedinUrl}
-                label="LinkedIn"
-                icon="linkedin"
-              />
-              <FriendRequestStatusButtons
-                userId={user.id}
-                existingFriendRequest={user.existingFriendRequest}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="flex flex-col gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>About</CardTitle>
-                <CardDescription>
-                  What this developer has shared.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="leading-7 text-muted-foreground">
-                  {profile?.bio ?? "This user has not added a bio yet."}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Collaboration</CardTitle>
-                <CardDescription>
-                  How they want to meet, build, and work with others.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <InfoTile
-                  icon={<UsersIcon />}
-                  label="Looking For"
-                  value={
-                    profile?.lookingFor
-                      ? formatUserLookingFor(profile.lookingFor)
-                      : null
-                  }
-                />
-                <InfoTile
-                  icon={<HandshakeIcon />}
-                  label="Collaboration Style"
-                  value={
-                    profile?.collaborationStyle
-                      ? formatUserCollborationStyle(profile.collaborationStyle)
-                      : null
-                  }
-                />
-                <InfoTile
-                  icon={<UserRoundIcon />}
-                  label="Meetup Preference"
-                  value={
-                    profile?.meetupPreference
-                      ? formatUserMeetupPreference(profile.meetupPreference)
-                      : null
-                  }
-                />
-                <InfoTile
-                  icon={<ClockIcon />}
-                  label="Years Programming"
-                  value={
-                    profile?.yearsProgramming !== null &&
-                    profile?.yearsProgramming !== undefined
-                      ? `${profile.yearsProgramming} ${
-                          profile.yearsProgramming === 1 ? "year" : "years"
-                        }`
-                      : null
-                  }
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Goals</CardTitle>
-                <CardDescription>
-                  What they are hoping to do here.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {goals.length ? (
-                  <div className="flex flex-wrap gap-2">
-                    {goals.map((goal) => (
-                      <Badge key={goal} variant="secondary">
-                        <DumbbellIcon />
-                        {formatUserGoals(goal)}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyValue>This user has not added goals yet.</EmptyValue>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Developer Details</CardTitle>
-                <CardDescription>
-                  Profile basics and public info.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <InfoRow
-                  label="Preferred Language"
-                  value={
-                    profile?.preferredLanguage
-                      ? formatProgrammingLanguage(profile.preferredLanguage)
-                      : null
-                  }
-                  icon={<CodeIcon />}
-                />
-                <InfoRow
-                  label="Experience Level"
-                  value={
-                    profile?.experienceLevel
-                      ? formatUserExperienceLevel(profile.experienceLevel)
-                      : null
-                  }
-                  icon={<MedalIcon />}
-                />
-                <InfoRow
-                  label="Location"
-                  value={profile?.location}
-                  icon={<EarthIcon />}
-                />
-                <InfoRow
-                  label="Timezone"
-                  value={profile?.timezone}
-                  icon={<MapPinIcon />}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Availability</CardTitle>
-                <CardDescription>
-                  When they are open to connecting.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {hasAvailability ? (
+    <div className="mx-auto flex w-full flex-col gap-4">
+      <Card>
+        <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-center">
+          <UserAvatar
+            {...user}
+            className="size-28 shrink-0"
+            textClassName="text-4xl font-semibold"
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className="min-w-0">
+              <h1 className="truncate text-4xl font-bold">{user.name}</h1>
+              <p className="text-muted-foreground">
+                {profile ? (
                   <>
-                    <InfoRow
-                      label="Days"
-                      value={profile?.availability?.days
-                        ?.map(formatUserAvailabilityDays)
-                        .join(", ")}
-                      icon={<CalendarIcon />}
-                    />
-                    <InfoRow
-                      label="Time of Day"
-                      value={profile?.availability?.timeOfDay
-                        ?.map(formatUserAvailabilityTimeOfDay)
-                        .join(", ")}
-                      icon={<SunIcon />}
-                    />
-                    <InfoRow
-                      label="Hours per Week"
-                      value={
-                        typeof profile?.availability?.hoursPerWeek === "number"
-                          ? `${profile.availability.hoursPerWeek} hours`
-                          : null
-                      }
-                      icon={<ClockIcon />}
-                    />
+                    {profile.experienceLevel
+                      ? formatUserExperienceLevel(profile.experienceLevel)
+                      : "Developer"}{" "}
+                    Developer •{" "}
+                    {formatProgrammingLanguage(profile.preferredLanguage)}
                   </>
                 ) : (
-                  <EmptyValue>
-                    This user has not shared their availability yet.
-                  </EmptyValue>
+                  "Community Developer"
                 )}
-              </CardContent>
-            </Card>
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Account</CardTitle>
-                <CardDescription>Basic account information.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <InfoRow label="Email" value={user.email} icon={<MailIcon />} />
-                <InfoRow
-                  label="Email Verified"
-                  value={
-                    <span className="inline-flex items-center gap-1">
-                      {user.emailVerified ? (
-                        <>
-                          <CheckCircle2Icon className="size-4 text-primary" />
-                          Verified
-                        </>
-                      ) : (
-                        <>
-                          <XCircleIcon className="size-4 text-muted-foreground" />
-                          Not verified
-                        </>
-                      )}
-                    </span>
-                  }
-                  icon={<CheckIcon />}
-                />
-                <InfoRow
-                  label="Joined"
-                  value={formatProfileDate(user.createdAt)}
-                  icon={<UserPlusIcon />}
-                />
-                <InfoRow
-                  label="Updated"
-                  value={formatProfileDate(user.updatedAt)}
-                  icon={<RefreshCcwIcon />}
-                />
-              </CardContent>
-            </Card>
+            <div className="flex flex-wrap gap-2">
+              {profile?.location && (
+                <Badge variant="secondary">
+                  <MapPinIcon />
+                  {profile.location}
+                </Badge>
+              )}
+              {profile?.timezone && (
+                <Badge variant="secondary">
+                  <GlobeIcon />
+                  {profile.timezone}
+                </Badge>
+              )}
+              {profile?.lookingFor && (
+                <Badge>
+                  <UsersIcon />
+                  {formatUserLookingFor(profile.lookingFor)}
+                </Badge>
+              )}
+              {!profile && (
+                <Badge variant="outline">Profile not completed yet</Badge>
+              )}
+            </div>
           </div>
+
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            <LinkButton variant="outline" href={`mailto:${user.email}`}>
+              <MailIcon />
+              Email
+            </LinkButton>
+            <ProfileLink
+              href={profile?.githubUrl}
+              label="GitHub"
+              icon="github"
+            />
+            <ProfileLink
+              href={profile?.portfolioUrl}
+              label="Portfolio"
+              icon="external"
+            />
+            <ProfileLink
+              href={profile?.linkedinUrl}
+              label="LinkedIn"
+              icon="linkedin"
+            />
+            <FriendRequestStatusButtons
+              userId={user.id}
+              existingFriendRequest={user.existingFriendRequest}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>About</CardTitle>
+              <CardDescription>What this developer has shared.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="leading-7 text-muted-foreground">
+                {profile?.bio ?? "This user has not added a bio yet."}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Collaboration</CardTitle>
+              <CardDescription>
+                How they want to meet, build, and work with others.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <InfoTile
+                icon={<UsersIcon />}
+                label="Looking For"
+                value={
+                  profile?.lookingFor
+                    ? formatUserLookingFor(profile.lookingFor)
+                    : null
+                }
+              />
+              <InfoTile
+                icon={<HandshakeIcon />}
+                label="Collaboration Style"
+                value={
+                  profile?.collaborationStyle
+                    ? formatUserCollborationStyle(profile.collaborationStyle)
+                    : null
+                }
+              />
+              <InfoTile
+                icon={<UserRoundIcon />}
+                label="Meetup Preference"
+                value={
+                  profile?.meetupPreference
+                    ? formatUserMeetupPreference(profile.meetupPreference)
+                    : null
+                }
+              />
+              <InfoTile
+                icon={<ClockIcon />}
+                label="Years Programming"
+                value={
+                  profile?.yearsProgramming !== null &&
+                  profile?.yearsProgramming !== undefined
+                    ? `${profile.yearsProgramming} ${
+                        profile.yearsProgramming === 1 ? "year" : "years"
+                      }`
+                    : null
+                }
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Goals</CardTitle>
+              <CardDescription>
+                What they are hoping to do here.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {goals.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {goals.map((goal) => (
+                    <Badge key={goal} variant="secondary">
+                      <DumbbellIcon />
+                      {formatUserGoals(goal)}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <EmptyValue>This user has not added goals yet.</EmptyValue>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Developer Details</CardTitle>
+              <CardDescription>Profile basics and public info.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <InfoRow
+                label="Preferred Language"
+                value={
+                  profile?.preferredLanguage
+                    ? formatProgrammingLanguage(profile.preferredLanguage)
+                    : null
+                }
+                icon={<CodeIcon />}
+              />
+              <InfoRow
+                label="Experience Level"
+                value={
+                  profile?.experienceLevel
+                    ? formatUserExperienceLevel(profile.experienceLevel)
+                    : null
+                }
+                icon={<MedalIcon />}
+              />
+              <InfoRow
+                label="Location"
+                value={profile?.location}
+                icon={<EarthIcon />}
+              />
+              <InfoRow
+                label="Timezone"
+                value={profile?.timezone}
+                icon={<MapPinIcon />}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Availability</CardTitle>
+              <CardDescription>
+                When they are open to connecting.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {hasAvailability ? (
+                <>
+                  <InfoRow
+                    label="Days"
+                    value={profile?.availability?.days
+                      ?.map(formatUserAvailabilityDays)
+                      .join(", ")}
+                    icon={<CalendarIcon />}
+                  />
+                  <InfoRow
+                    label="Time of Day"
+                    value={profile?.availability?.timeOfDay
+                      ?.map(formatUserAvailabilityTimeOfDay)
+                      .join(", ")}
+                    icon={<SunIcon />}
+                  />
+                  <InfoRow
+                    label="Hours per Week"
+                    value={
+                      typeof profile?.availability?.hoursPerWeek === "number"
+                        ? `${profile.availability.hoursPerWeek} hours`
+                        : null
+                    }
+                    icon={<ClockIcon />}
+                  />
+                </>
+              ) : (
+                <EmptyValue>
+                  This user has not shared their availability yet.
+                </EmptyValue>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Account</CardTitle>
+              <CardDescription>Basic account information.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <InfoRow label="Email" value={user.email} icon={<MailIcon />} />
+              <InfoRow
+                label="Email Verified"
+                value={
+                  <span className="inline-flex items-center gap-1">
+                    {user.emailVerified ? (
+                      <>
+                        <CheckCircle2Icon className="size-4 text-primary" />
+                        Verified
+                      </>
+                    ) : (
+                      <>
+                        <XCircleIcon className="size-4 text-muted-foreground" />
+                        Not verified
+                      </>
+                    )}
+                  </span>
+                }
+                icon={<CheckIcon />}
+              />
+              <InfoRow
+                label="Joined"
+                value={formatProfileDate(user.createdAt)}
+                icon={<UserPlusIcon />}
+              />
+              <InfoRow
+                label="Updated"
+                value={formatProfileDate(user.updatedAt)}
+                icon={<RefreshCcwIcon />}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

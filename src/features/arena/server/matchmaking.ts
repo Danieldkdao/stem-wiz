@@ -159,6 +159,7 @@ const tryPairUsers = async (
           status: "in-progress",
           problemId: arenaProblem.id,
           expiresAt: new Date(Date.now() + arenaProblem.timeLimit),
+          kind: "arena",
         })
         .returning();
 
