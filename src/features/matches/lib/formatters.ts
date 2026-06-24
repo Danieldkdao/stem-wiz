@@ -1,6 +1,7 @@
 import { ArenaProblemConfigTable, ProblemTable } from "@/db/schema";
 import {
   FriendMatchRequestStatusType,
+  MatchObserverInvitationStatusType,
   MatchResultReasonType,
   ProblemSourceType,
 } from "@/db/shared";
@@ -160,8 +161,31 @@ export const formatMatchRequestStatus = (
 };
 
 export const formatDateStringWithAgo = (dateString: string) => {
-  return dateString
-    .split(" ")
-    .filter((word) => word !== "ago")
-    .join(" ") + " ago";
+  return (
+    dateString
+      .split(" ")
+      .filter((word) => word !== "ago")
+      .join(" ") + " ago"
+  );
+};
+
+export const formatMatchObserverInvitationStatus = (
+  status: MatchObserverInvitationStatusType,
+) => {
+  switch (status) {
+    case "accepted":
+      return "Accepted";
+    case "expired":
+      return "Expired";
+    case "pending":
+      return "Pending";
+    case "rejected":
+      return "Rejected";
+    case "revoked":
+      return "Revoked";
+    default:
+      throw new Error(
+        `Unknown match observer invitation status: ${status satisfies never}`,
+      );
+  }
 };

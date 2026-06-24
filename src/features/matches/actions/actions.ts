@@ -7,6 +7,7 @@ import {
   FriendMatchRequestStatusType,
   FriendMatchRequestTable,
   FriendshipTable,
+  MatchObserverInvitationStatusType,
   MatchObserverInvitationTable,
   MatchResultReasonType,
   MatchResultTable,
@@ -1675,4 +1676,149 @@ export const sendMatchObserverInvitationsAction = async (
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const getUserMatchObserverInvitationsAction = async (filterOptions: {
+  search: string;
+  sortBy: SortByType;
+  filterBy: MatchRequestFilterByOptionType;
+  statuses: MatchObserverInvitationStatusType[];
+  page: number;
+}) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+
+  const { search, sortBy, filterBy, statuses, page } = filterOptions;
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const sortByMap: Record<SortByType, SQL<unknown>> = {
+    most_recent: desc(MatchObserverInvitationTable.createdAt),
+    oldest: asc(MatchObserverInvitationTable.createdAt),
+  };
+
+  const filterByMap: Record<
+    MatchRequestFilterByOptionType,
+    SQL<unknown> | undefined
+  > = {
+    all: or(
+      eq(MatchObserverInvitationTable.invitedUserId, userId),
+      eq(MatchObserverInvitationTable.inviterUserId, userId),
+    ),
+    sent: eq(MatchObserverInvitationTable.inviterUserId, userId),
+    received: eq(MatchObserverInvitationTable.invitedUserId, userId),
+  };
+
+  const searchPattern = `%${search.trim()}%`;
+
+  const problemConceptsSearch = sql`
+      EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(${ProblemTable.concepts}) AS concept(value)
+        WHERE concept.value ILIKE ${searchPattern}
+      )
+    `;
+
+  const searchQuery = search.trim()
+    ? or(
+        problemConceptsSearch,
+        exists(
+          db
+            .select()
+            .from(UserMatchTable)
+            .innerJoin(user, eq(user.id, UserMatchTable.userId))
+            .where(
+              and(
+                not(eq(UserMatchTable.userId, userId)),
+                eq(UserMatchTable.matchId, MatchTable.id),
+                or(
+                  ilike(user.name, searchPattern),
+                  ilike(user.email, searchPattern),
+                ),
+              ),
+            ),
+        ),
+        ilike(ProblemTable.title, searchPattern),
+        ilike(ProblemTable.description, searchPattern),
+      )
+    : undefined;
+
+  const statusQuery = statuses.length
+    ? inArray(MatchObserverInvitationTable.status, statuses)
+    : undefined;
+
+  const whereQuery = and(searchQuery, filterByMap[filterBy], statusQuery);
+
+  const matchObserverInvitations = await db
+    .select({
+      ...getTableColumns(MatchObserverInvitationTable),
+      match: getTableColumns(MatchTable),
+      problem: getTableColumns(ProblemTable),
+      participants: sql<
+        (typeof UserMatchTable.$inferSelect & { user: User })[]
+      >`(
+        SELECT COALESCE(
+          jsonb_agg(
+            jsonb_build_object(
+              'userId', umt.user_id,
+              'matchId', umt.match_id,
+              'code', umt.code,
+              'user', json_build_object(
+                'id', ut.id,
+                'name', ut.name,
+                'email', ut.email,
+                'emailVerified', ut.email_verified,
+                'image', ut.image,
+                'createdAt', ut.created_at,
+                'updatedAt', ut.updated_at
+              )
+            )
+          ),
+          '[]'::jsonb
+        )
+        FROM ${UserMatchTable} umt
+        JOIN ${user} ut ON umt.user_id = ut.id
+        WHERE umt.match_id = ${MatchTable.id}
+      )`,
+    })
+    .from(MatchObserverInvitationTable)
+    .innerJoin(
+      MatchTable,
+      eq(MatchTable.id, MatchObserverInvitationTable.matchId),
+    )
+    .innerJoin(
+      ArenaProblemConfigTable,
+      eq(ArenaProblemConfigTable.id, MatchTable.problemId),
+    )
+    .innerJoin(
+      ProblemTable,
+      eq(ProblemTable.id, ArenaProblemConfigTable.problemId),
+    )
+    .where(whereQuery)
+    .orderBy(sortByMap[sortBy])
+    .offset(offset)
+    .limit(PAGE_SIZE);
+
+  const [totalMatchObserverInvitations] = await db
+    .select({
+      count: count(),
+    })
+    .from(MatchObserverInvitationTable)
+    .innerJoin(
+      MatchTable,
+      eq(MatchTable.id, MatchObserverInvitationTable.matchId),
+    )
+    .innerJoin(ProblemTable, eq(ProblemTable.id, MatchTable.problemId))
+    .where(whereQuery);
+
+  const hasPrevPage = page > 1;
+  const hasNextPage = page * PAGE_SIZE < totalMatchObserverInvitations.count;
+
+  return {
+    currentUserId: userId,
+    matchObserverInvitations,
+    metadata: {
+      hasPrevPage,
+      hasNextPage,
+    },
+  };
 };

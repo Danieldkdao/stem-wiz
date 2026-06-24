@@ -151,6 +151,7 @@ export const friendMatchRequestStatusEnum = pgEnum(
 
 export const matchObserverInvitationStatuses = [
   ...invitationStatuses,
+  "expired",
   "revoked",
 ] as const;
 export type MatchObserverInvitationStatusType =

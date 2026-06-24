@@ -83,7 +83,7 @@ export const MatchRequestInfiniteCardGrid = ({
           title="No match requests found"
           description="We were unable to find any match requests that match the selected filters. Try adjusting your search or refreshing the page."
         >
-          <RefreshPageButton className="w-full">
+          <RefreshPageButton variant="outline" className="w-full">
             Refresh the page
           </RefreshPageButton>
         </NotFound>
