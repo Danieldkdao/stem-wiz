@@ -22,6 +22,7 @@ import {
   isNotNull,
   isNull,
   or,
+  SQL,
 } from "drizzle-orm";
 
 export const handleRespondFriendRequestEvent = async (
@@ -275,4 +276,66 @@ export const handleNewMatchObserverInvitation = async (
   if (!existingInvitation) throw new Error("Invitation not found.");
 
   return existingInvitation.invitedUserId;
+};
+
+export const handleMatchObserverInvitationAction = async (
+  userId: string,
+  payload: NotificationPayloadEvent<
+    | "match_observer_invitation_accepted"
+    | "match_observer_invitation_rejected"
+    | "match_observer_invitation_revoked"
+  >,
+) => {
+  const { matchId, matchObserverInvitationId } = payload;
+
+  const statusMap: Record<
+    typeof payload.type,
+    {
+      directionQuery: (SQL<unknown> | undefined)[];
+      fieldToReturn: Extract<
+        keyof typeof MatchObserverInvitationTable.$inferSelect,
+        "inviterUserId" | "invitedUserId"
+      >;
+    }
+  > = {
+    match_observer_invitation_accepted: {
+      directionQuery: [
+        eq(MatchObserverInvitationTable.invitedUserId, userId),
+        eq(MatchObserverInvitationTable.status, "accepted"),
+      ],
+      fieldToReturn: "inviterUserId",
+    },
+    match_observer_invitation_rejected: {
+      directionQuery: [
+        eq(MatchObserverInvitationTable.invitedUserId, userId),
+        eq(MatchObserverInvitationTable.status, "rejected"),
+      ],
+      fieldToReturn: "inviterUserId",
+    },
+    match_observer_invitation_revoked: {
+      directionQuery: [
+        eq(MatchObserverInvitationTable.inviterUserId, userId),
+        eq(MatchObserverInvitationTable.status, "revoked"),
+      ],
+      fieldToReturn: "invitedUserId",
+    },
+  };
+
+  const statusMapResult = statusMap[payload.type];
+
+  const [existingMatchObserverInvitation] = await db
+    .select()
+    .from(MatchObserverInvitationTable)
+    .where(
+      and(
+        eq(MatchObserverInvitationTable.id, matchObserverInvitationId),
+        eq(MatchObserverInvitationTable.matchId, matchId),
+        isNotNull(MatchObserverInvitationTable.respondedAt),
+        ...statusMapResult.directionQuery,
+      ),
+    );
+  if (!existingMatchObserverInvitation)
+    throw new Error("Match observer invitation not found.");
+
+  return existingMatchObserverInvitation[statusMapResult.fieldToReturn];
 };

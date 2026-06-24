@@ -253,6 +253,27 @@ export type NotificationPayload =
       message: string;
     }
   | {
+      type: "match_observer_invitation_accepted";
+      matchObserverInvitationId: string;
+      matchId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "match_observer_invitation_rejected";
+      matchObserverInvitationId: string;
+      matchId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "match_observer_invitation_revoked";
+      matchObserverInvitationId: string;
+      matchId: string;
+      title: string;
+      message: string;
+    }
+  | {
       type: "community_problem_deleted";
       friendshipId: string;
       title: string;
@@ -274,6 +295,9 @@ export const notificationEventTypes: NotificationPayload["type"][] = [
   "match_request_rejected",
   "match_request_cancelled",
   "new_match_observer_invitation",
+  "match_observer_invitation_accepted",
+  "match_observer_invitation_rejected",
+  "match_observer_invitation_revoked",
   "new_chat",
   "chat_deleted",
   "system",

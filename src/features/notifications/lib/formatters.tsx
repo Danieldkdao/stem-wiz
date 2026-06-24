@@ -24,6 +24,9 @@ export const getNotificationListItem = (
     case "match_request_rejected":
     case "match_request_cancelled":
     case "new_match_observer_invitation":
+    case "match_observer_invitation_accepted":
+    case "match_observer_invitation_rejected":
+    case "match_observer_invitation_revoked":
       return {
         ...notification,
         title: notification.payload.title,
@@ -127,6 +130,9 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
           </LinkButton>
         </div>
       );
+    case "match_observer_invitation_accepted":
+    case "match_observer_invitation_rejected":
+    case "match_observer_invitation_revoked":
     case "community_problem_deleted":
     case "community_problem_access_revoked":
     case "chat_deleted":

@@ -12,6 +12,7 @@ import {
   handleCommunityProblemEvent,
   handleFriendChatEvent,
   handleFriendRequestSentEvent,
+  handleMatchObserverInvitationAction,
   handleMatchRequestCancelled,
   handleMatchRequestResponse,
   handleNewMatchObserverInvitation,
@@ -84,6 +85,14 @@ export const handleNewNotification = async (
         break;
       case "new_match_observer_invitation":
         recipientUserId = await handleNewMatchObserverInvitation(
+          ws.user.id,
+          payload,
+        );
+        break;
+      case "match_observer_invitation_accepted":
+      case "match_observer_invitation_rejected":
+      case "match_observer_invitation_revoked":
+        recipientUserId = await handleMatchObserverInvitationAction(
           ws.user.id,
           payload,
         );

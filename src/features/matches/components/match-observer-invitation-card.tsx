@@ -33,6 +33,7 @@ import {
   formatDateStringWithAgo,
   formatMatchObserverInvitationStatus,
 } from "../lib/formatters";
+import { UpdateMatchObserverInvitationStatusButton } from "./update-match-observer-invitation-status-button";
 
 type MatchObserverInvitation = NonNullable<
   Awaited<ReturnType<typeof getUserMatchObserverInvitationsAction>>
@@ -340,16 +341,26 @@ export const MatchObserverInvitationCard = ({
               <CheckCircle2Icon />
               Accept invite
             </Button>
-            <Button disabled variant="destructive" className="w-full sm:flex-1">
+            <UpdateMatchObserverInvitationStatusButton
+              matchObserverInvitationId={matchObserverInvitation.id}
+              newStatus="rejected"
+              variant="destructive"
+              className="w-full sm:flex-1"
+            >
               <XCircleIcon />
               Decline
-            </Button>
+            </UpdateMatchObserverInvitationStatusButton>
           </div>
         ) : canRevoke ? (
-          <Button disabled variant="destructive" className="w-full sm:flex-1">
+          <UpdateMatchObserverInvitationStatusButton
+            matchObserverInvitationId={matchObserverInvitation.id}
+            newStatus="revoked"
+            variant="destructive"
+            className="w-full sm:flex-1"
+          >
             <BanIcon />
             Revoke invite
-          </Button>
+          </UpdateMatchObserverInvitationStatusButton>
         ) : (
           <p className="w-full text-center text-sm text-muted-foreground">
             {copy}

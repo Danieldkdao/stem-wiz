@@ -3,6 +3,7 @@
 import {
   FriendMatchRequestStatusType,
   InvitationStatusType,
+  MatchObserverInvitationStatusType,
 } from "@/db/shared";
 import { SocketStatus } from "@/lib/types";
 import {
@@ -58,6 +59,13 @@ type NotificationSocketContextType = {
     action: Exclude<FriendMatchRequestStatusType, "pending" | "expired">,
   ) => void;
   notifyNewMatchObserverInvitations: (notificationIds: string[]) => boolean;
+  notifyMatchObserverInvitationAction: (
+    notificationId: string,
+    newStatus: Exclude<
+      MatchObserverInvitationStatusType,
+      "pending" | "expired"
+    >,
+  ) => boolean;
 };
 
 type NotificationEventListener<T extends NotificationServerMessageType> = (
@@ -288,6 +296,22 @@ export const NotificationSocketProvider = ({
     return results.every(Boolean);
   };
 
+  const notifyMatchObserverInvitationAction = (
+    notificationId: string,
+    newStatus: Exclude<
+      MatchObserverInvitationStatusType,
+      "pending" | "expired"
+    >,
+  ) => {
+    return send({
+      type: "new_notification",
+      event: {
+        type: `match_observer_invitation_${newStatus}` as const,
+        notificationId,
+      },
+    });
+  };
+
   useEffect(() => {
     void connect().catch((error) => {
       console.error("[notifications:socket] failed to connect", error);
@@ -311,6 +335,7 @@ export const NotificationSocketProvider = ({
     notifyNewFriendMatchRequest,
     notifyFriendMatchRequestAction,
     notifyNewMatchObserverInvitations,
+    notifyMatchObserverInvitationAction,
   };
 
   return (
