@@ -290,11 +290,13 @@ const ProblemIdSuspense = async ({ params }: ProblemIdParams) => {
           </CardContent>
         </Card>
         <div className="flex flex-col gap-4 w-full min-w-0">
-          {/* todo: add functionality to this button */}
-          <Button className="h-11 w-full">
+          <LinkButton
+            href={`/arena?defaultTab=friend_challenge&selectedProblemId=${communityProblem.id}&problemTitle=${problem.title}`}
+            className="h-11 w-full"
+          >
             <PlayIcon />
             Use this problem in a match
-          </Button>
+          </LinkButton>
           <Card className="border-t-4 border-t-primary">
             <CardContent className="flex flex-col gap-6">
               <div className="flex items-center gap-2">

@@ -38,7 +38,13 @@ import {
 } from "../actions/schemas";
 import { formatProblemSource } from "../lib/formatters";
 
-export const FriendMatchRequestForm = () => {
+export const FriendMatchRequestForm = ({
+  defaultSelectedProblemId,
+  problemTitle,
+}: {
+  defaultSelectedProblemId: string | null | undefined;
+  problemTitle: string | null | undefined;
+}) => {
   const router = useRouter();
   const { notifyNewFriendMatchRequest } = useNotificationsSocket();
   const form = useForm<FriendMatchRequestSchemaType>({
@@ -46,7 +52,7 @@ export const FriendMatchRequestForm = () => {
     defaultValues: {
       problemSource: "user",
       programmingLanguage: undefined,
-      problemId: undefined,
+      problemId: defaultSelectedProblemId?.trim() || undefined,
       recipientFriendshipId: undefined,
       expiresAt: undefined,
       timeLimit: undefined,
@@ -131,6 +137,7 @@ export const FriendMatchRequestForm = () => {
                 <CommunityProblemCommandSelect
                   value={field.value ?? ""}
                   onValueChange={field.onChange}
+                  problemTitle={problemTitle}
                   className={getInputErrorStyle(fieldState.error)}
                   type="button"
                 />

@@ -35,12 +35,14 @@ type CommunityProblems = Awaited<
 export const CommunityProblemCommandSelect = ({
   value,
   onValueChange,
+  problemTitle,
   onClick,
   className,
   ...props
 }: {
   value: string;
   onValueChange: (value: string) => void;
+  problemTitle: string | null | undefined;
 } & ComponentProps<typeof Button>) => {
   const { data: session } = useAuthSession();
   const [search, setSearch] = useState("");
@@ -137,9 +139,13 @@ export const CommunityProblemCommandSelect = ({
         onClick={() => setOpen(true)}
         {...props}
       >
-        {selectedProblem ? (
+        {problemTitle || selectedProblem ? (
           <span className="text-left flex-1 min-w-0 truncate">
-            {selectedProblem.problem.title}
+            {problemTitle?.trim()
+              ? problemTitle
+              : selectedProblem
+                ? selectedProblem.problem.title
+                : "Select a community problem"}
           </span>
         ) : (
           <span className="text-muted-foreground text-left flex-1 min-w-0 truncate">
