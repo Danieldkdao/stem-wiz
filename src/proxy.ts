@@ -6,7 +6,8 @@ import { hasUserSettings } from "./features/social/server/user-profiles";
 import { getCurrentUser } from "./lib/auth/helpers";
 
 const authRoutes = new Set(["/sign-in", "/sign-up"]);
-const protectedRoutePrefixes = ["/dashboard", "/arena"];
+const protectedRoutePrefixes = ["/dashboard", "/arena", "/matches"];
+const onboardingRoute = "/onboarding";
 
 const matchesRoutePrefix = (pathname: string, route: string) => {
   return pathname === route || pathname.startsWith(`${route}/`);
@@ -22,8 +23,9 @@ export const proxy = async (request: NextRequest) => {
   const isProtectedRoute = protectedRoutePrefixes.some((route) =>
     matchesRoutePrefix(pathname, route),
   );
+  const isOnboardingRoute = matchesRoutePrefix(pathname, onboardingRoute);
 
-  if (!isAuthRoute && !isProtectedRoute) {
+  if (!isAuthRoute && !isProtectedRoute && !isOnboardingRoute) {
     return NextResponse.next();
   }
 
@@ -57,6 +59,13 @@ export const proxy = async (request: NextRequest) => {
     return redirectTo(request, "/dashboard");
   }
 
+  if (
+    matchesRoutePrefix(pathname, "/onboarding") &&
+    (await hasUserSettings(existingUser.id))
+  ) {
+    return redirectTo(request, "/dashboard");
+  }
+
   if (isProtectedRoute && !(await hasUserSettings(existingUser.id))) {
     return redirectTo(request, "/onboarding");
   }
@@ -68,8 +77,13 @@ export const config = {
   matcher: [
     "/sign-in",
     "/sign-up",
-    "/admin/:path*",
+    "/onboarding/:path*",
     "/dashboard/:path*",
     "/arena/:path*",
+    "/matches/:path*",
+    "/community/:path*",
+    "/oracle/:path*",
+    "/match-invitations/:path*",
+    "/my-profile",
   ],
 };
