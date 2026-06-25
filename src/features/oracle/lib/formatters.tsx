@@ -96,7 +96,7 @@ export const getDifficultyBadge = (
       return (
         <Badge
           variant="outline"
-          className={cn("text-accent border-accent bg-accent/20", className)}
+          className={cn("text-accent border-accent/50 bg-accent/20", className)}
         >
           {formatDifficultyLevel(difficulty)}
         </Badge>
@@ -105,7 +105,10 @@ export const getDifficultyBadge = (
       return (
         <Badge
           variant="outline"
-          className={cn("text-warning border-warning bg-warning/20", className)}
+          className={cn(
+            "text-warning border-warning/50 bg-warning/20",
+            className,
+          )}
         >
           {formatDifficultyLevel(difficulty)}
         </Badge>
@@ -115,7 +118,7 @@ export const getDifficultyBadge = (
         <Badge
           variant="outline"
           className={cn(
-            "text-destructive border-destructive bg-destructive/20",
+            "text-destructive border-destructive/50 bg-destructive/20",
             className,
           )}
         >
