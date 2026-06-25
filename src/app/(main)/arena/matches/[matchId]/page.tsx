@@ -10,9 +10,8 @@ import {
 import { InviteChatFriendsMatchWidget } from "@/features/matches/components/invite-chat-friends-match-widget";
 import { MatchHeader } from "@/features/matches/components/match-header";
 import { MatchView } from "@/features/matches/components/match-view";
-import { auth } from "@/lib/auth/auth";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { ParamsId } from "@/lib/types";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -113,8 +112,8 @@ const MatchCompeteLoading = () => {
 };
 
 const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
 
   const { matchId } = await params;
   const match = await checkExistingMatchAction({ id: matchId });
@@ -193,7 +192,7 @@ const MatchCompeteSuspense = async ({ params }: MatchCompeteParams) => {
   return (
     <div className="w-full h-full flex flex-col items-center relative">
       <MatchHeader match={match} />
-      <MatchView match={match} currentUserId={session.user.id} />
+      <MatchView match={match} currentUserId={userId} />
       {match.kind === "friend_challenge" && (
         <InviteChatFriendsMatchWidget matchId={match.id} />
       )}

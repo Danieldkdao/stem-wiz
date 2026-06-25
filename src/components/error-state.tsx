@@ -29,7 +29,7 @@ export const ErrorState = ({
         <p className="text-destructive text-lg text-center max-w-150">
           {description}
         </p>
-        {children}
+        <div className="w-full max-w-150">{children}</div>
       </CardContent>
     </Card>
   );

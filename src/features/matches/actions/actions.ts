@@ -22,7 +22,7 @@ import {
 import { finalizeMatch } from "@/features/arena/server/finalize-match";
 import { findActiveFriendshipById } from "@/features/friends/server/friendships";
 import { insertNotificationDb } from "@/features/notifications/server/notifications-db";
-import { auth, User } from "@/lib/auth/auth";
+import { User } from "@/lib/auth/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   GENERAL_ERROR_MESSAGE,
@@ -56,7 +56,6 @@ import {
   sql,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { headers } from "next/headers";
 import { mapProblemToArenaProblem } from "../lib/formatters";
 import { MatchRequestFilterByOptionType } from "../lib/match-request-params";
 import {
@@ -181,7 +180,10 @@ export const checkExistingMatchAction = async ({
         with: {
           user: true,
         },
+        orderBy: desc(UserMatchTable.userId),
       },
+      matchObserverInvitations: true,
+      matchObservers: true,
       result: true,
     },
   });
@@ -589,12 +591,12 @@ export const codeSubmissionAction = async (matchId: string, code: string) => {
 
 export const checkExistingParticipant = async (matchId: string) => {
   if (!areValidIds([matchId])) return null;
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
 
   const userMatch = await db.query.UserMatchTable.findFirst({
     where: and(
-      eq(UserMatchTable.userId, session.user.id),
+      eq(UserMatchTable.userId, userId),
       eq(UserMatchTable.matchId, matchId),
     ),
     with: {
@@ -611,8 +613,8 @@ export const getObservableMatchesAction = async (filterOptions: {
   languages: ProgrammingLanguageType[];
   page: number;
 }) => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
 
   const { search, sortBy, languages, page } = filterOptions;
 
@@ -641,6 +643,20 @@ export const getObservableMatchesAction = async (filterOptions: {
 
   const whereQuery = and(
     eq(MatchTable.status, "in-progress"),
+    or(
+      eq(MatchTable.kind, "arena"),
+      exists(
+        db
+          .select()
+          .from(MatchObserverTable)
+          .where(
+            and(
+              eq(MatchObserverTable.matchId, MatchTable.id),
+              eq(MatchObserverTable.userId, userId),
+            ),
+          ),
+      ),
+    ),
     not(
       exists(
         db
@@ -649,7 +665,7 @@ export const getObservableMatchesAction = async (filterOptions: {
           .where(
             and(
               eq(UserMatchTable.matchId, MatchTable.id),
-              eq(UserMatchTable.userId, session.user.id),
+              eq(UserMatchTable.userId, userId),
             ),
           ),
       ),
@@ -884,13 +900,6 @@ export const saveUserMatchCode = async (matchId: string, newCode: string) => {
     return {
       error: true,
       message: NOT_FOUND_ERROR_MESSAGE,
-    };
-  }
-
-  if (!newCode.trim()) {
-    return {
-      error: true,
-      message: INVALID_DATA_ERROR_MESSAGE,
     };
   }
 

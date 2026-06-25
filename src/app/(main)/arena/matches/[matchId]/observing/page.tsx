@@ -9,12 +9,16 @@ import {
   checkExistingMatchAction,
   checkExistingParticipant,
 } from "@/features/matches/actions/actions";
+import { AcceptMatchObserverInvitationButton } from "@/features/matches/components/accept-match-observer-invitation-button";
 import { ObservableMatchView } from "@/features/matches/components/observable-match-view";
+import { UpdateMatchObserverInvitationStatusButton } from "@/features/matches/components/update-match-observer-invitation-status-button";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   DEFAULT_PAGE,
   NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS,
 } from "@/lib/constants";
 import { ParamsId } from "@/lib/types";
+import { CheckIcon, CircleXIcon } from "lucide-react";
 import { Suspense } from "react";
 
 type MatchObservingProps = ParamsId<"matchId">;
@@ -116,6 +120,8 @@ const ObserverPanelSkeleton = ({ mirrored }: { mirrored?: boolean }) => {
 
 const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
   const { matchId } = await params;
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
   const match = await checkExistingMatchAction({ id: matchId });
 
   const userMatch = await checkExistingParticipant(matchId);
@@ -124,7 +130,7 @@ const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
       <div className="w-full h-full py-10 px-6">
         <ErrorState
           title="Hold on right there."
-          description="You are currently participating in this match. In the spirit of good sportsmanship, please go back and finish the match."
+          description="You are currently participating in this match. Please go back and finish the match."
         >
           <Button className="mt-2 w-full">Resume match</Button>
         </ErrorState>
@@ -156,22 +162,84 @@ const MatchObservingSuspense = async ({ params }: MatchObservingProps) => {
     );
   }
 
-  if (
-    match.users.length < NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS ||
-    match.users.length > NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS
-  ) {
+  if (match.users.length !== NUMBER_OF_ALLOWED_MATCH_PARTICIPANTS) {
     return (
       <div className="w-full h-full py-10 px-6">
         <ErrorState
           title="An error occurred"
-          description="Something went wrong that prevented the match from loading. Try refreshing the page or reloading the page."
+          description="Something went wrong that prevented the match from loading. Try refreshing the page."
         >
-          <Button className="mt-2 w-full">Resume match</Button>
+          <RefreshPageButton>Refresh the page</RefreshPageButton>
         </ErrorState>
       </div>
     );
   }
 
+  const userInvitations = match.matchObserverInvitations.filter(
+    (invitation) => invitation.invitedUserId === userId,
+  );
+  const matchObserver = match.matchObservers.find(
+    (observer) => observer.userId === userId,
+  );
+
+  if (match.kind === "friend_challenge") {
+    if (
+      !userInvitations.find(
+        (invitation) =>
+          invitation.status === "accepted" || invitation.status === "pending",
+      ) &&
+      !matchObserver
+    ) {
+      return (
+        <div className="w-full h-full py-10 px-6">
+          <ErrorState
+            title="Hold on right there."
+            description="You don't have permission to view this friend challenge match. If you are friends with one of the match participants, you can ask them for an invitation."
+          >
+            <LinkButton
+              href="/arena/observe"
+              variant="outline"
+              className="w-full"
+            >
+              Back to matches
+            </LinkButton>
+          </ErrorState>
+        </div>
+      );
+    }
+    const pendingInvitation = userInvitations.find(
+      (invitation) => invitation.status === "pending",
+    );
+    if (pendingInvitation) {
+      return (
+        <div className="w-full h-full py-10 px-6">
+          <ErrorState
+            title="Hold on right there."
+            description="You must accept the match observer invitation sent to you before continuing."
+          >
+            <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
+              <AcceptMatchObserverInvitationButton
+                matchObserverInvitationId={pendingInvitation.id}
+                className="w-full md:flex-1"
+              >
+                <CheckIcon />
+                Accept
+              </AcceptMatchObserverInvitationButton>
+              <UpdateMatchObserverInvitationStatusButton
+                matchObserverInvitationId={pendingInvitation.id}
+                newStatus="rejected"
+                variant="destructive"
+                className="w-full md:flex-1"
+              >
+                <CircleXIcon />
+                Reject
+              </UpdateMatchObserverInvitationStatusButton>
+            </div>
+          </ErrorState>
+        </div>
+      );
+    }
+  }
   const response = await getMatchChatMessagesAction(match.id, DEFAULT_PAGE);
   if (!response) {
     return (

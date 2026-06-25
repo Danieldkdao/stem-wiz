@@ -76,7 +76,9 @@ export const createNewSessionAction = async (
     const createdSession = await insertOracleSession({
       userId,
       ...data,
-      title: data.title ?? "New Session",
+      title:
+        data.title?.trim() ||
+        `New session ${new Date().toLocaleDateString("en-US")}`,
     });
 
     if (!createdSession) {
@@ -86,6 +88,7 @@ export const createNewSessionAction = async (
     return {
       error: false,
       message: "Session created successfully!",
+      sessionId: createdSession.id,
     };
   } catch (error) {
     console.error(error);

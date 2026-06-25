@@ -21,7 +21,6 @@ export const MatchCodeEditor = ({
   language,
   existingCode,
 }: MatchCodeEditorProps) => {
-  const isMountedRef = useRef(true);
   const saveVersionRef = useRef(0);
   const { status, broadcastCodeSnapshot } = useMatchSocket();
   const [userCode, setUserCode] = useState(existingCode ?? "");
@@ -31,8 +30,10 @@ export const MatchCodeEditor = ({
   const setCode = useCodeEditorStore((state) => state.setCode);
   const handleCodeChange = useDebouncer(
     async (code: string | undefined) => {
-      if (!isMountedRef.current || status !== "open" || code === undefined)
+      if (status !== "open" || code === undefined) {
         return;
+      }
+
       const saveVersion = ++saveVersionRef.current;
       setSaveStatus("saving");
       broadcastCodeSnapshot({ matchId, code });
@@ -54,7 +55,6 @@ export const MatchCodeEditor = ({
 
   useEffect(() => {
     return () => {
-      isMountedRef.current = false;
       handleCodeChange.cancel();
     };
   }, []);

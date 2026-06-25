@@ -12,7 +12,6 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
           <MatchObserverSocketProvider>
             <div className="bg-radial w-full h-svh from-primary/10 via-primary/20 to-primary/10">
               {children}
-              {/* <CommandFooter /> */}
             </div>
           </MatchObserverSocketProvider>
         </MatchSocketProvider>

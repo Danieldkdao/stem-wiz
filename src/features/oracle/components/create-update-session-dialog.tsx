@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -26,25 +27,24 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { oracleSessionModes, programmingLanguages } from "@/db/shared";
+import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { SetterType } from "@/lib/types";
 import { cn, getInputErrorStyle } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { ComponentProps, ReactNode, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import {
+  createNewSessionAction,
+  updateSessionAction,
+} from "../actions/actions";
 import {
   oracleSessionActionSchema,
   OracleSessionActionSchemaType,
 } from "../actions/schemas";
 import { formatOracleSessionMode } from "../lib/formatters";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  createNewSessionAction,
-  updateSessionAction,
-} from "../actions/actions";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { OracleSession } from "../lib/types";
-import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 
 type CreateUpdateSessionDialogProps = {
   open?: boolean;
@@ -89,7 +89,8 @@ export const CreateUpdateSessionDialog = ({
     const action = existingSession
       ? updateSessionAction(existingSession.id, data)
       : createNewSessionAction(data);
-    const response = await action;
+    const response: { error: boolean; message: string; sessionId?: string } =
+      await action;
     if (response.error) {
       toast.error(response.message);
     } else {
@@ -103,8 +104,8 @@ export const CreateUpdateSessionDialog = ({
       startRefreshTransition(() => {
         router.refresh();
       });
-      if (startAfterCreation) {
-        // todo: navigate to start page
+      if (startAfterCreation && response.sessionId) {
+        router.push(`/oracle/sessions/${response.sessionId}/waiting`);
       }
     }
   };
@@ -284,8 +285,8 @@ export const CreateUpdateSessionDialog = ({
                     </Select>
                   </FieldContent>
                   <FieldDescription>
-                    The mode you select will control the Oracle&apos;s personality
-                    during the session.
+                    The mode you select will control the Oracle&apos;s
+                    personality during the session.
                   </FieldDescription>
                   {fieldState.error && (
                     <FieldError errors={[fieldState.error]} />

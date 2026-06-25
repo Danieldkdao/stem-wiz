@@ -49,12 +49,21 @@ export const MatchCodeOutput = ({
   const handleCodeExecution = async () => {
     broadcastRunningCode(matchId);
     const result = await runCode(language, LANGUAGE_VERSION_MAP[language]);
-    if (status === "open" && result) {
-      broadcastCodeOutput({
-        matchId,
-        output: result.output,
-        error: result.error,
-      });
+    if (status === "open") {
+      if (result) {
+        broadcastCodeOutput({
+          matchId,
+          output: result.output,
+          error: result.error,
+        });
+      } else {
+        broadcastCodeOutput({
+          matchId,
+          output: "Error running code",
+          error:
+            "An unexpected error occurred while running your code. Please try again and make sure you are connected.",
+        });
+      }
     }
   };
 

@@ -1,9 +1,9 @@
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "./lib/auth/auth";
 import { db } from "./db/db";
 import { user } from "./db/schema";
-import { eq } from "drizzle-orm";
 import { hasUserSettings } from "./features/social/server/user-profiles";
+import { getCurrentUser } from "./lib/auth/helpers";
 
 const authRoutes = new Set(["/sign-in", "/sign-up"]);
 const protectedRoutePrefixes = ["/dashboard", "/arena"];
@@ -27,9 +27,9 @@ export const proxy = async (request: NextRequest) => {
     return NextResponse.next();
   }
 
-  const session = await auth.api.getSession({ headers: request.headers });
+  const { userId } = await getCurrentUser();
 
-  if (!session) {
+  if (!userId) {
     if (!isProtectedRoute) {
       return NextResponse.next();
     }
@@ -44,7 +44,7 @@ export const proxy = async (request: NextRequest) => {
       id: user.id,
     })
     .from(user)
-    .where(eq(user.id, session.user.id))
+    .where(eq(user.id, userId))
     .limit(1);
 
   if (!existingUser) {

@@ -1,5 +1,5 @@
 import { db } from "@/db/db";
-import { MatchTable, UserMatchTable } from "@/db/schema";
+import { MatchObserverTable, MatchTable, UserMatchTable } from "@/db/schema";
 import { RealtimeWebSocket } from "@/features/realtime/lib/types";
 import {
   sendToConnection,
@@ -156,18 +156,43 @@ export const subscribeObserverMatch = async (
     activeMatchesByUser,
   } = getArenaWsState();
 
+  const connectionId = ws.id;
   const userId = ws.user.id;
+
+  const existingMatch = await db.query.MatchTable.findFirst({
+    where: eq(MatchTable.id, matchId),
+  });
+  if (!existingMatch) {
+    sendToConnection(connectionId, {
+      type: "connection_error",
+      message: "Match not found.",
+    });
+    return;
+  }
 
   const userIsParticipating = await db.query.UserMatchTable.findFirst({
     where: and(
       eq(UserMatchTable.userId, userId),
-      eq(UserMatchTable.matchId, matchId),
+      eq(UserMatchTable.matchId, existingMatch.id),
     ),
   });
   if (userIsParticipating) {
-    sendToUser(userId, {
+    sendToConnection(connectionId, {
       type: "connection_error",
       message: "You cannot subscribe to a match you are participating in.",
+    });
+    return;
+  }
+  const hasPermission = await db.query.MatchObserverTable.findFirst({
+    where: and(
+      eq(MatchObserverTable.userId, userId),
+      eq(MatchObserverTable.matchId, existingMatch.id),
+    ),
+  });
+  if (existingMatch.kind === "friend_challenge" && !hasPermission) {
+    sendToConnection(connectionId, {
+      type: "connection_error",
+      message: "You do not have permission to observe this match.",
     });
     return;
   }
