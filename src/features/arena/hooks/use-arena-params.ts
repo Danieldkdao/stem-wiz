@@ -4,7 +4,7 @@ export const useArenaParams = () => {
   return useQueryStates(
     {
       defaultTab: parseAsStringEnum(["friend-challenge", "random-pairing"])
-        .withDefault("friend-challenge")
+        .withDefault("random-pairing")
         .withOptions({ clearOnDefault: true }),
       selectedProblemId: parseAsString
         .withDefault("")

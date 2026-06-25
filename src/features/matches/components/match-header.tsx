@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { Separator } from "@/components/ui/separator";
@@ -287,6 +288,7 @@ export const MatchHeader = ({
           </div>
 
           <div className="flex justify-end items-center gap-2">
+            <ThemeToggle />
             <Button
               variant="outline"
               disabled={isEnding}
