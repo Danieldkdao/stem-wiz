@@ -318,9 +318,12 @@ export const getFriendChatsAction = async (filterOptions: {
 
   const latestActivityAt = sql`
     COALESCE(
-      SELECT MAX(${ChatMessageTable.createdAt})
-      FROM ${ChatMessageTable}
-      WHERE ${ChatMessageTable.chatId} = ${ChatTable.id}
+      (
+        SELECT MAX(${ChatMessageTable.createdAt})
+        FROM ${ChatMessageTable}
+        WHERE ${ChatMessageTable.chatId} = ${ChatTable.id}
+      ),
+      ${ChatTable.createdAt}
     )
   `;
 

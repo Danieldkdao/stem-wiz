@@ -762,14 +762,25 @@ export const getUserMatchesAction = async (filterOptions: {
   completionReasons: MatchResultReasonType[];
   kind: UserMatchesKindOptionType;
   page: number;
+  limit?: number;
 }) => {
   const { userId } = await getCurrentUser();
   if (!userId) return null;
 
-  const { search, sortBy, filterBy, results, completionReasons, kind, page } =
-    filterOptions;
+  const {
+    search,
+    sortBy,
+    filterBy,
+    results,
+    completionReasons,
+    kind,
+    page,
+    limit,
+  } = filterOptions;
 
-  const offset = (page - 1) * PAGE_SIZE;
+  const pageSize = limit || PAGE_SIZE;
+
+  const offset = (page - 1) * pageSize;
 
   const currentUserMatch = alias(UserMatchTable, "current_user_match");
   const opponentUserMatch = alias(UserMatchTable, "opponent_user_match");
@@ -858,7 +869,7 @@ export const getUserMatchesAction = async (filterOptions: {
     .where(whereQuery)
     .orderBy(sortByMap[sortBy])
     .offset(offset)
-    .limit(PAGE_SIZE);
+    .limit(pageSize);
 
   const [totalMatches] = await db
     .select({
@@ -892,7 +903,7 @@ export const getUserMatchesAction = async (filterOptions: {
     .where(whereQuery);
 
   const hasPrevPage = page > 1;
-  const hasNextPage = page * PAGE_SIZE < totalMatches.count;
+  const hasNextPage = page * pageSize < totalMatches.count;
 
   return {
     matches: matches.map((match) =>

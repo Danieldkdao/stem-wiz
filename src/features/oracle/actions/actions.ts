@@ -174,14 +174,18 @@ export const getUserSessionsAction = async (
     statuses: OracleSessionStatusType[];
     modes: OracleSessionModeType[];
     page: number;
+    limit?: number;
   },
 ) => {
   "use cache";
   cacheTag(getOracleSessionUserTag(userId));
 
-  const { search, sortBy, languages, statuses, modes, page } = filterOptions;
+  const { search, sortBy, languages, statuses, modes, page, limit } =
+    filterOptions;
 
-  const offset = (page - 1) * PAGE_SIZE;
+  const pageSize = limit || PAGE_SIZE;
+
+  const offset = (page - 1) * pageSize;
 
   const sessionDuration = sql<number>`EXTRACT(
     EXPOCH FROM COALESCE(${OracleSessionTable.completedAt}, NOW()) - ${OracleSessionTable.startedAt}
@@ -220,7 +224,7 @@ export const getUserSessionsAction = async (
     .where(whereQuery)
     .orderBy(sortByMap[sortBy])
     .offset(offset)
-    .limit(PAGE_SIZE);
+    .limit(pageSize);
 
   const [totalUserSessions] = await db
     .select({
@@ -230,7 +234,7 @@ export const getUserSessionsAction = async (
     .where(whereQuery);
 
   const hasPrevPage = page > 1;
-  const hasNextPage = page * PAGE_SIZE < totalUserSessions.count;
+  const hasNextPage = page * pageSize < totalUserSessions.count;
 
   return {
     userSessions,

@@ -129,7 +129,7 @@ export const CreateUpdateSessionDialog = ({
         open={useButton ? hasChildrenOpen : open}
         onOpenChange={useButton ? setHasChildrenOpen : setOpen}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {existingSession ? "Update session" : "New Session"}

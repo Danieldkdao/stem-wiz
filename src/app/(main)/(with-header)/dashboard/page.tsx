@@ -1,65 +1,158 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { LandmarkIcon, SparklesIcon, UsersIcon } from "lucide-react";
+import { ChatsSection } from "@/components/dashboard/sections/chats-section";
+import { CommunityProblemsSection } from "@/components/dashboard/sections/community-problems-section";
+import { InfoCardGridSection } from "@/components/dashboard/sections/info-card-grid-section";
+import { MatchListSection } from "@/components/dashboard/sections/match-list-section";
+import { MatchRequestsSection } from "@/components/dashboard/sections/match-requests-section";
+import { NotificationsSection } from "@/components/dashboard/sections/notifications-section";
+import { ObserverInvitationsSection } from "@/components/dashboard/sections/observer-invitations-section";
+import { OracleSessionsListSection } from "@/components/dashboard/sections/oracle-sessions-list-section";
+import { ProfileActionItemsSection } from "@/components/dashboard/sections/profile-action-items-section";
+import { LinkButton } from "@/components/link-button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateUpdateSessionDialog } from "@/features/oracle/components/create-update-session-dialog";
+import {
+  BoxesIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  LandmarkIcon,
+  MessageSquareTextIcon,
+  PlusIcon,
+  SearchIcon,
+  SparklesIcon,
+  SwordsIcon,
+  UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
-
-const options = [
-  {
-    title: "Arena",
-    description:
-      "Ready to face off against other developers to learn and improve your skills? Go to arena to get started!",
-    icon: LandmarkIcon,
-    href: "/arena",
-  },
-  {
-    title: "Community",
-    description:
-      "Need a teammate for a hackathon or want to find some coding pals? Discover other developers and groups to collaborate and have fun.",
-    icon: UsersIcon,
-    href: "/community",
-  },
-  {
-    title: "The Oracle",
-    description:
-      "Feeling shaky on some concepts? Head to the oracle to get personalized traning and feedback to improve your skills.",
-    icon: SparklesIcon,
-    href: "/oracle/sessions",
-  },
-];
 
 const DashboardPage = () => {
   return (
-    <div className="w-full h-full pt-10 px-6 flex items-center justify-center overflow-y-auto">
-      <div className="w-full max-w-250 flex flex-col items-center gap-4">
-        <div className="flex flex-col items-center gap-1">
-          <h1 className="text-3xl font-bold text-center">
-            Good to see you again!
-          </h1>
-          <p className="text-base text-muted-foreground text-center">
-            What are you feeling like today?
-          </p>
+    <div className="h-full w-full overflow-y-auto px-6 py-10">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex min-w-0 flex-col gap-2">
+            <h1 className="text-4xl font-bold">Dashboard</h1>
+            <p className="max-w-3xl text-lg font-medium text-muted-foreground">
+              Track your matches, Oracle sessions, community activity, chats,
+              and invitations in one place.
+            </p>
+          </div>
+
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <LinkButton href="/arena/waiting">
+              <SwordsIcon />
+              Find Match
+            </LinkButton>
+            <CreateUpdateSessionDialog
+              useButton
+              variant="outline"
+              buttonChildren={
+                <>
+                  <PlusIcon />
+                  New Oracle Session
+                </>
+              }
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-center w-full">
-          {options.map((option) => (
-            <Link href={option.href} key={option.href} className="h-full">
-              <Card className="h-full">
-                <CardContent className="flex flex-col items-center gap-2">
-                  <option.icon
-                    className="text-primary size-20"
-                    strokeWidth={3}
-                  />
-                  <h2 className="text-2xl mt-2 font-semibold text-center">
-                    {option.title}
-                  </h2>
-                  <p className="text-muted-foreground text-base text-center">
-                    {option.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+
+        <InfoCardGridSection />
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <MatchListSection />
+
+            <OracleSessionsListSection />
+
+            <MatchRequestsSection />
+
+            <ObserverInvitationsSection />
+
+            <CommunityProblemsSection />
+          </div>
+
+          <aside className="flex min-w-0 flex-col gap-4">
+            <QuickActions />
+
+            <NotificationsSection />
+
+            <ChatsSection />
+
+            <ProfileActionItemsSection />
+          </aside>
         </div>
       </div>
     </div>
+  );
+};
+
+const QuickActions = () => {
+  const actions = [
+    {
+      title: "Find a match",
+      href: "/arena/waiting",
+      icon: SwordsIcon,
+    },
+    {
+      title: "Challenge a friend",
+      href: "/arena",
+      icon: LandmarkIcon,
+    },
+    {
+      title: "Observe live matches",
+      href: "/arena/observe",
+      icon: EyeIcon,
+    },
+    {
+      title: "Explore developers",
+      href: "/community",
+      icon: UsersIcon,
+    },
+    {
+      title: "Start a chat",
+      href: "/community/chats",
+      icon: MessageSquareTextIcon,
+    },
+    {
+      title: "Create community problem",
+      href: "/community/problems",
+      icon: BoxesIcon,
+    },
+    {
+      title: "Oracle practice",
+      href: "/oracle/sessions",
+      icon: SparklesIcon,
+    },
+  ];
+
+  return (
+    <Card className="gap-0 py-0">
+      <CardHeader className="border-b py-5">
+        <CardTitle className="flex items-center gap-2 text-2xl font-semibold">
+          <SearchIcon className="text-primary" />
+          Quick Actions
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="flex items-center gap-3 border-b p-4 transition-colors last:border-b-0 hover:bg-muted/60"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Icon className="size-5" />
+              </div>
+              <span className="min-w-0 flex-1 font-semibold">
+                {action.title}
+              </span>
+              <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+            </Link>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 };
 
