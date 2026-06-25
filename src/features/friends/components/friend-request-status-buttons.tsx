@@ -1,20 +1,19 @@
 import { TooltipWrapper } from "@/components/tooltip-wrapper";
-import { FriendRequestTable } from "@/db/schema";
-import {
-  CircleQuestionMarkIcon,
-  UserCheckIcon,
-  UserPlusIcon,
-} from "lucide-react";
-import { FriendRequestButton } from "./friend-request-button";
-import { RespondFriendRequestButton } from "./respond-friend-request-button";
 import { Badge } from "@/components/ui/badge";
+import { FriendRequestTable, FriendshipTable } from "@/db/schema";
+import { CircleQuestionMarkIcon, UserPlusIcon, XIcon } from "lucide-react";
+import { FriendRequestButton } from "./friend-request-button";
+import { RemovedFriendshipButton } from "./remove-friendship-button";
+import { RespondFriendRequestButton } from "./respond-friend-request-button";
 
 export const FriendRequestStatusButtons = ({
   userId,
   existingFriendRequest,
+  existingFriendship,
 }: {
   userId: string;
-  existingFriendRequest?: typeof FriendRequestTable.$inferSelect;
+  existingFriendRequest: typeof FriendRequestTable.$inferSelect | null;
+  existingFriendship: typeof FriendshipTable.$inferSelect | null;
 }) => {
   return (
     <TooltipWrapper
@@ -25,7 +24,7 @@ export const FriendRequestStatusButtons = ({
               ? "Your friend request is pending"
               : "Accept/reject the friend request"
             : existingFriendRequest.status === "accepted"
-              ? "You are friends with this user."
+              ? "Remove your connection with this user"
               : "Send friend request to this user"
           : "Send friend request to this user"
       }
@@ -56,11 +55,15 @@ export const FriendRequestStatusButtons = ({
               </div>
             </>
           )
-        ) : existingFriendRequest.status === "accepted" ? (
-          <Badge>
-            <UserCheckIcon />
-            <span>Your friend</span>
-          </Badge>
+        ) : existingFriendRequest.status === "accepted" &&
+          existingFriendship ? (
+          <RemovedFriendshipButton
+            variant="destructive"
+            friendshipId={existingFriendship.id}
+          >
+            <XIcon />
+            Remove
+          </RemovedFriendshipButton>
         ) : (
           <FriendRequestButton userId={userId}>
             <UserPlusIcon className="size-4" />

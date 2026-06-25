@@ -38,7 +38,8 @@ type NotificationSocketContextType = {
   notifyFriendRequestResponse: (
     notificationId: string,
     action: Exclude<InvitationStatusType, "pending">,
-  ) => void;
+  ) => boolean;
+  notifyFriendshipRemoved: (notificationId: string) => boolean;
   notifyFriendChatAction: (
     notificationId: string,
     action: "new_chat" | "chat_deleted",
@@ -57,7 +58,7 @@ type NotificationSocketContextType = {
   notifyFriendMatchRequestAction: (
     notificationId: string,
     action: Exclude<FriendMatchRequestStatusType, "pending" | "expired">,
-  ) => void;
+  ) => boolean;
   notifyNewMatchObserverInvitations: (notificationIds: string[]) => boolean;
   notifyMatchObserverInvitationAction: (
     notificationId: string,
@@ -216,6 +217,13 @@ export const NotificationSocketProvider = ({
     });
   };
 
+  const notifyFriendshipRemoved = (notificationId: string) => {
+    return send({
+      type: "new_notification",
+      event: { type: "friendship_removed", notificationId },
+    });
+  };
+
   const notifyFriendChatAction = (
     notificationId: string,
     action: "new_chat" | "chat_deleted",
@@ -328,6 +336,7 @@ export const NotificationSocketProvider = ({
     subscribeNotificationEvent,
     lastEvent,
     notifyFriendRequestResponse,
+    notifyFriendshipRemoved,
     notifyFriendChatAction,
     notifyFriendRequestSent,
     notifyCommunityProblemFriends,

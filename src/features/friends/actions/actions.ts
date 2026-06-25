@@ -41,6 +41,7 @@ import {
   updateFriendRequestDb,
 } from "../server/friend-requests";
 import {
+  findActiveFriendshipById,
   findActiveFriendshipByUsers,
   insertFriendshipDb,
 } from "../server/friendships";
@@ -301,6 +302,67 @@ export const respondFriendRequestAction = async (
         updated: updatedNotification.id,
         inserted: insertedNotification.id,
       },
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const removeFriendAction = async (friendshipId: string) => {
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const existingFriendship = await findActiveFriendshipById(
+    friendshipId,
+    userId,
+  );
+  if (!existingFriendship) {
+    return {
+      error: true,
+      message: "Friendship not found.",
+    };
+  }
+
+  try {
+    const notificationId = await db.transaction(async (tx) => {
+      const [deletedFriendship] = await tx
+        .delete(FriendshipTable)
+        .where(eq(FriendshipTable.id, existingFriendship.id))
+        .returning();
+      if (!deletedFriendship) throw new Error("Failed to delete friendship.");
+
+      const createdNotification = await insertNotificationDb(
+        {
+          userId: existingFriendship.friend.id,
+          payload: {
+            type: "friendship_removed",
+            userId: existingFriendship.friend.id,
+            friendshipId: deletedFriendship.id,
+            title: "Friendship removed",
+            message: `${userInfo.name} removed their connection with you. You'll no longer see each other as friends.`,
+          },
+        },
+        tx,
+      );
+      if (!createdNotification)
+        throw new Error("Failed to create notification.");
+
+      return createdNotification.id;
+    });
+
+    return {
+      error: false,
+      message: "Friendship removed successfully.",
+      notificationId,
     };
   } catch (error) {
     console.error(error);

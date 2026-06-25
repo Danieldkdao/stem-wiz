@@ -1,4 +1,5 @@
 import { LinkButton } from "@/components/link-button";
+import { TooltipWrapper } from "@/components/tooltip-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,7 @@ import {
   RefreshCcwIcon,
   SearchIcon,
   SunIcon,
+  UserCheckIcon,
   UserPlusIcon,
   UserRoundIcon,
   UsersIcon,
@@ -150,8 +152,18 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
           />
           <div className="flex min-w-0 flex-1 flex-col gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-4xl font-bold">{user.name}</h1>
-              <p className="text-muted-foreground">
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="truncate text-4xl font-bold">{user.name}</h1>
+                {user.existingFriendship && (
+                  <TooltipWrapper content={`You are friends with ${user.name}`}>
+                    <UserCheckIcon
+                      className="text-primary shrink-0"
+                      strokeWidth={3}
+                    />
+                  </TooltipWrapper>
+                )}
+              </div>
+              <p className="text-muted-foreground text-lg">
                 {profile ? (
                   <>
                     {profile.experienceLevel
@@ -214,6 +226,7 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
             <FriendRequestStatusButtons
               userId={user.id}
               existingFriendRequest={user.existingFriendRequest}
+              existingFriendship={user.existingFriendship}
             />
           </div>
         </CardContent>
@@ -223,11 +236,13 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>About</CardTitle>
-              <CardDescription>What this developer has shared.</CardDescription>
+              <CardTitle className="text-xl font-semibold">About</CardTitle>
+              <CardDescription className="text-base">
+                What this developer has shared.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="leading-7 text-muted-foreground">
+              <p className="leading-7 text-muted-foreground text-base">
                 {profile?.bio ?? "This user has not added a bio yet."}
               </p>
             </CardContent>
@@ -235,8 +250,10 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Collaboration</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl font-semibold">
+                Collaboration
+              </CardTitle>
+              <CardDescription className="text-base">
                 How they want to meet, build, and work with others.
               </CardDescription>
             </CardHeader>
@@ -285,8 +302,8 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Goals</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl font-semibold">Goals</CardTitle>
+              <CardDescription className="text-base">
                 What they are hoping to do here.
               </CardDescription>
             </CardHeader>
@@ -310,8 +327,12 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>Developer Details</CardTitle>
-              <CardDescription>Profile basics and public info.</CardDescription>
+              <CardTitle className="text-xl font-semibold">
+                Developer Details
+              </CardTitle>
+              <CardDescription className="text-base">
+                Profile basics and public info.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <InfoRow
@@ -347,8 +368,10 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Availability</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl font-semibold">
+                Availability
+              </CardTitle>
+              <CardDescription className="text-base">
                 When they are open to connecting.
               </CardDescription>
             </CardHeader>
@@ -389,8 +412,10 @@ const CommunityUserIdSuspense = async ({ params }: CommunityUserIdParams) => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Account</CardTitle>
-              <CardDescription>Basic account information.</CardDescription>
+              <CardTitle className="text-xl font-semibold">Account</CardTitle>
+              <CardDescription className="text-base">
+                Basic account information.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <InfoRow label="Email" value={user.email} icon={<MailIcon />} />
@@ -466,10 +491,10 @@ const InfoTile = ({
   return (
     <div className="rounded-lg border bg-background/60 p-4">
       <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-        <span className="[&>svg]:size-4">{icon}</span>
-        <span className="text-sm font-medium">{label}</span>
+        <span className="[&>svg]:size-5">{icon}</span>
+        <span className="text-base font-medium">{label}</span>
       </div>
-      <div className="text-base font-semibold">
+      <div className="text-lg font-semibold">
         {value || <EmptyValue>Not shared yet</EmptyValue>}
       </div>
     </div>
@@ -489,11 +514,11 @@ const InfoRow = ({
     <div className="border-b pb-4 last:border-b-0 last:pb-0">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2">
-          <span className="[&>svg]:size-4 text-muted-foreground">{icon}</span>
-          <span className="text-muted-foreground">{label}</span>
+          <span className="[&>svg]:size-5 text-muted-foreground">{icon}</span>
+          <span className="text-base text-muted-foreground">{label}</span>
         </div>
 
-        <span className="text-right font-medium">
+        <span className="text-right text-lg font-medium">
           {value || <EmptyValue>Not shared yet</EmptyValue>}
         </span>
       </div>
@@ -503,7 +528,9 @@ const InfoRow = ({
 
 const EmptyValue = ({ children }: { children: React.ReactNode }) => {
   return (
-    <span className="font-normal italic text-muted-foreground">{children}</span>
+    <span className="font-normal italic text-muted-foreground text-base">
+      {children}
+    </span>
   );
 };
 

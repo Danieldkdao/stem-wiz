@@ -382,7 +382,26 @@ export const getUserAction = async (
     .select({
       ...getTableColumns(user),
       profile: getTableColumns(UserProfileTable),
-      existingFriendRequest: sql<typeof FriendRequestTable.$inferSelect>`
+      existingFriendship: sql<typeof FriendshipTable.$inferSelect | null>`(
+        SELECT
+          jsonb_build_object(
+            'id', ft.id,
+            'userOneId', ft.user_one_id,
+            'userTwoId', ft.user_two_id,
+            'createdFromFriendRequestId', ft.created_from_friend_request_id,
+            'createdAt', ft.created_at,
+            'deletedAt', ft.deleted_at
+          )
+        FROM ${FriendshipTable} ft
+        WHERE
+          ((ft.user_one_id = ${user.id} AND ft.user_two_id = ${currentUserId})
+          OR
+          (ft.user_one_id = ${currentUserId} AND ft.user_two_id = ${user.id}))
+          AND ft.deleted_at IS NULL
+        ORDER BY ft.created_at DESC
+        LIMIT 1
+      )`,
+      existingFriendRequest: sql<typeof FriendRequestTable.$inferSelect | null>`
           (
             SELECT 
                 jsonb_build_object(
@@ -400,6 +419,7 @@ export const getUserAction = async (
               OR
               (fr.to_user_id = ${user.id} AND fr.from_user_id = ${currentUserId}))
               AND fr.status != 'rejected'
+            ORDER BY fr.created_at DESC
             LIMIT 1
           )
       `,

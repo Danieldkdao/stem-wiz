@@ -4,6 +4,7 @@ import {
   CommunityProblemTable,
   FriendMatchRequestTable,
   FriendRequestTable,
+  FriendshipTable,
   MatchObserverInvitationTable,
   MatchObserverTable,
   MatchTable,
@@ -78,6 +79,33 @@ export const handleFriendRequestSentEvent = async (
   }
 
   return existingFriendRequest.toUserId;
+};
+
+export const handleFriendshipRemovedEvent = async (
+  userId: string,
+  payload: NotificationPayloadEvent<"friendship_removed">,
+) => {
+  const [deletedFriendship] = await db
+    .select()
+    .from(FriendshipTable)
+    .where(
+      and(
+        eq(FriendshipTable.id, payload.friendshipId),
+        or(
+          and(
+            eq(FriendshipTable.userOneId, userId),
+            eq(FriendshipTable.userTwoId, payload.userId),
+          ),
+          and(
+            eq(FriendshipTable.userOneId, payload.userId),
+            eq(FriendshipTable.userTwoId, userId),
+          ),
+        ),
+      ),
+    );
+  if (deletedFriendship) throw new Error("Friendship not deleted yet.");
+
+  return payload.userId;
 };
 
 export const handleFriendChatEvent = async (

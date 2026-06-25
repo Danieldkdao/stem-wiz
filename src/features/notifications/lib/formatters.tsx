@@ -14,6 +14,7 @@ export const getNotificationListItem = (
     case "friend_request_accepted":
     case "friend_request_rejected":
     case "friend_request_sent":
+    case "friendship_removed":
     case "new_chat":
     case "chat_deleted":
     case "community_problem_shared_with_you":
@@ -59,14 +60,13 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
           >
             Accept
           </RespondFriendRequestButton>
-          <RespondFriendRequestButton
-            friendRequestId={payload.friendRequestId}
-            action="rejected"
-            variant="destructive"
+          <LinkButton
+            href={`/community/user/${payload.fromUserId}`}
+            variant="outline"
             className="w-full flex-1"
           >
-            Reject
-          </RespondFriendRequestButton>
+            View profile
+          </LinkButton>
         </div>
       );
     case "new_chat":
@@ -133,6 +133,7 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
           </LinkButton>
         </div>
       );
+    case "friendship_removed":
     case "match_observer_invitation_accepted":
     case "match_observer_invitation_rejected":
     case "match_observer_invitation_revoked":

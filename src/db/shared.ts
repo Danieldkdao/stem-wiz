@@ -187,6 +187,14 @@ export type NotificationPayload =
       message: string;
     }
   | {
+      type: "friendship_removed";
+      friendshipId: string;
+      // the user id of the friend that was removed
+      userId: string;
+      title: string;
+      message: string;
+    }
+  | {
       type: "new_chat";
       chatId: string;
       // note: this user id means the creator user id
@@ -287,6 +295,7 @@ export const notificationEventTypes: NotificationPayload["type"][] = [
   "friend_request_sent",
   "friend_request_accepted",
   "friend_request_rejected",
+  "friendship_removed",
   "community_problem_access_revoked",
   "community_problem_shared_with_you",
   "community_problem_deleted",

@@ -12,6 +12,7 @@ import {
   handleCommunityProblemEvent,
   handleFriendChatEvent,
   handleFriendRequestSentEvent,
+  handleFriendshipRemovedEvent,
   handleMatchObserverInvitationAction,
   handleMatchRequestCancelled,
   handleMatchRequestResponse,
@@ -52,6 +53,12 @@ export const handleNewNotification = async (
         break;
       case "friend_request_sent":
         recipientUserId = await handleFriendRequestSentEvent(payload);
+        break;
+      case "friendship_removed":
+        recipientUserId = await handleFriendshipRemovedEvent(
+          ws.user.id,
+          payload,
+        );
         break;
       case "new_chat":
       case "chat_deleted":
