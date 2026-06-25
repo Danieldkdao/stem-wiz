@@ -17,8 +17,15 @@ import {
 } from "@/components/ui/select";
 import { programmingLanguages, ProgrammingLanguageType } from "@/db/shared";
 import { useObservableMatchParams } from "@/features/matches/hooks/use-observable-match-params";
-import { formatUserMatchSortByOptions } from "@/features/matches/lib/formatters";
-import { USER_MATCHES_SORT_BY_OPTIONS } from "@/features/matches/lib/params";
+import {
+  formatUserMatchKindOptions,
+  formatUserMatchSortByOptions,
+} from "@/features/matches/lib/formatters";
+import {
+  USER_MATCHES_KIND_OPTIONS,
+  USER_MATCHES_SORT_BY_OPTIONS,
+  UserMatchesKindOptionType,
+} from "@/features/matches/lib/params";
 import { formatProgrammingLanguage } from "../../social/lib/formatters";
 
 export const ObservableMatchFilters = () => {
@@ -69,6 +76,28 @@ export const ObservableMatchFilters = () => {
               ))}
             </MultiSelectContent>
           </MultiSelect>
+        </div>
+        <div className="rounded-md bg-card">
+          <Select
+            value={filters.kind}
+            onValueChange={(value) =>
+              setFilters({
+                ...filters,
+                kind: value as UserMatchesKindOptionType,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by kind..." />
+            </SelectTrigger>
+            <SelectContent>
+              {USER_MATCHES_KIND_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {formatUserMatchKindOptions(option)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>

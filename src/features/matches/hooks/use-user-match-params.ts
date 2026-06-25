@@ -9,6 +9,7 @@ import {
   USER_MATCHES_SORT_BY_OPTIONS,
   USER_MATCHES_FILTER_BY_OPTIONS,
   USER_MATCHES_RESULT_OPTIONS,
+  USER_MATCHES_KIND_OPTIONS,
 } from "../lib/params";
 
 export const useUserMatchParams = () => {
@@ -35,6 +36,9 @@ export const useUserMatchParams = () => {
         .withOptions({
           clearOnDefault: true,
         }),
+      kind: parseAsStringEnum([...USER_MATCHES_KIND_OPTIONS])
+        .withDefault("all")
+        .withOptions({ clearOnDefault: true }),
     },
     { shallow: false },
   );

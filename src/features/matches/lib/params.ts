@@ -30,6 +30,14 @@ export const USER_MATCHES_RESULT_OPTIONS = [
 export type UserMatchesResultOptionType =
   (typeof USER_MATCHES_RESULT_OPTIONS)[number];
 
+export const USER_MATCHES_KIND_OPTIONS = [
+  "all",
+  "arena",
+  "friend_challenge",
+] as const;
+export type UserMatchesKindOptionType =
+  (typeof USER_MATCHES_KIND_OPTIONS)[number];
+
 const filterSearchParams = {
   search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
   sortBy: parseAsStringEnum([...USER_MATCHES_SORT_BY_OPTIONS])
@@ -46,5 +54,8 @@ const filterSearchParams = {
     .withOptions({
       clearOnDefault: true,
     }),
+  kind: parseAsStringEnum([...USER_MATCHES_KIND_OPTIONS])
+    .withDefault("all")
+    .withOptions({ clearOnDefault: true }),
 };
 export const loadUserMatchSearchParams = createLoader(filterSearchParams);

@@ -7,6 +7,7 @@ import {
 } from "@/db/shared";
 import {
   UserMatchesFilterByOptionType,
+  UserMatchesKindOptionType,
   UserMatchesResultOptionType,
   UserMatchesSortByOptionType,
 } from "./params";
@@ -186,6 +187,23 @@ export const formatMatchObserverInvitationStatus = (
     default:
       throw new Error(
         `Unknown match observer invitation status: ${status satisfies never}`,
+      );
+  }
+};
+
+export const formatUserMatchKindOptions = (
+  option: UserMatchesKindOptionType,
+) => {
+  switch (option) {
+    case "all":
+      return "All";
+    case "arena":
+      return "Arena";
+    case "friend_challenge":
+      return "Friend challenge";
+    default:
+      throw new Error(
+        `Unknown user match kind option: ${option satisfies never}`,
       );
   }
 };

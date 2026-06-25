@@ -60,6 +60,7 @@ import { mapProblemToArenaProblem } from "../lib/formatters";
 import { MatchRequestFilterByOptionType } from "../lib/match-request-params";
 import {
   UserMatchesFilterByOptionType,
+  UserMatchesKindOptionType,
   UserMatchesResultOptionType,
   UserMatchesSortByOptionType,
 } from "../lib/params";
@@ -611,12 +612,13 @@ export const getObservableMatchesAction = async (filterOptions: {
   search: string;
   sortBy: UserMatchesSortByOptionType;
   languages: ProgrammingLanguageType[];
+  kind: UserMatchesKindOptionType;
   page: number;
 }) => {
   const { userId } = await getCurrentUser();
   if (!userId) return null;
 
-  const { search, sortBy, languages, page } = filterOptions;
+  const { search, sortBy, languages, kind, page } = filterOptions;
 
   const offset = (page - 1) * PAGE_SIZE;
 
@@ -624,6 +626,12 @@ export const getObservableMatchesAction = async (filterOptions: {
     most_recent: desc(MatchTable.createdAt),
     oldest: asc(MatchTable.createdAt),
     expires_soon: sql`${MatchTable.expiresAt} asc nulls last`,
+  };
+
+  const kindMap: Record<UserMatchesKindOptionType, SQL<unknown> | undefined> = {
+    all: undefined,
+    arena: eq(MatchTable.kind, "arena"),
+    friend_challenge: eq(MatchTable.kind, "friend_challenge"),
   };
 
   const searchQuery = search.trim()
@@ -643,6 +651,7 @@ export const getObservableMatchesAction = async (filterOptions: {
 
   const whereQuery = and(
     eq(MatchTable.status, "in-progress"),
+    kindMap[kind],
     or(
       eq(MatchTable.kind, "arena"),
       exists(
@@ -751,12 +760,13 @@ export const getUserMatchesAction = async (filterOptions: {
   filterBy: UserMatchesFilterByOptionType;
   results: UserMatchesResultOptionType[];
   completionReasons: MatchResultReasonType[];
+  kind: UserMatchesKindOptionType;
   page: number;
 }) => {
   const { userId } = await getCurrentUser();
   if (!userId) return null;
 
-  const { search, sortBy, filterBy, results, completionReasons, page } =
+  const { search, sortBy, filterBy, results, completionReasons, kind, page } =
     filterOptions;
 
   const offset = (page - 1) * PAGE_SIZE;
@@ -791,12 +801,26 @@ export const getUserMatchesAction = async (filterOptions: {
     no_winner: eq(MatchResultTable.result, "tie"),
   };
 
+  const kindMap: Record<UserMatchesKindOptionType, SQL<unknown> | undefined> = {
+    all: undefined,
+    arena: eq(MatchTable.kind, "arena"),
+    friend_challenge: eq(MatchTable.kind, "friend_challenge"),
+  };
+
   const resultsFilter = results.length
     ? or(...results.map((result) => resultsMap[result]))
     : undefined;
   const completionReasonsFilter = completionReasons.length
     ? inArray(MatchResultTable.reason, completionReasons)
     : undefined;
+
+  const whereQuery = and(
+    filterByMap[filterBy],
+    resultsFilter,
+    completionReasonsFilter,
+    search.trim() ? ilike(user.name, `%${search.trim()}%`) : undefined,
+    kindMap[kind],
+  );
 
   const matches = await db
     .select({
@@ -831,14 +855,7 @@ export const getUserMatchesAction = async (filterOptions: {
       ),
     )
     .innerJoin(user, eq(opponentUserMatch.userId, user.id))
-    .where(
-      and(
-        filterByMap[filterBy],
-        resultsFilter,
-        completionReasonsFilter,
-        search.trim() ? ilike(user.name, `%${search.trim()}%`) : undefined,
-      ),
-    )
+    .where(whereQuery)
     .orderBy(sortByMap[sortBy])
     .offset(offset)
     .limit(PAGE_SIZE);
@@ -872,14 +889,7 @@ export const getUserMatchesAction = async (filterOptions: {
       ),
     )
     .innerJoin(user, eq(opponentUserMatch.userId, user.id))
-    .where(
-      and(
-        filterByMap[filterBy],
-        resultsFilter,
-        completionReasonsFilter,
-        search.trim() ? ilike(user.name, `%${search.trim()}%`) : undefined,
-      ),
-    );
+    .where(whereQuery);
 
   const hasPrevPage = page > 1;
   const hasNextPage = page * PAGE_SIZE < totalMatches.count;
