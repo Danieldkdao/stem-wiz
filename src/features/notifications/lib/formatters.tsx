@@ -1,10 +1,10 @@
-import { NotificationPayload, NotificationTable } from "@/db/schema";
-import { NotificationListItem } from "./types";
-import { RespondFriendRequestButton } from "@/features/friends/components/respond-friend-request-button";
 import { LinkButton } from "@/components/link-button";
+import { NotificationPayload, NotificationTable } from "@/db/schema";
+import { RespondFriendRequestButton } from "@/features/friends/components/respond-friend-request-button";
+import { AcceptMatchObserverInvitationButton } from "@/features/matches/components/accept-match-observer-invitation-button";
 import { AcceptMatchRequestButton } from "@/features/matches/components/accept-match-request-button";
 import { CheckIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { NotificationListItem } from "./types";
 
 export const getNotificationListItem = (
   notification: typeof NotificationTable.$inferSelect,
@@ -118,10 +118,13 @@ export const getNotificationChildren = (payload: NotificationPayload) => {
     case "new_match_observer_invitation":
       return (
         <div className="w-full grid grid-cols-2 gap-2">
-          <Button className="w-full">
+          <AcceptMatchObserverInvitationButton
+            matchObserverInvitationId={payload.matchObserverInvitationId}
+            className="w-full"
+          >
             <CheckIcon />
             Accept
-          </Button>
+          </AcceptMatchObserverInvitationButton>
           <LinkButton
             variant="outline"
             href="/match-invitations/observer-invitations"

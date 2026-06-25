@@ -1,6 +1,5 @@
 import { LinkButton } from "@/components/link-button";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
 import { MatchObserverInvitationStatusType } from "@/db/shared";
 import { cn, formatTime } from "@/lib/utils";
+import { formatDistance, formatDistanceToNow } from "date-fns";
 import {
   BanIcon,
   CheckCircle2Icon,
@@ -27,12 +27,12 @@ import {
   XCircleIcon,
   type LucideIcon,
 } from "lucide-react";
-import { formatDistance, formatDistanceToNow } from "date-fns";
 import { getUserMatchObserverInvitationsAction } from "../actions/actions";
 import {
   formatDateStringWithAgo,
   formatMatchObserverInvitationStatus,
 } from "../lib/formatters";
+import { AcceptMatchObserverInvitationButton } from "./accept-match-observer-invitation-button";
 import { UpdateMatchObserverInvitationStatusButton } from "./update-match-observer-invitation-status-button";
 
 type MatchObserverInvitation = NonNullable<
@@ -337,10 +337,13 @@ export const MatchObserverInvitationCard = ({
           </LinkButton>
         ) : canRespond ? (
           <div className="flex w-full flex-col gap-2 sm:flex-row">
-            <Button disabled className="w-full sm:flex-1">
+            <AcceptMatchObserverInvitationButton
+              matchObserverInvitationId={matchObserverInvitation.id}
+              className="w-full sm:flex-1"
+            >
               <CheckCircle2Icon />
               Accept invite
-            </Button>
+            </AcceptMatchObserverInvitationButton>
             <UpdateMatchObserverInvitationStatusButton
               matchObserverInvitationId={matchObserverInvitation.id}
               newStatus="rejected"

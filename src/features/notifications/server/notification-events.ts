@@ -5,6 +5,7 @@ import {
   FriendMatchRequestTable,
   FriendRequestTable,
   MatchObserverInvitationTable,
+  MatchObserverTable,
   MatchTable,
   UserMatchTable,
 } from "@/db/schema";
@@ -336,6 +337,22 @@ export const handleMatchObserverInvitationAction = async (
     );
   if (!existingMatchObserverInvitation)
     throw new Error("Match observer invitation not found.");
+
+  if (payload.type === "match_observer_invitation_accepted") {
+    const [existingMatchObserver] = await db
+      .select()
+      .from(MatchObserverTable)
+      .where(
+        and(
+          eq(MatchObserverTable.userId, userId),
+          eq(
+            MatchObserverTable.matchId,
+            existingMatchObserverInvitation.matchId,
+          ),
+        ),
+      );
+    if (!existingMatchObserver) throw new Error("Match observer not found.");
+  }
 
   return existingMatchObserverInvitation[statusMapResult.fieldToReturn];
 };

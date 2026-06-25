@@ -9,6 +9,7 @@ import {
   FriendshipTable,
   MatchObserverInvitationStatusType,
   MatchObserverInvitationTable,
+  MatchObserverTable,
   MatchResultReasonType,
   MatchResultTable,
   MatchSubmissionTable,
@@ -1550,6 +1551,12 @@ export const sendMatchObserverInvitationsAction = async (
   matchId: string,
   unsafeData: MatchObserverInvitationSchemaType,
 ) => {
+  if (!areValidIds([matchId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId, user: userInfo } = await getCurrentUser({ allData: true });
   if (!userId || !userInfo) {
     return {
@@ -1827,6 +1834,12 @@ export const updateMatchObserverInvitationStatusAction = async (
   matchObserverInvitationId: string,
   newStatus: Extract<MatchObserverInvitationStatusType, "rejected" | "revoked">,
 ) => {
+  if (!areValidIds([matchObserverInvitationId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
   const { userId, user: userInfo } = await getCurrentUser({ allData: true });
   if (!userId || !userInfo) {
     return {
@@ -1855,12 +1868,14 @@ export const updateMatchObserverInvitationStatusAction = async (
     .select({
       ...getTableColumns(MatchObserverInvitationTable),
       match: getTableColumns(MatchTable),
+      matchObserver: getTableColumns(MatchObserverTable),
     })
     .from(MatchObserverInvitationTable)
     .innerJoin(
       MatchTable,
       eq(MatchTable.id, MatchObserverInvitationTable.matchId),
     )
+    .leftJoin(MatchObserverTable, eq(MatchObserverTable.matchId, MatchTable.id))
     .where(whereQuery);
   if (!existingMatchInvitation) {
     return {
@@ -1871,7 +1886,7 @@ export const updateMatchObserverInvitationStatusAction = async (
 
   try {
     const notificationId = await db.transaction(async (tx) => {
-      const [updatedInvitation] = await db
+      const [updatedInvitation] = await tx
         .update(MatchObserverInvitationTable)
         .set({
           status: newStatus,
@@ -1881,6 +1896,23 @@ export const updateMatchObserverInvitationStatusAction = async (
         .returning();
       if (!updatedInvitation)
         throw new Error("Failed to update match observer invitation status.");
+
+      if (newStatus === "revoked" && existingMatchInvitation.matchObserver) {
+        const deletedMatchObserver = await tx
+          .delete(MatchObserverTable)
+          .where(
+            and(
+              eq(MatchObserverTable.matchId, existingMatchInvitation.matchId),
+              eq(
+                MatchObserverTable.userId,
+                existingMatchInvitation.invitedUserId,
+              ),
+            ),
+          )
+          .returning();
+        if (!deletedMatchObserver)
+          throw new Error("Failed to delete match observer.");
+      }
 
       const createdNotification = await insertNotificationDb(
         {
@@ -1907,6 +1939,116 @@ export const updateMatchObserverInvitationStatusAction = async (
     return {
       error: false,
       message: `Match observer invitation ${newStatus} successfully!`,
+      notificationId,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: true,
+      message: GENERAL_ERROR_MESSAGE,
+    };
+  }
+};
+
+export const acceptMatchObserverInvitationAction = async (
+  matchObserverInvitationId: string,
+) => {
+  if (!areValidIds([matchObserverInvitationId])) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+  const { userId, user: userInfo } = await getCurrentUser({ allData: true });
+  if (!userId || !userInfo) {
+    return {
+      error: true,
+      message: UNAUTHED_ERROR_MESSAGE,
+    };
+  }
+
+  const [existingMatchObserverInvitation] = await db
+    .select({
+      ...getTableColumns(MatchObserverInvitationTable),
+      match: getTableColumns(MatchTable),
+    })
+    .from(MatchObserverInvitationTable)
+    .innerJoin(
+      MatchTable,
+      eq(MatchTable.id, MatchObserverInvitationTable.matchId),
+    )
+    .where(
+      and(
+        eq(MatchObserverInvitationTable.id, matchObserverInvitationId),
+        eq(MatchObserverInvitationTable.invitedUserId, userId),
+        eq(MatchTable.status, "in-progress"),
+        or(isNull(MatchTable.expiresAt), gt(MatchTable.expiresAt, new Date())),
+        eq(MatchObserverInvitationTable.status, "pending"),
+        isNull(MatchObserverInvitationTable.respondedAt),
+      ),
+    );
+  if (!existingMatchObserverInvitation) {
+    return {
+      error: true,
+      message: NOT_FOUND_ERROR_MESSAGE,
+    };
+  }
+
+  try {
+    const { matchId, notificationId } = await db.transaction(async (tx) => {
+      const [updatedInvitation] = await tx
+        .update(MatchObserverInvitationTable)
+        .set({
+          status: "accepted",
+          respondedAt: new Date(),
+        })
+        .where(
+          eq(
+            MatchObserverInvitationTable.id,
+            existingMatchObserverInvitation.id,
+          ),
+        )
+        .returning();
+      if (!updatedInvitation) throw new Error("Failed to update invitation.");
+
+      const [createdMatchObserver] = await db
+        .insert(MatchObserverTable)
+        .values({
+          invitationId: updatedInvitation.id,
+          userId,
+          invitedByUserId: updatedInvitation.inviterUserId,
+          matchId: updatedInvitation.matchId,
+        })
+        .returning();
+      if (!createdMatchObserver)
+        throw new Error("Failed to create match observer.");
+
+      const createdNotification = await insertNotificationDb(
+        {
+          userId: updatedInvitation.inviterUserId,
+          payload: {
+            type: "match_observer_invitation_accepted",
+            matchId: updatedInvitation.matchId,
+            matchObserverInvitationId: updatedInvitation.id,
+            title: "Match invitation accepted",
+            message: `${userInfo.name} accepted your invitation to observe your match.`,
+          },
+        },
+        tx,
+      );
+      if (!createdNotification)
+        throw new Error("Failed to create notification.");
+
+      return {
+        matchId: updatedInvitation.matchId,
+        notificationId: createdNotification.id,
+      };
+    });
+
+    return {
+      error: false,
+      message: "Match invitation accepted successfully!",
+      matchId,
       notificationId,
     };
   } catch (error) {
