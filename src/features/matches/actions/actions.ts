@@ -1858,7 +1858,10 @@ export const updateMatchObserverInvitationStatusAction = async (
 
   const whereQuery = and(
     eq(MatchObserverInvitationTable.id, matchObserverInvitationId),
-    eq(MatchObserverInvitationTable.status, "pending"),
+    or(
+      eq(MatchObserverInvitationTable.status, "pending"),
+      eq(MatchObserverInvitationTable.status, "accepted"),
+    ),
     eq(MatchTable.status, "in-progress"),
     or(gt(MatchTable.expiresAt, new Date()), isNull(MatchTable.expiresAt)),
     statusMap[newStatus],
@@ -1896,23 +1899,6 @@ export const updateMatchObserverInvitationStatusAction = async (
         .returning();
       if (!updatedInvitation)
         throw new Error("Failed to update match observer invitation status.");
-
-      if (newStatus === "revoked" && existingMatchInvitation.matchObserver) {
-        const deletedMatchObserver = await tx
-          .delete(MatchObserverTable)
-          .where(
-            and(
-              eq(MatchObserverTable.matchId, existingMatchInvitation.matchId),
-              eq(
-                MatchObserverTable.userId,
-                existingMatchInvitation.invitedUserId,
-              ),
-            ),
-          )
-          .returning();
-        if (!deletedMatchObserver)
-          throw new Error("Failed to delete match observer.");
-      }
 
       const createdNotification = await insertNotificationDb(
         {
@@ -2058,4 +2044,50 @@ export const acceptMatchObserverInvitationAction = async (
       message: GENERAL_ERROR_MESSAGE,
     };
   }
+};
+
+export const getMatchObserverAccessAction = async (matchId: string) => {
+  const { userId } = await getCurrentUser();
+  if (!userId) return null;
+
+  const [existingUserMatch] = await db
+    .select({
+      ...getTableColumns(UserMatchTable),
+      match: getTableColumns(MatchTable),
+    })
+    .from(UserMatchTable)
+    .innerJoin(MatchTable, eq(MatchTable.id, UserMatchTable.matchId))
+    .where(
+      and(
+        eq(UserMatchTable.userId, userId),
+        eq(MatchTable.id, matchId),
+        eq(MatchTable.status, "in-progress"),
+        or(isNull(MatchTable.expiresAt), gt(MatchTable.expiresAt, new Date())),
+      ),
+    );
+  if (!existingUserMatch) return null;
+
+  const matchObservers = await db
+    .select({
+      ...getTableColumns(MatchObserverInvitationTable),
+      user: getTableColumns(user),
+      matchObserver: getTableColumns(MatchObserverTable),
+    })
+    .from(MatchObserverInvitationTable)
+    .innerJoin(user, eq(user.id, MatchObserverInvitationTable.invitedUserId))
+    .leftJoin(
+      MatchObserverTable,
+      eq(MatchObserverInvitationTable.id, MatchObserverTable.invitationId),
+    )
+    .where(
+      and(
+        eq(MatchObserverInvitationTable.matchId, existingUserMatch.matchId),
+        or(
+          eq(MatchObserverInvitationTable.status, "accepted"),
+          eq(MatchObserverInvitationTable.status, "pending"),
+        ),
+      ),
+    );
+
+  return matchObservers;
 };

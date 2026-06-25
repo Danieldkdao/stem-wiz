@@ -36,7 +36,7 @@ export const formatTime = (
     minute: "2-digit",
   })
     .format(d)
-    .replace(/, (?=\d)/, " at ");
+    .replace(/, (?=\d{1,2}:\d{2})/, " at ");
 
   return formatted;
 };

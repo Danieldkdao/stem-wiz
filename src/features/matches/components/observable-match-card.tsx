@@ -9,7 +9,6 @@ import {
   ProblemTable,
   UserMatchTable,
 } from "@/db/schema";
-import { formatDifficultyLevel } from "@/features/arena-problems/lib/formatters";
 import { getDifficultyBadge } from "@/features/oracle/lib/formatters";
 import { formatProgrammingLanguage } from "@/features/social/lib/formatters";
 import { User } from "@/lib/auth/auth";

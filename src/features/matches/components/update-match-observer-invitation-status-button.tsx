@@ -36,6 +36,7 @@ export const UpdateMatchObserverInvitationStatusButton = ({
   matchObserverInvitationId,
   newStatus,
   children,
+  afterAction,
   onClick,
   disabled,
   ...props
@@ -43,6 +44,7 @@ export const UpdateMatchObserverInvitationStatusButton = ({
   matchObserverInvitationId: string;
   newStatus: LimitedMatchObserverInvitationStatus;
   children: ReactNode;
+  afterAction?: () => Promise<unknown> | unknown;
 } & ComponentProps<typeof Button>) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -83,6 +85,7 @@ export const UpdateMatchObserverInvitationStatusButton = ({
         router.refresh();
       }
     });
+    void afterAction?.();
 
     setOtherActionsPending(false);
   };

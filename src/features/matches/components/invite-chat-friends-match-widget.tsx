@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlusIcon } from "lucide-react";
 import { MatchObserverInvitationsForm } from "./match-observer-invitations-form";
+import { MatchObserversList } from "./match-observers-list";
 
 export const InviteChatFriendsMatchWidget = ({
   matchId,
@@ -47,7 +48,9 @@ export const InviteChatFriendsMatchWidget = ({
             <TabsContent value="invite">
               <MatchObserverInvitationsForm matchId={matchId} />
             </TabsContent>
-            <TabsContent value="manage"></TabsContent>
+            <TabsContent value="manage">
+              <MatchObserversList matchId={matchId} />
+            </TabsContent>
           </div>
         </Tabs>
       </PopoverContent>
