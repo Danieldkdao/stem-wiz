@@ -1,8 +1,12 @@
+packages:
+  - "."
+
 allowBuilds:
   esbuild: false
   msw: false
   sharp: false
   unrs-resolver: false
+
 packageExtensions:
   "@hookform/resolvers@*":
     peerDependencies:
