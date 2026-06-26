@@ -1,8 +1,29 @@
 "use client";
 
-import { Controller, useForm } from "react-hook-form";
-import { userProfileSchema, UserProfileSchemaType } from "../actions/schemas";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { LoadingSwap } from "@/components/ui/loading-swap";
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from "@/components/ui/multi-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   programmingLanguages,
   userAvailabilityDays,
@@ -14,69 +35,46 @@ import {
   userMeetupPreferences,
   UserProfileTable,
 } from "@/db/schema";
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn, getInputErrorStyle } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 import {
-  formatUserExperienceLevel,
-  formatProgrammingLanguage,
-  formatUserCollborationStyle,
-  formatUserMeetupPreference,
-  formatUserLookingFor,
-  formatUserAvailabilityDays,
-  formatUserAvailabilityTimeOfDay,
-  formatUserGoals,
-} from "../lib/formatters";
-import { Input } from "@/components/ui/input";
-import {
-  MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from "@/components/ui/multi-select";
-import { Button } from "@/components/ui/button";
-import { LoadingSwap } from "@/components/ui/loading-swap";
-import { upsertUserProfileAction } from "../actions/actions";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  FaCode,
-  FaHourglassHalf,
-  FaMedal,
-  FaUserPen,
-  FaGlobe,
-  FaLocationDot,
-  FaPeopleArrows,
-  FaHandshake,
-  FaUserGroup,
-  FaCalendarDays,
   FaBullseye,
+  FaCalendarDays,
+  FaClock,
+  FaCode,
   FaGithub,
+  FaGlobe,
+  FaHandshake,
+  FaHourglassHalf,
   FaLink,
   FaLinkedin,
+  FaLocationDot,
+  FaMedal,
+  FaPeopleArrows,
   FaSun,
-  FaClock,
+  FaUserGroup,
+  FaUserPen,
 } from "react-icons/fa6";
+import { toast } from "sonner";
+import { upsertUserProfileAction } from "../actions/actions";
+import { userProfileSchema, UserProfileSchemaType } from "../actions/schemas";
+import {
+  formatProgrammingLanguage,
+  formatUserAvailabilityDays,
+  formatUserAvailabilityTimeOfDay,
+  formatUserCollborationStyle,
+  formatUserExperienceLevel,
+  formatUserGoals,
+  formatUserLookingFor,
+  formatUserMeetupPreference,
+} from "../lib/formatters";
 
 export const UserProfileForm = ({
   userProfile,
 }: {
   userProfile?: typeof UserProfileTable.$inferSelect;
 }) => {
-  const router = useRouter();
   const form = useForm<UserProfileSchemaType>({
     resolver: zodResolver(userProfileSchema),
     defaultValues: {
@@ -106,27 +104,6 @@ export const UserProfileForm = ({
     if (response.error) {
       toast.error(response.message);
     } else {
-      router.refresh();
-      form.reset({
-        availability: userProfile?.availability ?? {
-          days: [],
-          hoursPerWeek: undefined,
-          timeOfDay: [],
-        },
-        bio: userProfile?.bio ?? "",
-        collaborationStyle: userProfile?.collaborationStyle ?? undefined,
-        experienceLevel: userProfile?.experienceLevel ?? undefined,
-        githubUrl: userProfile?.githubUrl ?? "",
-        goals: userProfile?.goals ?? [],
-        linkedinUrl: userProfile?.linkedinUrl ?? "",
-        location: userProfile?.location ?? "",
-        lookingFor: userProfile?.lookingFor ?? undefined,
-        meetupPreference: userProfile?.meetupPreference ?? undefined,
-        portfolioUrl: userProfile?.portfolioUrl ?? "",
-        preferredLanguage: userProfile?.preferredLanguage ?? undefined,
-        timezone: userProfile?.timezone ?? "",
-        yearsProgramming: userProfile?.yearsProgramming ?? undefined,
-      });
       toast.success(response.message);
     }
   };

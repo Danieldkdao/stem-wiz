@@ -70,6 +70,18 @@ export const zodNumberValidation = (min = 0) =>
       error: `Please enter a positive integer greater than ${min}.`,
     });
 
+const emptyStringToNull = <T extends z.ZodType>(schema: T) =>
+  z
+    .union([z.string().trim().length(0).transform(() => null), schema])
+    .optional()
+    .nullable();
+
+const emptyArrayToNull = <T extends z.ZodArray>(schema: T) =>
+  schema
+    .transform((value) => (value.length === 0 ? null : value))
+    .optional()
+    .nullable();
+
 export const userAvailabilityObjectSchema = z.object({
   days: z
     .array(z.enum(userAvailabilityDays))
@@ -225,36 +237,29 @@ export const userProfileSchema = z.object({
   preferredLanguage: z.enum(programmingLanguages),
   yearsProgramming: zodNumberValidation().optional().nullable(),
   experienceLevel: z.enum(userExperienceLevels).optional().nullable(),
-  bio: z
-    .string()
-    .min(10, { error: "Please enter at least 10 characters." })
-
-    .optional()
-    .nullable(),
-  timezone: z.string().optional().nullable(),
-  location: z.string().optional().nullable(),
+  bio: emptyStringToNull(
+    z.string().trim().min(10, {
+      error: "Please enter at least 10 characters.",
+    }),
+  ),
+  timezone: emptyStringToNull(z.string().trim()),
+  location: emptyStringToNull(z.string().trim()),
   meetupPreference: z.enum(userMeetupPreferences).optional().nullable(),
   collaborationStyle: z.enum(userCollaborationStyles).optional().nullable(),
   lookingFor: z.enum(userLookingFor).optional().nullable(),
   availability: userAvailabilitySchema,
-  goals: z
-    .array(z.enum(userGoals))
-    .min(1, { error: "Please enter at least one goal." })
-
-    .optional()
-    .nullable(),
-  githubUrl: z
-    .url({ error: "Please enter a a valid url." })
-    .optional()
-    .nullable(),
-  portfolioUrl: z
-    .url({ error: "Please enter a a valid url." })
-    .optional()
-    .nullable(),
-  linkedinUrl: z
-    .url({ error: "Please enter a a valid url." })
-    .optional()
-    .nullable(),
+  goals: emptyArrayToNull(
+    z.array(z.enum(userGoals)),
+  ),
+  githubUrl: emptyStringToNull(
+    z.url({ error: "Please enter a valid url." }),
+  ),
+  portfolioUrl: emptyStringToNull(
+    z.url({ error: "Please enter a valid url." }),
+  ),
+  linkedinUrl: emptyStringToNull(
+    z.url({ error: "Please enter a valid url." }),
+  ),
 });
 export type UserProfileSchemaType = z.infer<typeof userProfileSchema>;
 
