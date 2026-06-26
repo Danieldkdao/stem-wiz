@@ -121,7 +121,7 @@ export const sendVerificationOtp = async ({
           <div style="max-width:560px;margin:0 auto;background:${EMAIL_THEME.surface};border:1px solid ${EMAIL_THEME.border};border-radius:24px;overflow:hidden;box-shadow:${EMAIL_THEME.shadow};">
             <div style="padding:28px 30px 26px;background:${EMAIL_THEME.elevated};border-bottom:1px solid ${EMAIL_THEME.border};">
               <div style="font-size:24px;line-height:1;font-weight:800;color:${EMAIL_THEME.text};">
-                STEM<span style="color:${EMAIL_THEME.primary};">Wiz</span>
+                <span style="color:${EMAIL_THEME.primary};">Synapse</span>
               </div>
               <div style="display:inline-block;margin-top:22px;padding:7px 12px;border-radius:999px;background:${EMAIL_THEME.badgeBackground};border:1px solid ${EMAIL_THEME.border};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL_THEME.accent};">
                 ${escapedEyebrow}

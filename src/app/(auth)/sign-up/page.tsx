@@ -1,12 +1,8 @@
 "use client";
 
+import { VerifyAccount } from "@/components/auth/verify-account";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { FaGoogle, FaGithub } from "react-icons/fa6";
-import z from "zod";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Field,
   FieldContent,
@@ -14,18 +10,22 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { getInputErrorStyle } from "@/lib/utils";
+import { LoadingSwap } from "@/components/ui/loading-swap";
 import {
   PasswordInput,
   PasswordInputStrengthChecker,
 } from "@/components/ui/password-input";
-import { LoadingSwap } from "@/components/ui/loading-swap";
-import { useState } from "react";
+import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth/auth-client";
-import { toast } from "sonner";
 import { GENERAL_ERROR_MESSAGE } from "@/lib/constants";
+import { getInputErrorStyle } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { VerifyAccount } from "@/components/auth/verify-account";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { FaGithub, FaGoogle } from "react-icons/fa6";
+import { toast } from "sonner";
+import z from "zod";
 
 const formSchema = z.object({
   name: z.string().trim().min(1, { error: "Please enter your name." }),
@@ -55,10 +55,6 @@ const SignUpPage = () => {
         onSuccess: async () => {
           toast.success("Account created successfully!");
           setVerifyEmail(data.email);
-          await authClient.emailOtp.sendVerificationOtp({
-            email: data.email,
-            type: "email-verification",
-          });
         },
         onError: (error) => {
           toast.error(error.error.message || GENERAL_ERROR_MESSAGE);
