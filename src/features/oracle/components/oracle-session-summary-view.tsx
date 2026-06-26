@@ -234,10 +234,7 @@ export const OracleSessionSummaryView = ({
                                       "The user did not provide a solution."
                                     }
                                     key={`${session.id}:${oracleProblem.id}`}
-                                    height={
-                                      (oracleProblem.userCode?.split(" ")
-                                        .length ?? 25) * 4
-                                    }
+                                    height={500}
                                     keepCurrentModel
                                   />
                                 </div>
