@@ -301,6 +301,13 @@ const MatchResultsSuspense = async ({ params }: MatchCompeteParams) => {
               language={problem.programmingLanguage}
               height={500}
             />
+          ) : currentUserSubmission ? (
+            <CodeEditor
+              options={{ readOnly: true }}
+              value={currentUserSubmission.code}
+              language={problem.programmingLanguage}
+              height={500}
+            />
           ) : (
             <NoCode />
           )

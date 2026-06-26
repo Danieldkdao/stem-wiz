@@ -132,10 +132,18 @@ export const MatchSocketProvider = ({ children }: { children: ReactNode }) => {
               case "match_finished":
               case "error":
                 break;
-              default:
-                throw new Error(
-                  `Unknown match response type: ${messageType satisfies never}`,
+              default: {
+                const unexpectedMessage = message as { type?: unknown };
+                messageType satisfies never;
+                console.error(
+                  "[match:socket] received an unexpected websocket event",
+                  {
+                    messageType: unexpectedMessage.type,
+                    message: unexpectedMessage,
+                  },
                 );
+                break;
+              }
             }
           } catch (error) {
             console.error(error);

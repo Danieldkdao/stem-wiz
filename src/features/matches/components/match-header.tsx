@@ -63,6 +63,8 @@ export const MatchHeader = ({
     lastEvent?.type === "match_finished" ||
     !!(match.result && match.status === "finished");
   const hasSubmittedCode = match.submissions.length > 0;
+  const matchCompletionReason =
+    lastEvent?.type === "match_finished" ? lastEvent.reason : null;
 
   const handleMatchQuit = async () => {
     const confirmation = await confirm();
@@ -220,7 +222,7 @@ export const MatchHeader = ({
           if (isMatchFinished) return;
         }}
         matchId={match.id}
-        reason={match.result?.reason}
+        reason={match.result?.reason ?? matchCompletionReason ?? undefined}
       />
       <div className="flex flex-col w-full">
         {opponentStatus === "disconnected" && match.kind === "arena" && (

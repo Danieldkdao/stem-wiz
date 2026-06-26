@@ -13,6 +13,7 @@ const getSocketUrl = () => {
 };
 
 export const useWaitingArenaSocket = () => {
+  const ongoingConnectionRef = useRef<Promise<void> | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   const [status, setStatus] = useState<SocketStatus>("idle");
@@ -37,68 +38,136 @@ export const useWaitingArenaSocket = () => {
     setLastEvent(null);
   }, []);
 
+  // todo: remove after testing
+  // const connectBefore = useCallback(async () => {
+  //   if (
+  //     socketRef.current?.readyState === WebSocket.OPEN ||
+  //     socketRef.current?.readyState === WebSocket.CONNECTING
+  //   )
+  //     return;
+
+  //   setStatus("connecting");
+
+  //   await fetch("/api/realtime", {
+  //     method: "GET",
+  //     credentials: "include",
+  //   });
+
+  //   const socket = new WebSocket(getSocketUrl());
+  //   socketRef.current = socket;
+
+  //   socket.onopen = () => {
+  //     setStatus("open");
+  //   };
+
+  //   socket.onmessage = (event) => {
+  //     try {
+  //       const message = JSON.parse(event.data) as ArenaWaitingServerMessage;
+
+  //       setLastEvent(message);
+
+  //       if (message.type === "match_found") {
+  //         setMatch(message);
+  //       }
+  //     } catch (error) {
+  //       console.error(error);
+  //       // todo: maybe implement better error handling
+  //     }
+  //   };
+
+  //   socket.onerror = () => {
+  //     setStatus("error");
+  //     clearWaitingState();
+  //   };
+
+  //   socket.onclose = () => {
+  //     setStatus("closed");
+  //     clearWaitingState();
+
+  //     if (socketRef.current === socket) {
+  //       socketRef.current = null;
+  //     }
+  //   };
+  // }, [clearWaitingState]);
+
   const connect = useCallback(async () => {
     if (
       socketRef.current?.readyState === WebSocket.OPEN ||
       socketRef.current?.readyState === WebSocket.CONNECTING
     )
       return;
+    if (ongoingConnectionRef.current) {
+      return ongoingConnectionRef.current;
+    }
 
-    setStatus("connecting");
+    ongoingConnectionRef.current = (async () => {
+      setStatus("connecting");
 
-    await fetch("/api/realtime", {
-      method: "GET",
-      credentials: "include",
+      await fetch("/api/realtime", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const socket = new WebSocket(getSocketUrl());
+      socketRef.current = socket;
+
+      await new Promise<void>((resolve, reject) => {
+        socket.onopen = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("open");
+          resolve();
+        };
+
+        socket.onmessage = (event) => {
+          if (socketRef.current !== socket) return;
+          try {
+            const message = JSON.parse(event.data) as ArenaWaitingServerMessage;
+
+            setLastEvent(message);
+
+            if (message.type === "match_found") {
+              setMatch(message);
+            }
+          } catch (error) {
+            console.error(error);
+            // todo: maybe implement better error handling
+          }
+        };
+
+        socket.onerror = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("error");
+          clearWaitingState();
+          reject();
+        };
+
+        socket.onclose = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("closed");
+          clearWaitingState();
+          reject();
+
+          if (socketRef.current === socket) {
+            socketRef.current = null;
+          }
+        };
+      });
+    })().finally(() => {
+      ongoingConnectionRef.current = null;
     });
-
-    const socket = new WebSocket(getSocketUrl());
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      setStatus("open");
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data) as ArenaWaitingServerMessage;
-
-        setLastEvent(message);
-
-        if (message.type === "match_found") {
-          setMatch(message);
-        }
-      } catch (error) {
-        console.error(error);
-        // todo: maybe implement better error handling
-      }
-    };
-
-    socket.onerror = () => {
-      setStatus("error");
-      clearWaitingState();
-    };
-
-    socket.onclose = () => {
-      setStatus("closed");
-      clearWaitingState();
-
-      if (socketRef.current === socket) {
-        socketRef.current = null;
-      }
-    };
   }, [clearWaitingState]);
 
   const send = useCallback((message: ArenaClientMessage) => {
-    if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
 
-    socketRef.current.send(JSON.stringify(message));
+    socket.send(JSON.stringify(message));
     return true;
   }, []);
 
   const joinWaitingRoom = useCallback(() => {
-    clearWaitingState();
     return send({ type: "join_waiting_room" });
-  }, [clearWaitingState, send]);
+  }, [send]);
 
   const leaveWaitingRoom = useCallback(() => {
     clearWaitingState();
@@ -107,11 +176,11 @@ export const useWaitingArenaSocket = () => {
 
   useEffect(() => {
     return () => {
-      clearWaitingState();
+      leaveWaitingRoom();
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [clearWaitingState]);
+  }, [leaveWaitingRoom]);
 
   return {
     status,

@@ -161,10 +161,18 @@ export const NotificationSocketProvider = ({
               case "new_notification":
               case "error":
                 break;
-              default:
-                throw new Error(
-                  `Unknown notification response type: ${messageType satisfies never}`,
+              default: {
+                const unexpectedMessage = message as { type?: unknown };
+                messageType satisfies never;
+                console.error(
+                  "[notifications:socket] received an unexpected websocket event",
+                  {
+                    messageType: unexpectedMessage.type,
+                    message: unexpectedMessage,
+                  },
                 );
+                break;
+              }
             }
           } catch (error) {
             console.error(error);

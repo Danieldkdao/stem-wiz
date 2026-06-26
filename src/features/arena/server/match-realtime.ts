@@ -105,11 +105,7 @@ export const disconnectFromMatch = async (
   const connectionId = ws.id;
 
   const existingMatch = await db.query.MatchTable.findFirst({
-    where: and(
-      eq(MatchTable.id, matchId),
-      eq(MatchTable.status, "in-progress"),
-      activeMatchExpirationQuery(),
-    ),
+    where: eq(MatchTable.id, matchId),
     with: {
       users: true,
     },
@@ -135,6 +131,13 @@ export const disconnectFromMatch = async (
     return;
   }
 
+  if (
+    existingMatch.status === "finished" ||
+    (existingMatch.expiresAt !== null && existingMatch.expiresAt <= new Date())
+  ) {
+    cleanupUserConnection(userId);
+    return;
+  }
   const opponentConnectionId = getOpponentConnectionId(userId);
   if (opponentConnectionId) {
     sendToConnection(opponentConnectionId, {

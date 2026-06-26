@@ -8,17 +8,37 @@ import {
   UserMatchTable,
   UserProfileTable,
 } from "@/db/schema";
-import { and, eq, getTableColumns, gt, isNull, or } from "drizzle-orm";
+import { and, eq, getTableColumns, gt, isNull, or, sql } from "drizzle-orm";
 import {
+  getSocketById,
   sendToUser,
   sendToClient,
   sendToConnection,
 } from "@/features/realtime/server/connection-state";
 import { RealtimeWebSocket } from "@/features/realtime/lib/types";
 
+const hasOpenConnection = (connectionId: string) => {
+  const socket = getSocketById(connectionId);
+  if (!socket) return false;
+
+  return socket.readyState === socket.OPEN;
+};
+
+const cleanupStaleWaitingUsers = () => {
+  const { usersInWaitingRoom } = getArenaWsState();
+
+  usersInWaitingRoom.forEach((user, userId) => {
+    if (!hasOpenConnection(user.connectionId)) {
+      usersInWaitingRoom.delete(userId);
+    }
+  });
+};
+
 export const joinWaitingRoom = async (ws: RealtimeWebSocket) => {
   const { usersInWaitingRoom, activeMatchesByUser } = getArenaWsState();
   const userId = ws.user.id;
+
+  cleanupStaleWaitingUsers();
 
   const [userSettings] = await db
     .select()
@@ -52,7 +72,12 @@ export const joinWaitingRoom = async (ws: RealtimeWebSocket) => {
     }
   }
 
-  if (usersInWaitingRoom.has(userId)) return;
+  const existingWaitingUser = usersInWaitingRoom.get(userId);
+
+  if (existingWaitingUser?.connectionId === ws.id) {
+    await tryPairUsers(userId, userSettings.preferredLanguage);
+    return;
+  }
 
   usersInWaitingRoom.set(userId, {
     ...ws.user,
@@ -70,10 +95,17 @@ const tryPairUsers = async (
   const { usersInWaitingRoom, activeMatchesByUser, usersInObservingRoom } =
     getArenaWsState();
 
+  cleanupStaleWaitingUsers();
+
   if (usersInWaitingRoom.size < 2) {
     setTimeout(() => {
       const waitingUser = usersInWaitingRoom.get(currentUserId);
       if (!waitingUser) return;
+      if (!hasOpenConnection(waitingUser.connectionId)) {
+        usersInWaitingRoom.delete(currentUserId);
+        return;
+      }
+
       sendToConnection(waitingUser.connectionId, {
         type: "no_matches_found",
       });
@@ -85,6 +117,7 @@ const tryPairUsers = async (
       .values()
       .find(
         (user) =>
+          hasOpenConnection(user.connectionId) &&
           user.userSettings.preferredLanguage === preferredLanguage &&
           user.id !== currentUserId,
       )
@@ -101,11 +134,16 @@ const tryPairUsers = async (
   if (!currentUser) {
     return;
   }
+  if (!hasOpenConnection(currentUser.connectionId)) {
+    usersInWaitingRoom.delete(currentUser.id);
+    return;
+  }
 
   const opponent = usersInWaitingRoom
     .values()
     .find(
       (user) =>
+        hasOpenConnection(user.connectionId) &&
         user.id !== currentUser?.id &&
         user.userSettings.preferredLanguage ===
           currentUser?.userSettings.preferredLanguage,
@@ -142,6 +180,7 @@ const tryPairUsers = async (
         eq(ArenaProblemConfigTable.problemId, ProblemTable.id),
       )
       .where(eq(ProblemTable.programmingLanguage, preferredLanguage))
+      .orderBy(sql`random()`)
       .limit(1);
     if (!arenaProblem) {
       devSockets.forEach((devSocket) => {

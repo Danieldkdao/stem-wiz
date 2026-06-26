@@ -7,7 +7,7 @@ import { useWaitingArenaSocket } from "@/features/arena/hooks/use-waiting-arena-
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { SwordsIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { statusMap } from ".";
 import { FindingMatchLoader } from "./finding-match-loader";
 import { ArenaWaitingServerMessage } from "../lib/types";
@@ -30,9 +30,9 @@ const renderWaitingResponse = (message: ArenaWaitingServerMessage) => {
         <div className="flex flex-col gap-2 items-center">
           <h1 className="text-xl font-medium text-center">Match Found!</h1>
           <p className="text-muted-foreground text-center">
-            You have been matched up with {message.opponent.name}! You are
-            being redirected to the battle now. If that did not work, you can
-            click on the link below.
+            You have been matched up with {message.opponent.name}! You are being
+            redirected to the battle now. If that did not work, you can click on
+            the link below.
           </p>
           <LinkButton
             variant="outline"
@@ -65,9 +65,7 @@ const renderWaitingResponse = (message: ArenaWaitingServerMessage) => {
     case "no_problems_found":
       return (
         <div className="flex flex-col gap-2 items-center">
-          <h1 className="text-xl font-medium text-center">
-            No Problems Found
-          </h1>
+          <h1 className="text-xl font-medium text-center">No Problems Found</h1>
           <p className="text-muted-foreground text-center">
             Unfortunately, we currently are unable to find any interesting
             problems for your battle. Try refreshing the page or coming back at
@@ -108,6 +106,7 @@ const renderWaitingResponse = (message: ArenaWaitingServerMessage) => {
 
 export const ArenaWaitingArea = () => {
   const router = useRouter();
+  const hasJoinedWaitingRoomRef = useRef(false);
   const {
     status,
     match,
@@ -126,11 +125,20 @@ export const ArenaWaitingArea = () => {
   }, [connect, isPending, session, status]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session?.user.id) return;
     if (status !== "open") return;
+    if (hasJoinedWaitingRoomRef.current) return;
 
-    joinWaitingRoom();
-  }, [session, status, joinWaitingRoom]);
+    if (joinWaitingRoom()) {
+      hasJoinedWaitingRoomRef.current = true;
+    }
+  }, [session?.user.id, status, joinWaitingRoom]);
+
+  useEffect(() => {
+    if (status === "open") return;
+
+    hasJoinedWaitingRoomRef.current = false;
+  }, [status]);
 
   useEffect(() => {
     if (status !== "open") return;
@@ -190,9 +198,24 @@ export const ArenaWaitingArea = () => {
           </Card>
         )}
 
-        {lastEvent && (
+        {lastEvent ? (
           <Card className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <CardContent>{renderWaitingResponse(lastEvent)}</CardContent>
+          </Card>
+        ) : (
+          <Card className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <CardContent>
+              <div className="flex flex-col gap-2 items-center">
+                <h1 className="text-xl font-medium text-center">
+                  Discovering other developers...
+                </h1>
+                <p className="text-muted-foreground text-center">
+                  We are currently looking for other active developers to match
+                  you up with. If nothing has happened yet, try refreshing the
+                  page.
+                </p>
+              </div>
+            </CardContent>
           </Card>
         )}
       </div>

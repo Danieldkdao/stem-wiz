@@ -12,9 +12,19 @@ export const handleNotificationMessage = async (
     case "new_notification":
       await handleNewNotification(ws, message.event);
       break;
-    default:
-      throw new Error(
-        `Unknown notification message type: ${messageType satisfies never}`,
+    default: {
+      const unexpectedMessage = message as { type?: unknown };
+      messageType satisfies never;
+      console.error(
+        "[notifications:server] received an unexpected websocket message",
+        {
+          userId: ws.user.id,
+          connectionId: ws.id,
+          messageType: unexpectedMessage.type,
+          message: unexpectedMessage,
+        },
       );
+      break;
+    }
   }
 };

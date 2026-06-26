@@ -47,9 +47,19 @@ export const handleRealtimeFriendChatMessage = async (
     case "deleted_chat":
       await handleBroadcastChatChanges(ws, message.chatId, "deleted");
       break;
-    default:
-      throw new Error(
-        `Unknown realtime friend chat message event: ${messageType satisfies never}`,
+    default: {
+      const unexpectedMessage = message as { type?: unknown };
+      messageType satisfies never;
+      console.error(
+        "[friend-chat:server] received an unexpected websocket message",
+        {
+          userId: ws.user.id,
+          connectionId: ws.id,
+          messageType: unexpectedMessage.type,
+          message: unexpectedMessage,
+        },
       );
+      break;
+    }
   }
 };

@@ -30,7 +30,7 @@ export const ObservableMatchCard = ({
   const problem = match.arenaProblem.problem;
   const timeRemaining = match.expiresAt
     ? getTimeValues(
-        Math.round((match.expiresAt.getTime() - new Date().getTime()) * 1000),
+        Math.round((match.expiresAt.getTime() - new Date().getTime()) / 1000),
       )
     : null;
   const timeRemainingString = timeRemaining

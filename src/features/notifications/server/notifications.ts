@@ -106,10 +106,20 @@ export const handleNewNotification = async (
         break;
       case "system":
         break;
-      default:
-        throw new Error(
-          `Unknown notification event type: ${eventType satisfies never}`,
+      default: {
+        const unexpectedPayload = payload as { type?: unknown };
+        eventType satisfies never;
+        console.error(
+          "[notifications:server] received an unexpected notification websocket event",
+          {
+            userId: ws.user.id,
+            connectionId: ws.id,
+            eventType: unexpectedPayload.type,
+            payload: unexpectedPayload,
+          },
         );
+        break;
+      }
     }
 
     if (recipientUserId) {

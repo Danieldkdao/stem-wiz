@@ -171,10 +171,18 @@ export const FriendChatSocketProvider = ({
               case "friend_chat_deleted":
               case "error":
                 break;
-              default:
-                throw new Error(
-                  `Unknown match response type: ${messageType satisfies never}`,
+              default: {
+                const unexpectedMessage = message as { type?: unknown };
+                messageType satisfies never;
+                console.error(
+                  "[friend-chat:socket] received an unexpected websocket event",
+                  {
+                    messageType: unexpectedMessage.type,
+                    message: unexpectedMessage,
+                  },
                 );
+                break;
+              }
             }
           } catch (error) {
             console.error(error);

@@ -3,9 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArenaMatchOptionsTabs } from "@/features/arena/components/arena-match-options-tabs";
 import { ChevronRightIcon, EyeIcon, HistoryIcon, MailIcon } from "lucide-react";
 import Link from "next/link";
-import { SearchParams } from "nuqs";
 
-const ArenaPage = (props: { searchParams: Promise<SearchParams> }) => {
+const ArenaPage = () => {
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 items-center py-10 px-6">
       <h1 className="text-4xl font-semibold">Arena</h1>
@@ -18,7 +17,7 @@ const ArenaPage = (props: { searchParams: Promise<SearchParams> }) => {
                 Choose how you want to find your opponent.
               </p>
             </div>
-            <ArenaMatchOptionsTabs {...props} />
+            <ArenaMatchOptionsTabs />
           </CardContent>
         </Card>
         <div className="flex flex-col gap-4">

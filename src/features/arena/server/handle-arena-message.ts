@@ -72,7 +72,16 @@ export const handleArenaMessage = async (
     case "leave_observer_match":
       await leaveObserverMatch(ws, message.matchId);
       break;
-    default:
-      throw new Error(`Invalid message type: ${messageType satisfies never}`);
+    default: {
+      const unexpectedMessage = message as { type?: unknown };
+      messageType satisfies never;
+      console.error("[arena:server] received an unexpected websocket message", {
+        userId: ws.user.id,
+        connectionId: ws.id,
+        messageType: unexpectedMessage.type,
+        message: unexpectedMessage,
+      });
+      break;
+    }
   }
 };

@@ -5,15 +5,47 @@ import { LinkButton } from "@/components/link-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FriendMatchRequestForm } from "@/features/matches/components/friend-match-request-form";
 import { SwordsIcon } from "lucide-react";
-import { SearchParams } from "nuqs";
 import { FaQuestion } from "react-icons/fa6";
 import { useArenaParams } from "../hooks/use-arena-params";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export const ArenaMatchOptionsTabs = ({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) => {
+export const ArenaMatchOptionsTabs = () => {
+  return (
+    <Suspense fallback={<ArenaMatchOptionsTabsLoading />}>
+      <ArenaMatchOptionsTabsSuspense />
+    </Suspense>
+  );
+};
+
+const ArenaMatchOptionsTabsLoading = () => {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 border-b">
+        <Skeleton className="h-10 w-36 rounded-md" />
+        <Skeleton className="h-10 w-36 rounded-md" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-full max-w-180" />
+        <Skeleton className="h-7 w-4/5 max-w-140" />
+        <div className="flex items-center justify-center gap-6 rounded-md bg-muted p-5">
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton className="size-20 rounded-full" />
+            <Skeleton className="h-7 w-12" />
+          </div>
+          <Skeleton className="size-14" />
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton className="size-20 rounded-full" />
+            <Skeleton className="h-7 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-9 w-full rounded-md" />
+      </div>
+    </div>
+  );
+};
+
+const ArenaMatchOptionsTabsSuspense = () => {
   const [{ defaultTab, selectedProblemId, problemTitle }] = useArenaParams();
 
   const tabs = [

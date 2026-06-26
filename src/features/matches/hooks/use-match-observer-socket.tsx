@@ -1,5 +1,7 @@
 "use client";
 
+import { MatchResultReasonType } from "@/db/shared";
+import { ArenaClientMessage } from "@/features/arena/lib/schemas";
 import { ArenaServerMessage } from "@/features/arena/lib/types";
 import { SocketStatus } from "@/lib/types";
 import {
@@ -15,8 +17,6 @@ import {
   MatchObserverServerMessage,
   MatchObserverServerMessageType,
 } from "../lib/types";
-import { MatchResultReasonType } from "@/db/shared";
-import { ArenaClientMessage } from "@/features/arena/lib/schemas";
 
 const getSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -62,6 +62,7 @@ export const MatchObserverSocketProvider = ({
       Set<(event: MatchObserverServerMessage) => void>
     >(),
   );
+  const ongoingConnectionRef = useRef<Promise<void> | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   const [status, setStatus] = useState<SocketStatus>("idle");
@@ -93,7 +94,7 @@ export const MatchObserverSocketProvider = ({
     [],
   );
 
-  const connect = useCallback(async () => {
+  const beforeConnect = useCallback(async () => {
     if (
       socketRef.current?.readyState === WebSocket.OPEN ||
       socketRef.current?.readyState === WebSocket.CONNECTING
@@ -160,10 +161,18 @@ export const MatchObserverSocketProvider = ({
           case "new_chat_message":
           case "error":
             break;
-          default:
-            throw new Error(
-              `Unknown match response type: ${messageType satisfies never}`,
+          default: {
+            const unexpectedMessage = message as { type?: unknown };
+            messageType satisfies never;
+            console.error(
+              "[match-observer:socket] received an unexpected websocket event",
+              {
+                messageType: unexpectedMessage.type,
+                message: unexpectedMessage,
+              },
             );
+            break;
+          }
         }
       } catch (error) {
         console.error(error);
@@ -182,10 +191,124 @@ export const MatchObserverSocketProvider = ({
     };
   }, []);
 
-  const send = useCallback((message: ArenaClientMessage) => {
-    if (socketRef.current?.readyState !== WebSocket.OPEN) return false;
+  const connect = useCallback(async () => {
+    if (
+      socketRef.current?.readyState === WebSocket.OPEN ||
+      socketRef.current?.readyState === WebSocket.CONNECTING
+    )
+      return;
+    if (ongoingConnectionRef.current) return ongoingConnectionRef.current;
 
-    socketRef.current.send(JSON.stringify(message));
+    ongoingConnectionRef.current = (async () => {
+      setStatus("connecting");
+
+      await fetch("/api/realtime", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const socket = new WebSocket(getSocketUrl());
+      socketRef.current = socket;
+
+      await new Promise<void>((resolve, reject) => {
+        socket.onopen = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("open");
+          resolve();
+        };
+
+        socket.onmessage = (event) => {
+          if (socketRef.current !== socket) return;
+          try {
+            const message = JSON.parse(
+              event.data,
+            ) as MatchObserverServerMessage;
+
+            setLastEvent(message);
+
+            listenersRef.current.get(message.type)?.forEach((listener) => {
+              try {
+                listener(message);
+              } catch (error) {
+                console.error(error);
+              }
+            });
+
+            const messageType = message.type;
+
+            switch (messageType) {
+              case "match_observer_count_updated":
+                const newCount = message.newCount;
+                setMatchesObserverCount((prev) => {
+                  const next = new Map(prev);
+                  const newMap = next.set(message.matchId, newCount);
+
+                  return newMap;
+                });
+                break;
+              case "connection_error":
+                setStatus("error");
+                break;
+              case "match_finished":
+                setMatchesCompletionReason((prev) => {
+                  const next = new Map(prev);
+                  const newMap = next.set(message.matchId, message.reason);
+
+                  return newMap;
+                });
+                break;
+              case "users_connection_statuses":
+              case "observable_match_count_updated":
+              case "observer_code_snapshot":
+              case "observer_code_output":
+              case "observer_running_code":
+              case "user_submitted_code":
+              case "new_chat_message":
+              case "error":
+                break;
+              default: {
+                const unexpectedMessage = message as { type?: unknown };
+                messageType satisfies never;
+                console.error(
+                  "[match-observer:socket] received an unexpected websocket event",
+                  {
+                    messageType: unexpectedMessage.type,
+                    message: unexpectedMessage,
+                  },
+                );
+                break;
+              }
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        };
+        socket.onerror = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("error");
+          resolve();
+        };
+
+        socket.onclose = () => {
+          if (socketRef.current !== socket) return;
+          setStatus("closed");
+          resolve();
+
+          if (socketRef.current === socket) {
+            socketRef.current = null;
+          }
+        };
+      });
+    })().finally(() => {
+      ongoingConnectionRef.current = null;
+    });
+  }, []);
+
+  const send = useCallback((message: ArenaClientMessage) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+
+    socket.send(JSON.stringify(message));
     return true;
   }, []);
 
