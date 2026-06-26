@@ -94,103 +94,6 @@ export const MatchObserverSocketProvider = ({
     [],
   );
 
-  const beforeConnect = useCallback(async () => {
-    if (
-      socketRef.current?.readyState === WebSocket.OPEN ||
-      socketRef.current?.readyState === WebSocket.CONNECTING
-    )
-      return;
-
-    setStatus("connecting");
-
-    await fetch("/api/realtime", {
-      method: "GET",
-      credentials: "include",
-    });
-
-    const socket = new WebSocket(getSocketUrl());
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      setStatus("open");
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data) as MatchObserverServerMessage;
-
-        setLastEvent(message);
-
-        listenersRef.current.get(message.type)?.forEach((listener) => {
-          try {
-            listener(message);
-          } catch (error) {
-            console.error(error);
-          }
-        });
-
-        const messageType = message.type;
-
-        switch (messageType) {
-          case "match_observer_count_updated":
-            const newCount = message.newCount;
-            setMatchesObserverCount((prev) => {
-              const next = new Map(prev);
-              const newMap = next.set(message.matchId, newCount);
-
-              return newMap;
-            });
-            break;
-          case "connection_error":
-            setStatus("error");
-            break;
-          case "match_finished":
-            setMatchesCompletionReason((prev) => {
-              const next = new Map(prev);
-              const newMap = next.set(message.matchId, message.reason);
-
-              return newMap;
-            });
-            break;
-          case "users_connection_statuses":
-          case "observable_match_count_updated":
-          case "observer_code_snapshot":
-          case "observer_code_output":
-          case "observer_running_code":
-          case "user_submitted_code":
-          case "new_chat_message":
-          case "error":
-            break;
-          default: {
-            const unexpectedMessage = message as { type?: unknown };
-            messageType satisfies never;
-            console.error(
-              "[match-observer:socket] received an unexpected websocket event",
-              {
-                messageType: unexpectedMessage.type,
-                message: unexpectedMessage,
-              },
-            );
-            break;
-          }
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    socket.onerror = () => {
-      setStatus("error");
-    };
-
-    socket.onclose = () => {
-      setStatus("closed");
-
-      if (socketRef.current === socket) {
-        socketRef.current = null;
-      }
-    };
-  }, []);
-
   const connect = useCallback(async () => {
     if (
       socketRef.current?.readyState === WebSocket.OPEN ||
@@ -286,13 +189,13 @@ export const MatchObserverSocketProvider = ({
         socket.onerror = () => {
           if (socketRef.current !== socket) return;
           setStatus("error");
-          resolve();
+          reject();
         };
 
         socket.onclose = () => {
           if (socketRef.current !== socket) return;
           setStatus("closed");
-          resolve();
+          reject();
 
           if (socketRef.current === socket) {
             socketRef.current = null;

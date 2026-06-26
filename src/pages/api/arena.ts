@@ -1,2 +1,6 @@
-export { config } from "./realtime";
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 export { default } from "./realtime";
