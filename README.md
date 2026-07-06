@@ -203,6 +203,11 @@ The websocket connection does rely on stable internet connection so if things ar
 
 The project was solely my creation with some AI assistance. No outside reference regarding the initial idea or code was used.
 
+### Acknowledgements
+
+For some help configuring the code editor, themes, and the code output, I referenced this repo: [CodeCraft](https://github.com/burakorkmez/code-craft/tree/master).
+I then edited and tweaked the code to match my application and its specific use cases.
+
 ### AI Usage
 
 AI was used for some tasks which I have documented below. Every line of AI generated code was read, understood, and tweaked if necessary.
