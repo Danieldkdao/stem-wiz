@@ -54,6 +54,12 @@ export const MatchCodeEditor = ({
   );
 
   useEffect(() => {
+    const code = existingCode ?? "";
+    setCode(code);
+    setUserCode(code);
+  }, [existingCode, matchId, setCode]);
+
+  useEffect(() => {
     return () => {
       handleCodeChange.cancel();
     };
