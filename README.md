@@ -4,6 +4,11 @@
 
 Synapse is a platform that allows developers to compete against other developers in realtime timed coding battles, connect with other developers, and practice by themselves using an integrated AI coach called the Oracle. Other developers can also watch the matches in realtime, providing insight and fun.
 
+## Video Demo!
+Click on the link below to watch a full video demonstration and introduction to the Synapse platform!
+
+[![Synapse Youtube Video Demonstration](./public/hero-image-dark.png)](https://youtu.be/Y6WOOliOSUk)
+
 ## What It Does
 
 Some of the main features are:
