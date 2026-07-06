@@ -26,6 +26,7 @@ export const FriendCommandSelect = ({
   value,
   onValueChange,
   onClick,
+  type,
   className,
   ...props
 }: {
@@ -109,6 +110,7 @@ export const FriendCommandSelect = ({
           className,
         )}
         onClick={() => setOpen(true)}
+        type="button"
         {...props}
       >
         {selectedFriend ? (
