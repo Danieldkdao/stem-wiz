@@ -5,8 +5,8 @@
 Synapse is a platform that allows developers to compete against other developers in realtime timed coding battles, connect with other developers, and practice by themselves using an integrated AI coach called the Oracle. Other developers can also watch the matches in realtime, providing insight and fun.
 
 ## Note to Macondo Reviewers
-Hi there! Thank you for taking your time to review this project. As you might know, a few days ago, the Macondo platform experienced a rollback of all decisions made in the past 5 days. My project was one of the affected ones. With that in mind, I have two things I would like to mention. First if it says that my streak was 51 days, this was because of the rollback. My streak was at 52 days when I submitted,
-[I have a screenshot to prove this.](./public/52-days-streak-screenshot.png) Second, if the AI disclosure checkbox is unchecked, this was also because of the rollback. I made sure that the checkbox was checked when I submitted and the same AI disclosure text I explained there can be found in the [AI usage section at the end of this README](#ai-usage). Thank you very much for your understanding.
+Hi there! Thank you for taking your time to review this project. As you might know, the Macondo platform experienced a rollback and my project was one of the affected ones. With that in mind, I have two things I would like to mention. First my streak should be at 52 days and  
+[I have a screenshot to prove this.](./public/52-days-streak-screenshot.png) Second, I made sure that the AI disclosure checkbox was checked when I submitted and the same AI disclosure text I explained there can be found in the [AI usage section at the end of this README](#ai-usage). Thank you very much for your understanding.
 
 
 ## Video Demo!
